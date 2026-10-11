@@ -1,0 +1,4 @@
+{"sheet":"heroes","rows":[
+{"id":"chogath","champion":"Cho'Gath","replaces_hero":"TBD-verify","role":"tank","abilities":["chogath_q","chogath_w","chogath_e","chogath_r"],"model_src":"lol:Game/DATA/FINAL/Champions/Chogath.wad.client","verified":false},
+{"id":"ashe","champion":"Ashe","replaces_hero":"TBD-verify","role":"ranged","abilities":["ashe_q","ashe_w","ashe_e","ashe_r"],"model_src":"lol:Game/DATA/FINAL/Champions/Ashe.wad.client","verified":false},
+{"id":"leblanc","champion":"LeBlanc","replaces_hero":"TBD-verify","role":"mage","abilities":["leblanc_q","leblanc_w","leblanc_e","leblanc_r"],"model_src":"lol:Game/DATA/FINAL/Champions/Leblanc.wad.client","verified":false}]}

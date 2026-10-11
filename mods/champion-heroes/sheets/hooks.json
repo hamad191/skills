@@ -1,0 +1,5 @@
+{"sheet":"hooks","rows":[
+{"id":"hero_select","target":"DDA hero select / spawn","needs":"installed DDA","verified":false},
+{"id":"skill_bind","target":"DDA skill input + cooldown UI","needs":"installed DDA","verified":false},
+{"id":"defense_place","target":"DDA defense build menu","needs":"installed DDA","verified":false},
+{"id":"lol_reader","target":"read League WAD data from {game:league-of-legends}","needs":"installed League","verified":false}]}

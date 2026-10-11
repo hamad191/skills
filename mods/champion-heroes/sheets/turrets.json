@@ -1,0 +1,3 @@
+{"sheet":"turrets","rows":[
+{"id":"outer_turret","name":"Outer Turret","replaces_dda_defense":"TBD-verify","mana_cost":"TBD","range_src":"lol:turret data","model_src":"lol:Map11 turret","verified":false},
+{"id":"inhibitor_turret","name":"Inhibitor Turret","replaces_dda_defense":"TBD-verify","mana_cost":"TBD","range_src":"lol:turret data","model_src":"lol:Map11 turret","verified":false}]}

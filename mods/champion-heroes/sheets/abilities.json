@@ -1,0 +1,13 @@
+{"sheet":"abilities","note":"values read from player's League install at runtime, never shipped","rows":[
+{"id":"chogath_q","name":"Rupture","slot":"skill1","dda_mapping":"ground AoE knock-up","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"chogath_w","name":"Feral Scream","slot":"skill2","dda_mapping":"cone silence/damage","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"chogath_e","name":"Vorpal Spikes","slot":"passive","dda_mapping":"melee spike projectiles","cooldown_src":"lol:spell data","cost_src":"none","verified":false},
+{"id":"chogath_r","name":"Feast","slot":"ultimate","dda_mapping":"execute single enemy, gain max HP","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"ashe_q","name":"Ranger's Focus","slot":"skill1","dda_mapping":"rapid-fire arrows","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"ashe_w","name":"Volley","slot":"skill2","dda_mapping":"arrow fan + slow","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"ashe_e","name":"Hawkshot","slot":"utility","dda_mapping":"reveal lane scout","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"ashe_r","name":"Enchanted Crystal Arrow","slot":"ultimate","dda_mapping":"long-range stun arrow","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"leblanc_q","name":"Sigil of Malice","slot":"skill1","dda_mapping":"single-target burst + mark","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"leblanc_w","name":"Distortion","slot":"skill2","dda_mapping":"dash + return","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"leblanc_e","name":"Ethereal Chains","slot":"utility","dda_mapping":"tether root","cooldown_src":"lol:spell data","cost_src":"mana","verified":false},
+{"id":"leblanc_r","name":"Mimic","slot":"ultimate","dda_mapping":"recast last skill","cooldown_src":"lol:spell data","cost_src":"mana","verified":false}]}
