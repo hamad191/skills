@@ -147,6 +147,7 @@ kbd{background:var(--p3);border:1px solid var(--bd);border-radius:4px;padding:0 
     <button id="bNextE" title="القطع التالي (PageDown)">⇥</button>
     <button id="bEnd" title="End">⏭</button>
     <span id="time">00:00.00 / 00:00.00</span>
+    <select id="selType" title="تحديد حسب النوع" style="width:auto"><option value="">☑ تحديد…</option><option value="all">الكل (Ctrl+A)</option><option value="video">كل الفيديو</option><option value="audio">كل الأصوات</option><option value="image">كل الصور</option><option value="text">كل النصوص</option><option value="none">إلغاء التحديد</option></select>
     <button id="bSplit" title="S">✂ قص</button>
     <button id="bDup" title="Ctrl+D">⧉ نسخ</button>
     <button class="dn" id="bDel" title="Delete">🗑 حذف</button>
@@ -197,7 +198,7 @@ const PRESETS={'الأصلي':{},'أبيض وأسود':{gray:100,contrast:110},'
 const TRANS=[['none','بدون'],['fade','تلاشي'],['slideL','انزلاق من اليسار'],['slideR','انزلاق من اليمين'],['slideU','انزلاق من الأسفل'],['zoom','تقريب'],['spin','دوران']];
 
 const P={w:1280,h:720,bg:'#000000'};
-let media={},clips=[],sel=null,t=0,playing=false,pps=80,uid=1,exporting=false,pt0=0,wall0=0;
+let media={},clips=[],sel=null,ms=new Set(),t=0,playing=false,pps=80,uid=1,exporting=false,pt0=0,wall0=0;
 const tm=[],th=[];
 const els={},gains={};
 const byId=id=>clips.find(c=>c.id===id);
@@ -216,7 +217,7 @@ function newText(o){return newClip(Object.assign({type:'text',track:0,dur:4,name
 let hist=[],hi=-1;
 const snapshot=()=>JSON.stringify({clips,P});
 function commit(){hist=hist.slice(0,hi+1);hist.push(snapshot());if(hist.length>150)hist.shift();hi=hist.length-1}
-function restore(s){const o=JSON.parse(s);clips=o.clips;Object.assign(P,o.P);applySize();if(sel&&!byId(sel))sel=null;renderTL();renderProps()}
+function restore(s){const o=JSON.parse(s);clips=o.clips;Object.assign(P,o.P);applySize();ms=new Set([...ms].filter(id=>byId(id)));if(sel&&!byId(sel))sel=[...ms][0]??null;renderTL();renderProps()}
 function undo(){if(hi>0){hi--;restore(hist[hi])}}
 function redo(){if(hi<hist.length-1){hi++;restore(hist[hi])}}
 
@@ -440,7 +441,7 @@ function loop(){
 function renderHeads(){
   const h=$('#heads');h.innerHTML='';
   TN.forEach((n,i)=>{
-    const d=div('head');const b=document.createElement('b');b.textContent=n;
+    const d=div('head');const b=document.createElement('b');b.textContent=n;b.style.cursor='pointer';b.title='اضغط لتحديد كل المقاطع في هذا المسار';b.onclick=()=>setMulti(clips.filter(c=>c.track===i).map(c=>c.id));
     const mb=document.createElement('button');mb.textContent='🔇';mb.title='كتم';mb.classList.toggle('on',!!tm[i]);
     mb.onclick=()=>{tm[i]=!tm[i];renderHeads()};
     const hb=document.createElement('button');hb.textContent='👁';hb.title='إخفاء';hb.classList.toggle('on',!!th[i]);
@@ -488,7 +489,7 @@ function renderTL(){
   const rl=div();rl.id='ruler';inn.append(rl);
   for(let i=0;i<NT;i++){const r=div('row'+(th[i]?' hid':''));r.style.top=RT+i*RH+'px';inn.append(r)}
   clips.forEach(c=>{
-    const d=div('clip '+c.type+(c.id===sel?' sel':'')+(c.mediaId&&media[c.mediaId]?.missing?' miss':''));
+    const d=div('clip '+c.type+(ms.has(c.id)?' sel':'')+(c.mediaId&&media[c.mediaId]?.missing?' miss':''));
     d.dataset.id=c.id;d.style.left=c.start*pps+'px';d.style.width=Math.max(8,c.dur*pps)+'px';d.style.top=RT+c.track*RH+3+'px';
     const s=document.createElement('span');s.textContent=(c.type==='text'?'T  ':'')+(c.type==='text'?c.text.replace(/\n/g,' '):c.name)+(c.dur*pps>150?'  ·  '+c.dur.toFixed(1)+'s':'');d.append(s);
     const pm=media[c.mediaId];
@@ -504,33 +505,59 @@ function renderTL(){
   const ph=div();ph.id='ph';ph.style.left=t*pps+'px';inn.append(ph);
   renderRuler();
 }
-function select(id){sel=id;renderTL();renderProps()}
+function select(id){ms=new Set(id?[id]:[]);sel=id;renderTL();renderProps()}
+function setMulti(ids){ms=new Set(ids);sel=ids[0]??null;renderTL();renderProps()}
+function toggleSel(id){if(ms.has(id)){ms.delete(id);if(sel===id)sel=[...ms][0]??null}else{ms.add(id);sel=id}renderTL();renderProps()}
 
-const snapPts=c=>{const p=[0,t];clips.forEach(o=>{if(o!==c)p.push(o.start,o.start+o.dur)});return p};
+const snapPts=c=>{const p=[0,t];clips.forEach(o=>{if(o!==c&&!(ms.has(c.id)&&ms.has(o.id)))p.push(o.start,o.start+o.dur)});return p};
 function snapV(v,c){const lim=8/pps;let best=v,bd=lim;for(const p of snapPts(c)){const d=Math.abs(p-v);if(d<bd){bd=d;best=p}}return best}
 
 $('#inner').addEventListener('pointerdown',e=>{
-  const inn=$('#inner'),cel=e.target.closest('.clip');
+  const inn=$('#inner'),cel=e.target.closest('.clip'),rect=inn.getBoundingClientRect();
+  const add=e.shiftKey||e.ctrlKey||e.metaKey;
   if(!cel){
     if(e.target.closest('#ruler')){
       const mv=ev=>seek(Math.round((ev.clientX-inn.getBoundingClientRect().left)/pps*30)/30);
       mv(e);window.addEventListener('pointermove',mv);
       window.addEventListener('pointerup',()=>window.removeEventListener('pointermove',mv),{once:true});
-    }else if(sel)select(null);
+      return;
+    }
+    const x0=e.clientX-rect.left,y0=e.clientY-rect.top,base=add?new Set(ms):new Set();let moved=false;
+    const mq=div();mq.style.cssText='position:absolute;border:1px dashed #22d3ee;background:#22d3ee22;z-index:8;pointer-events:none;display:none';inn.append(mq);
+    const mv=ev=>{
+      const x=ev.clientX-rect.left,y=ev.clientY-rect.top;
+      if(!moved&&Math.hypot(x-x0,y-y0)<4)return;moved=true;
+      const l=Math.min(x,x0),r=Math.max(x,x0),tp=Math.min(y,y0),bt=Math.max(y,y0);
+      Object.assign(mq.style,{display:'block',left:l+'px',top:tp+'px',width:r-l+'px',height:bt-tp+'px'});
+      ms=new Set(base);
+      clips.forEach(c=>{const cl=c.start*pps,cr=cl+c.dur*pps,ct=RT+c.track*RH+3;if(cl<r&&cr>l&&ct<bt&&ct+38>tp)ms.add(c.id)});
+      inn.querySelectorAll('.clip').forEach(d=>d.classList.toggle('sel',ms.has(+d.dataset.id)));
+    };
+    const up=()=>{
+      window.removeEventListener('pointermove',mv);mq.remove();
+      if(moved){sel=[...ms][0]??null;renderTL();renderProps()}else if(!add&&(ms.size||sel))select(null);
+    };
+    window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up,{once:true});
     return;
   }
   const c=byId(+cel.dataset.id);if(!c)return;
-  if(sel!==c.id)select(c.id);
+  if(add){toggleSel(c.id);return}
   const mode=e.target.classList.contains('l')?'l':e.target.classList.contains('r')?'r':'m';
-  const x0=e.clientX,orig=copy(c),m=media[c.mediaId],rect=inn.getBoundingClientRect();
+  const group=ms.has(c.id)&&ms.size>1&&mode==='m';
+  if(group)sel=c.id;else select(c.id);
+  const x0=e.clientX,orig=copy(c),m=media[c.mediaId];
+  const origs=new Map([...ms].map(id=>{const o=byId(id);return[id,{start:o.start,track:o.track}]}));
   const hasSrc=c.type==='video'||c.type==='audio';
   let moved=false;
   const mv=ev=>{
     moved=true;const dt=(ev.clientX-x0)/pps;
     if(mode==='m'){
       let s=orig.start+dt;const a=snapV(s,c),b=snapV(s+c.dur,c)-c.dur;
-      s=Math.abs(a-s)<=Math.abs(b-s)?a:b;c.start=Math.max(0,s);
-      c.track=clamp(Math.floor((ev.clientY-rect.top-RT)/RH),0,NT-1);
+      s=Math.abs(a-s)<=Math.abs(b-s)?a:b;
+      const vals=[...origs.values()],ds=Math.max(s-orig.start,-Math.min(...vals.map(o=>o.start)));
+      const trs=vals.map(o=>o.track),nt=clamp(Math.floor((ev.clientY-rect.top-RT)/RH),0,NT-1);
+      const dtr=clamp(nt-orig.track,-Math.min(...trs),NT-1-Math.max(...trs));
+      origs.forEach((o,id)=>{const k=byId(id);k.start=o.start+ds;k.track=o.track+dtr});
     }else if(mode==='l'){
       let ns=snapV(orig.start+dt,c);
       ns=clamp(ns,hasSrc?orig.start-orig.offset/orig.speed:0,orig.start+orig.dur-.1);ns=Math.max(0,ns);
@@ -542,7 +569,10 @@ $('#inner').addEventListener('pointerdown',e=>{
     }
     renderTL();
   };
-  const up=()=>{window.removeEventListener('pointermove',mv);if(moved){commit();renderProps()}};
+  const up=()=>{
+    window.removeEventListener('pointermove',mv);
+    if(moved){commit();renderProps()}else if(group)select(c.id);
+  };
   window.addEventListener('pointermove',mv);window.addEventListener('pointerup',up,{once:true});
 });
 $('#inner').addEventListener('dragover',e=>e.preventDefault());
@@ -557,8 +587,7 @@ $('#zIn').onclick=()=>setZoom(pps*1.5);$('#zOut').onclick=()=>setZoom(pps/1.5);$
 
 /* ---------- edit ops ---------- */
 function split(){
-  const c0=sel&&byId(sel);
-  const list=c0?(active(c0,t)?[c0]:[]):clips.filter(x=>active(x,t));
+  const list=ms.size?clips.filter(x=>ms.has(x.id)&&active(x,t)):clips.filter(x=>active(x,t));
   let did=false;
   for(const c of list){
     const lt=t-c.start;if(lt<.05||c.dur-lt<.05)continue;
@@ -567,9 +596,14 @@ function split(){
   }
   if(did){commit();renderTL();renderProps()}else toast('ضع المؤشر داخل مقطع لقصّه');
 }
-function del(){if(!sel)return;clips=clips.filter(c=>c.id!==sel);sel=null;commit();renderTL();renderProps()}
+function del(){if(!ms.size)return;clips=clips.filter(c=>!ms.has(c.id));sel=null;ms=new Set();commit();renderTL();renderProps()}
 function delRipple(){const c=sel&&byId(sel);if(!c)return;clips.forEach(o=>{if(o!==c&&o.track===c.track&&o.start>=c.start+c.dur-.001)o.start-=c.dur});del()}
-function dup(){const c=sel&&byId(sel);if(!c)return;const n=copy(c);n.id=uid++;n.start=c.start+c.dur;clips.push(n);commit();select(n.id)}
+function dup(){
+  const g=clips.filter(c=>ms.has(c.id));if(!g.length)return;
+  const span=Math.max(...g.map(c=>c.start+c.dur))-Math.min(...g.map(c=>c.start)),ids=[];
+  g.forEach(c=>{const n=copy(c);n.id=uid++;n.start=c.start+span;clips.push(n);ids.push(n.id)});
+  commit();setMulti(ids);
+}
 
 /* ---------- properties ---------- */
 const gp=(c,p)=>p.split('.').reduce((o,k)=>o[k],c);
@@ -606,6 +640,20 @@ function renderProps(){
   box.innerHTML='';
   const c=sel&&byId(sel);
   const keep=(title,def)=>title in open?open[title]:def;
+  if(ms.size>1){
+    const g=clips.filter(x=>ms.has(x.id)),h=document.createElement('h3');h.textContent=g.length+' عناصر محددة';box.append(h);
+    const mk=(label,key,min,max,step,ok)=>{
+      const w=lab(label),i=document.createElement('input'),o=document.createElement('output'),tg=g.filter(ok);
+      i.type='range';i.min=min;i.max=max;i.step=step;i.value=tg[0]?tg[0][key]:0;o.textContent=i.value;
+      i.oninput=()=>{tg.forEach(x=>x[key]=+i.value);o.textContent=i.value};i.onchange=()=>commit();w.append(i,o);return w;
+    };
+    box.append(sec('تعديل جماعي',true,
+      mk('مستوى الصوت','vol',0,2,.01,x=>x.type==='video'||x.type==='audio'),
+      mk('الشفافية','opacity',0,1,.01,x=>x.type!=='audio'),
+      mk('تدرج البداية','fadeIn',0,3,.1,()=>true),mk('تدرج النهاية','fadeOut',0,3,.1,()=>true)));
+    box.append(btn('نسخ المحدد',dup),' ',btn('حذف المحدد',del,'dn'),' ',btn('إلغاء التحديد',()=>select(null)));
+    return;
+  }
   if(!c){
     const sz=lab('أبعاد الفيديو','f two'),s=document.createElement('select');
     SIZES.forEach(([w,h])=>{const o=document.createElement('option');o.value=w+'x'+h;o.textContent=`${w}×${h}`+(w>h?' أفقي':w<h?' عمودي':' مربع');s.append(o)});
@@ -613,7 +661,7 @@ function renderProps(){
     const bg=I(P,'لون الخلفية','bg','color');
     const h=document.createElement('h3');h.textContent='إعدادات المشروع';box.append(h,sz,bg);
     const tips=document.createElement('p');tips.className='hint';
-    tips.innerHTML='<b>اختصارات</b><br><kbd>Space</kbd> تشغيل/إيقاف · <kbd>S</kbd> قص · <kbd>Del</kbd> حذف<br><kbd>Ctrl+Z</kbd> تراجع · <kbd>Ctrl+D</kbd> نسخ<br><kbd>←</kbd><kbd>→</kbd> إطار بإطار (مع <kbd>Shift</kbd> ثانية)<br><kbd>PageUp</kbd><kbd>PageDown</kbd> القطع السابق/التالي<br><kbd>+</kbd><kbd>-</kbd> تكبير/تصغير · <kbd>Ctrl</kbd>+عجلة الفأرة تكبير عند المؤشر<br><br>اسحب المقطع على الشاشة لتحريكه، وعجلة الفأرة للتكبير. اضغط على المسطرة للتنقل.';
+    tips.innerHTML='<b>اختصارات</b><br><kbd>Space</kbd> تشغيل/إيقاف · <kbd>S</kbd> قص · <kbd>Del</kbd> حذف<br><kbd>Ctrl+Z</kbd> تراجع · <kbd>Ctrl+D</kbd> نسخ<br><kbd>←</kbd><kbd>→</kbd> إطار بإطار (مع <kbd>Shift</kbd> ثانية)<br><kbd>PageUp</kbd><kbd>PageDown</kbd> القطع السابق/التالي<br><kbd>+</kbd><kbd>-</kbd> تكبير/تصغير · <kbd>Ctrl</kbd>+عجلة الفأرة تكبير عند المؤشر<br><br>اسحب المقطع على الشاشة لتحريكه، وعجلة الفأرة للتكبير. اضغط على المسطرة للتنقل.<br><br><b>التحديد:</b> اسحب على مساحة فارغة لتحديد عدة مقاطع، أو <kbd>Shift</kbd>+نقر، أو <kbd>Ctrl+A</kbd> للكل. اضغط اسم المسار لتحديد كل ما فيه. المحدد يتحرك ويُحذف ويُنسخ معاً.';
     box.append(tips);return;
   }
   const h=document.createElement('h3');h.textContent={video:'مقطع فيديو',audio:'مقطع صوتي',image:'صورة',text:'نص',shape:'شكل'}[c.type];box.append(h);
@@ -772,6 +820,7 @@ $('#fileIn').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 $('#pp').onclick=toggle;
 $('#bStart').onclick=()=>{seek(0);reveal()};$('#bPrevE').onclick=prevEdit;$('#bNextE').onclick=nextEdit;$('#bFB').onclick=()=>step(-1/30);$('#bFF').onclick=()=>step(1/30);
 $('#bEnd').onclick=()=>{seek(total());reveal()};
+$('#selType').onchange=e=>{const v=e.target.value;e.target.value='';if(!v)return;setMulti(v==='none'?[]:clips.filter(c=>v==='all'||c.type===v).map(c=>c.id))};
 $('#bRip').onclick=delRipple;$('#bSplit').onclick=split;$('#bDel').onclick=del;$('#bDup').onclick=dup;
 $('#bUndo').onclick=undo;$('#bRedo').onclick=redo;
 $('#bSnap').onclick=()=>{shooting=true;render();cv.toBlob(b=>{dl(b,'frame.png');shooting=false});};
@@ -849,6 +898,8 @@ addEventListener('keydown',e=>{
   if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&!(e.target.type==='range'))return;
   const k=e.key,ctrl=e.ctrlKey||e.metaKey;
   if(k===' '){e.preventDefault();toggle()}
+  else if(ctrl&&k.toLowerCase()==='a'){e.preventDefault();setMulti(clips.map(c=>c.id))}
+  else if(k==='Escape'){select(null)}
   else if(ctrl&&k.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo()}
   else if(ctrl&&k.toLowerCase()==='y'){e.preventDefault();redo()}
   else if(ctrl&&k.toLowerCase()==='d'){e.preventDefault();dup()}
