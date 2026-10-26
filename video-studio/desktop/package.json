@@ -17,9 +17,27 @@
   "build": {
     "appId": "app.videostudio.desktop",
     "productName": "Video Studio",
-    "files": ["main.js", "index.html"],
-    "win": { "target": "nsis" },
-    "mac": { "target": "dmg", "category": "public.app-category.video" },
-    "linux": { "target": "AppImage", "category": "AudioVideo" }
+    "files": [
+      "main.js",
+      "index.html"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.video"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "AudioVideo"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false
+    }
   }
 }
