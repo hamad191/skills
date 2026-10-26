@@ -1,0 +1,25 @@
+{
+  "name": "video-studio-desktop",
+  "productName": "Video Studio",
+  "version": "1.0.0",
+  "description": "ستوديو الفيديو - تطبيق سطح المكتب",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "sync": "node -e \"require('fs').copyFileSync('../index.html','index.html')\"",
+    "start": "npm run sync && electron .",
+    "dist": "npm run sync && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "app.videostudio.desktop",
+    "productName": "Video Studio",
+    "files": ["main.js", "index.html"],
+    "win": { "target": "nsis" },
+    "mac": { "target": "dmg", "category": "public.app-category.video" },
+    "linux": { "target": "AppImage", "category": "AudioVideo" }
+  }
+}

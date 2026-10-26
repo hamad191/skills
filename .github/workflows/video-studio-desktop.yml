@@ -1,0 +1,31 @@
+name: Build Video Studio desktop app
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: video-studio/desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+      - uses: actions/upload-artifact@v4
+        with:
+          name: video-studio-${{ matrix.os }}
+          path: |
+            video-studio/desktop/dist/*.exe
+            video-studio/desktop/dist/*.dmg
+            video-studio/desktop/dist/*.AppImage
