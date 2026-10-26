@@ -53,16 +53,19 @@ details>div{padding:0 10px 10px}
 #time{font:600 14px ui-monospace,Menlo,Consolas,monospace;direction:ltr;min-width:150px;text-align:center}
 #tlbar .sp{flex:1}
 #tlbar input[type=range]{width:120px}
-#tl{display:flex;direction:ltr;height:246px}
-#heads{width:118px;flex:none;padding-top:26px;border-right:1px solid var(--bd);background:var(--p1)}
+#tl{display:flex;direction:ltr;height:252px}
+#heads{width:118px;flex:none;padding-top:32px;border-right:1px solid var(--bd);background:var(--p1)}
 .head{height:44px;display:flex;align-items:center;gap:3px;padding:0 6px;border-bottom:1px solid var(--bd);font-size:11px;color:var(--mu)}
 .head b{flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .head button{padding:1px 5px;font-size:11px;border-radius:5px}
 .head button.on{background:var(--dn);border-color:var(--dn);color:#fff}
 #scroll{flex:1;overflow-x:auto;overflow-y:hidden;position:relative}
-#inner{position:relative;height:246px}
-#ruler{position:absolute;top:0;left:0;right:0;height:26px;background:var(--p2);cursor:text;border-bottom:1px solid var(--bd)}
-.tick{position:absolute;top:0;bottom:0;border-left:1px solid var(--bd);font-size:10px;color:var(--mu);padding-left:4px;pointer-events:none;padding-top:6px}
+#inner{position:relative;height:252px}
+#ruler{position:absolute;top:0;left:0;right:0;height:32px;background:var(--p2);cursor:text;border-bottom:1px solid var(--bd)}
+.tick{position:absolute;top:0;bottom:0;border-left:1px solid #5b6379;font:600 11px ui-monospace,Menlo,Consolas,monospace;color:var(--tx);padding-left:4px;pointer-events:none;padding-top:4px}
+.minor{position:absolute;bottom:0;height:9px;border-left:1px solid #434a5e;pointer-events:none}
+#hv{position:absolute;top:0;bottom:0;width:1px;background:#22d3ee99;pointer-events:none;z-index:5;display:none}
+#hv i{position:absolute;top:36px;left:4px;font:600 11px ui-monospace,Menlo,Consolas,monospace;font-style:normal;background:var(--ac);padding:1px 5px;border-radius:4px;white-space:nowrap}
 .row{position:absolute;left:0;right:0;height:44px;border-bottom:1px solid var(--bd)}
 .row:nth-child(odd){background:#ffffff05}
 .row.hid{opacity:.45}
@@ -137,7 +140,11 @@ kbd{background:var(--p3);border:1px solid var(--bd);border-radius:4px;padding:0 
 <div id="tlwrap">
   <div id="tlbar">
     <button id="bStart" title="Home">⏮</button>
+    <button id="bPrevE" title="القطع السابق (PageUp)">⇤</button>
+    <button id="bFB" title="إطار للخلف (,)">◂</button>
     <button class="pri" id="pp" title="Space">▶</button>
+    <button id="bFF" title="إطار للأمام (.)">▸</button>
+    <button id="bNextE" title="القطع التالي (PageDown)">⇥</button>
     <button id="bEnd" title="End">⏭</button>
     <span id="time">00:00.00 / 00:00.00</span>
     <button id="bSplit" title="S">✂ قص</button>
@@ -145,7 +152,7 @@ kbd{background:var(--p3);border:1px solid var(--bd);border-radius:4px;padding:0 
     <button class="dn" id="bDel" title="Delete">🗑 حذف</button>
     <button class="dn" id="bRip" title="حذف وإغلاق الفراغ">⇤ حذف وسحب</button>
     <span class="sp"></span>
-    <label>🔍 <input type="range" id="zoom" min="15" max="400" value="80"></label>
+    <button id="zOut" title="تصغير (-)">－</button><input type="range" id="zoom" min="0" max="100" step="0.1" value="56.5"><button id="zIn" title="تكبير (+)">＋</button><button id="zFit" title="ملاءمة (\)">⤢ ملاءمة</button>
   </div>
   <div id="tl">
     <div id="heads"></div>
@@ -182,7 +189,7 @@ kbd{background:var(--p3);border:1px solid var(--bd);border-radius:4px;padding:0 
 const $=(s,r=document)=>r.querySelector(s);
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const div=cls=>{const d=document.createElement('div');if(cls)d.className=cls;return d};
-const NT=5,RH=44,RT=26;
+const NT=5,RH=44,RT=32;
 const TN=['نص وملصقات','فيديو 2','فيديو 1','صوت 1','صوت 2'];
 const FONTS=['system-ui','Arial','Tahoma','Verdana',"'Trebuchet MS'",'Georgia',"'Times New Roman'","'Courier New'",'Impact','cursive','serif','monospace'];
 const SIZES=[[1280,720],[1920,1080],[720,1280],[1080,1920],[1080,1080],[1080,1350],[1680,720]];
@@ -441,19 +448,49 @@ function renderHeads(){
     d.append(b,mb);if(i<3)d.append(hb);h.append(d);
   });
 }
-function fmtS(x){const m=Math.floor(x/60),s=x%60;return m+':'+(Number.isInteger(s)?String(s).padStart(2,'0'):s.toFixed(1).padStart(4,'0'))}
+function fmtS(x,dec){const m=Math.floor(x/60+1e-9),s=Math.max(0,x-m*60);return m+':'+(dec?s.toFixed(1).padStart(4,'0'):String(Math.round(s)).padStart(2,'0'))}
+const TSTEPS=[.1,.2,.5,1,2,5,10,15,30,60,120,300,600,1800],TMIN={.1:5,.2:4,.5:5,1:10,2:4,5:5,10:10,15:3,30:6,60:6,120:4,300:5,600:10,1800:6};
+function renderRuler(){
+  const rl=$('#ruler'),sc=$('#scroll');if(!rl)return;rl.innerHTML='';
+  const st=TSTEPS.find(v=>v*pps>=100)||1800,n=TMIN[st];
+  const z=(sc.scrollLeft+sc.clientWidth+300)/pps;
+  for(let i=Math.max(0,Math.floor((sc.scrollLeft-300)/pps/st));i*st<=z;i++){
+    const k=div('tick');k.style.left=i*st*pps+'px';k.textContent=fmtS(i*st,st<1);rl.append(k);
+    for(let j=1;j<n;j++){const m=div('minor');m.style.left=(i+j/n)*st*pps+'px';rl.append(m)}
+  }
+}
+$('#scroll').addEventListener('scroll',renderRuler);
+function setZoom(np,aT=t,aX){
+  const sc=$('#scroll');np=clamp(np,4,800);
+  if(aX===undefined)aX=clamp(aT*pps-sc.scrollLeft,0,sc.clientWidth);
+  pps=np;renderTL();sc.scrollLeft=Math.max(0,aT*pps-aX);renderRuler();
+  $('#zoom').value=100*Math.log(pps/4)/Math.log(200);
+}
+function fitZoom(){const sc=$('#scroll');setZoom((sc.clientWidth-60)/Math.max(total(),2),0,0);sc.scrollLeft=0;renderRuler()}
+function reveal(){const sc=$('#scroll'),x=t*pps;if(x<sc.scrollLeft+20||x>sc.scrollLeft+sc.clientWidth-40)sc.scrollLeft=Math.max(0,x-sc.clientWidth/2)}
+const edits=()=>[...new Set(clips.flatMap(c=>[c.start,c.start+c.dur].map(v=>+v.toFixed(3))).concat(0))].sort((a,b)=>a-b);
+function prevEdit(){const e=edits().filter(v=>v<t-.01);seek(e.length?e[e.length-1]:0);reveal()}
+function nextEdit(){const e=edits().find(v=>v>t+.01);seek(e??total());reveal()}
+function step(d){seek(t+d);reveal()}
+$('#scroll').addEventListener('wheel',e=>{
+  const sc=$('#scroll');
+  if(e.ctrlKey||e.metaKey){e.preventDefault();const x=e.clientX-sc.getBoundingClientRect().left;setZoom(pps*(e.deltaY<0?1.25:.8),(sc.scrollLeft+x)/pps,x)}
+  else if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){e.preventDefault();sc.scrollLeft+=e.deltaY}
+},{passive:false});
+$('#inner').addEventListener('mousemove',e=>{
+  const inn=$('#inner'),hv=$('#hv');if(!hv)return;
+  const x=e.clientX-inn.getBoundingClientRect().left;hv.style.display='block';hv.style.left=x+'px';hv.firstChild.textContent=fmt(Math.max(0,x/pps));
+});
+$('#inner').addEventListener('mouseleave',()=>{const hv=$('#hv');if(hv)hv.style.display='none'});
 function renderTL(){
   const sc=$('#scroll'),inn=$('#inner');
   const W=Math.max(sc.clientWidth,(total()+20)*pps);inn.style.width=W+'px';inn.innerHTML='';
-  const rl=div();rl.id='ruler';
-  const st=[.5,1,2,5,10,15,30,60,120,300,600].find(s=>s*pps>=80)||600;
-  for(let x=0;x<=W/pps;x+=st){const k=div('tick');k.style.left=x*pps+'px';k.textContent=fmtS(x);rl.append(k)}
-  inn.append(rl);
+  const rl=div();rl.id='ruler';inn.append(rl);
   for(let i=0;i<NT;i++){const r=div('row'+(th[i]?' hid':''));r.style.top=RT+i*RH+'px';inn.append(r)}
   clips.forEach(c=>{
     const d=div('clip '+c.type+(c.id===sel?' sel':'')+(c.mediaId&&media[c.mediaId]?.missing?' miss':''));
     d.dataset.id=c.id;d.style.left=c.start*pps+'px';d.style.width=Math.max(8,c.dur*pps)+'px';d.style.top=RT+c.track*RH+3+'px';
-    const s=document.createElement('span');s.textContent=(c.type==='text'?'T  ':'')+(c.type==='text'?c.text.replace(/\n/g,' '):c.name);d.append(s);
+    const s=document.createElement('span');s.textContent=(c.type==='text'?'T  ':'')+(c.type==='text'?c.text.replace(/\n/g,' '):c.name)+(c.dur*pps>150?'  ·  '+c.dur.toFixed(1)+'s':'');d.append(s);
     const pm=media[c.mediaId];
     if(pm&&pm.peaks&&(c.type==='audio'||c.type==='video')){
       const w=Math.min(3000,Math.max(8,Math.round(c.dur*pps))),cn=document.createElement('canvas');cn.width=w;cn.height=38;
@@ -463,7 +500,9 @@ function renderTL(){
     }
     const l=div('h l'),r=div('h r');d.append(l,r);inn.append(d);
   });
+  const hv=div();hv.id='hv';hv.innerHTML='<i></i>';inn.append(hv);
   const ph=div();ph.id='ph';ph.style.left=t*pps+'px';inn.append(ph);
+  renderRuler();
 }
 function select(id){sel=id;renderTL();renderProps()}
 
@@ -474,7 +513,7 @@ $('#inner').addEventListener('pointerdown',e=>{
   const inn=$('#inner'),cel=e.target.closest('.clip');
   if(!cel){
     if(e.target.closest('#ruler')){
-      const mv=ev=>seek((ev.clientX-inn.getBoundingClientRect().left)/pps);
+      const mv=ev=>seek(Math.round((ev.clientX-inn.getBoundingClientRect().left)/pps*30)/30);
       mv(e);window.addEventListener('pointermove',mv);
       window.addEventListener('pointerup',()=>window.removeEventListener('pointermove',mv),{once:true});
     }else if(sel)select(null);
@@ -513,7 +552,8 @@ $('#inner').addEventListener('drop',e=>{
   const r=$('#inner').getBoundingClientRect();
   addMediaClip(+d.slice(1),Math.max(0,(e.clientX-r.left)/pps),clamp(Math.floor((e.clientY-r.top-RT)/RH),0,NT-1));
 });
-$('#zoom').oninput=e=>{pps=+e.target.value;renderTL()};
+$('#zoom').oninput=e=>setZoom(4*Math.pow(200,+e.target.value/100));
+$('#zIn').onclick=()=>setZoom(pps*1.5);$('#zOut').onclick=()=>setZoom(pps/1.5);$('#zFit').onclick=fitZoom;
 
 /* ---------- edit ops ---------- */
 function split(){
@@ -573,7 +613,7 @@ function renderProps(){
     const bg=I(P,'لون الخلفية','bg','color');
     const h=document.createElement('h3');h.textContent='إعدادات المشروع';box.append(h,sz,bg);
     const tips=document.createElement('p');tips.className='hint';
-    tips.innerHTML='<b>اختصارات</b><br><kbd>Space</kbd> تشغيل/إيقاف · <kbd>S</kbd> قص · <kbd>Del</kbd> حذف<br><kbd>Ctrl+Z</kbd> تراجع · <kbd>Ctrl+D</kbd> نسخ<br><kbd>←</kbd><kbd>→</kbd> إطار بإطار (مع <kbd>Shift</kbd> ثانية)<br><br>اسحب المقطع على الشاشة لتحريكه، وعجلة الفأرة للتكبير. اضغط على المسطرة للتنقل.';
+    tips.innerHTML='<b>اختصارات</b><br><kbd>Space</kbd> تشغيل/إيقاف · <kbd>S</kbd> قص · <kbd>Del</kbd> حذف<br><kbd>Ctrl+Z</kbd> تراجع · <kbd>Ctrl+D</kbd> نسخ<br><kbd>←</kbd><kbd>→</kbd> إطار بإطار (مع <kbd>Shift</kbd> ثانية)<br><kbd>PageUp</kbd><kbd>PageDown</kbd> القطع السابق/التالي<br><kbd>+</kbd><kbd>-</kbd> تكبير/تصغير · <kbd>Ctrl</kbd>+عجلة الفأرة تكبير عند المؤشر<br><br>اسحب المقطع على الشاشة لتحريكه، وعجلة الفأرة للتكبير. اضغط على المسطرة للتنقل.';
     box.append(tips);return;
   }
   const h=document.createElement('h3');h.textContent={video:'مقطع فيديو',audio:'مقطع صوتي',image:'صورة',text:'نص',shape:'شكل'}[c.type];box.append(h);
@@ -730,8 +770,8 @@ cv.addEventListener('wheel',e=>{
 $('#bImport').onclick=()=>$('#fileIn').click();
 $('#fileIn').onchange=e=>{addFiles(e.target.files);e.target.value=''};
 $('#pp').onclick=toggle;
-$('#bStart').onclick=()=>seek(0);
-$('#bEnd').onclick=()=>seek(total());
+$('#bStart').onclick=()=>{seek(0);reveal()};$('#bPrevE').onclick=prevEdit;$('#bNextE').onclick=nextEdit;$('#bFB').onclick=()=>step(-1/30);$('#bFF').onclick=()=>step(1/30);
+$('#bEnd').onclick=()=>{seek(total());reveal()};
 $('#bRip').onclick=delRipple;$('#bSplit').onclick=split;$('#bDel').onclick=del;$('#bDup').onclick=dup;
 $('#bUndo').onclick=undo;$('#bRedo').onclick=redo;
 $('#bSnap').onclick=()=>{shooting=true;render();cv.toBlob(b=>{dl(b,'frame.png');shooting=false});};
@@ -815,10 +855,13 @@ addEventListener('keydown',e=>{
   else if(ctrl&&k.toLowerCase()==='s'){e.preventDefault();saveProj()}
   else if(k==='s'||k==='S'){split()}
   else if(k==='Delete'||k==='Backspace'){del()}
-  else if(k==='ArrowRight'){seek(t+(e.shiftKey?1:1/30))}
-  else if(k==='ArrowLeft'){seek(t-(e.shiftKey?1:1/30))}
-  else if(k==='Home'){seek(0)}
-  else if(k==='End'){seek(total())}
+  else if(k==='ArrowRight'){step(e.shiftKey?1:1/30)}
+  else if(k==='ArrowLeft'){step(e.shiftKey?-1:-1/30)}
+  else if(k===','){step(-1/30)}else if(k==='.'){step(1/30)}
+  else if(k==='PageUp'){e.preventDefault();prevEdit()}else if(k==='PageDown'){e.preventDefault();nextEdit()}
+  else if(k==='Home'){seek(0);reveal()}
+  else if(k==='End'){seek(total());reveal()}
+  else if(k==='+'||k==='='){setZoom(pps*1.5)}else if(k==='-'){setZoom(pps/1.5)}else if(k==='\\'){fitZoom()}
 });
 addEventListener('resize',renderTL);
 
