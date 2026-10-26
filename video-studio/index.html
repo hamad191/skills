@@ -120,6 +120,7 @@ kbd{background:var(--p3);border:1px solid var(--bd);border-radius:4px;padding:0 
     <h3>أشكال</h3>
     <div class="grid2"><button id="qRect">▭ مستطيل</button><button id="qCirc">● دائرة</button></div>
     <h3>الترجمة</h3>
+    <button id="bAuto" class="pri" style="width:100%;margin-bottom:6px">🗣 تفريغ الصوت تلقائياً</button>
     <div class="grid2"><button id="bSrt">استيراد SRT</button><button id="bSrtX">تصدير SRT</button></div>
     <input id="srtIn" type="file" accept=".srt,.vtt" hidden>
     <h3>ملصقات</h3>
@@ -151,6 +152,16 @@ kbd{background:var(--p3);border:1px solid var(--bd);border-radius:4px;padding:0 
     <div id="scroll"><div id="inner"></div></div>
   </div>
 </div>
+
+<dialog id="dlgT">
+  <h2>تفريغ الصوت إلى نص</h2>
+  <p class="hint">حدّد مقطع الفيديو أو الصوت على الخط الزمني أولاً. يعمل داخل متصفحك ولا يرسل ملفاتك لأي جهة، لكن يحمّل النموذج مرة واحدة من الإنترنت.</p>
+  <label class="f two"><span>لغة الكلام</span><select id="tLang"><option value="japanese">اليابانية</option><option value="english">الإنجليزية</option><option value="korean">الكورية</option><option value="chinese">الصينية</option><option value="arabic">العربية</option><option value="spanish">الإسبانية</option><option value="french">الفرنسية</option></select></label>
+  <label class="f two"><span>النموذج</span><select id="tModel"><option value="Xenova/whisper-small">أدق (موصى به لليابانية)</option><option value="Xenova/whisper-base">أسرع</option></select></label>
+  <progress id="tProg" value="0" max="1" hidden></progress>
+  <p id="tStat" class="hint"></p>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button id="tClose">إغلاق</button><button class="pri" id="tGo">ابدأ التفريغ</button></div>
+</dialog>
 
 <dialog id="dlg">
   <h2>تصدير الفيديو</h2>
@@ -651,6 +662,44 @@ $('#bSrtX').onclick=()=>{
   const list=clips.filter(c=>c.type==='text').sort((a,b)=>a.start-b.start);
   if(!list.length)return toast('لا توجد نصوص لتصديرها');
   dl(new Blob([list.map((c,i)=>`${i+1}\n${st(c.start)} --> ${st(c.start+c.dur)}\n${c.text}\n`).join('\n')],{type:'text/plain'}),'subtitles.srt');
+};
+
+/* ---------- auto transcription (Whisper in browser) ---------- */
+$('#bAuto').onclick=()=>{
+  const c=sel&&byId(sel);
+  if(!c||(c.type!=='video'&&c.type!=='audio'))return toast('حدّد مقطع فيديو أو صوت على الخط الزمني أولاً');
+  $('#tStat').textContent='';$('#tProg').hidden=true;$('#tGo').disabled=false;$('#dlgT').showModal();
+};
+$('#tClose').onclick=()=>$('#dlgT').close();
+$('#tGo').onclick=async()=>{
+  const c=sel&&byId(sel),m=c&&media[c.mediaId],st=$('#tStat'),pr=$('#tProg');
+  if(!m||!m.url)return;
+  $('#tGo').disabled=true;pr.hidden=false;pr.removeAttribute('value');
+  try{
+    st.textContent='جارٍ قراءة الصوت…';
+    const buf=await (await fetch(m.url)).arrayBuffer();
+    const oc=new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,1,16000);
+    const ab=await oc.decodeAudioData(buf),pcm=ab.getChannelData(0);
+    st.textContent='جارٍ تحميل النموذج (أول مرة فقط)…';
+    const {pipeline}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2');
+    const files={};
+    const cb=d=>{if(d.status==='progress'){files[d.file]=d.progress;const v=Object.values(files);pr.value=v.reduce((a,b)=>a+b,0)/v.length/100;st.textContent='تحميل النموذج… '+Math.round(pr.value*100)+'%'}};
+    let asr;
+    try{asr=await pipeline('automatic-speech-recognition',$('#tModel').value,{device:navigator.gpu?'webgpu':'wasm',dtype:navigator.gpu?{encoder_model:'fp32',decoder_model_merged:'q4'}:undefined,progress_callback:cb})}
+    catch{asr=await pipeline('automatic-speech-recognition',$('#tModel').value,{progress_callback:cb})}
+    pr.removeAttribute('value');st.textContent='جارٍ تفريغ الكلام… قد يستغرق دقائق';
+    const i0=Math.floor(c.offset*16000),i1=Math.min(pcm.length,Math.floor((c.offset+c.dur*c.speed)*16000));
+    const out=await asr(pcm.slice(i0,i1),{language:$('#tLang').value,task:'transcribe',return_timestamps:true,chunk_length_s:30,stride_length_s:5});
+    let n=0;
+    for(const ch of out.chunks||[]){
+      const text=(ch.text||'').trim();if(!text)continue;
+      const a=ch.timestamp[0]||0,z=ch.timestamp[1]??a+2;
+      clips.push(newText(Object.assign({},SUB,{text,start:c.start+a/c.speed,dur:Math.max(.3,(z-a)/c.speed),y:Math.round(P.h*.38)})));n++;
+    }
+    commit();renderTL();renderProps();pr.value=1;
+    st.textContent=n?`✅ تمت إضافة ${n} سطر. صدّر SRT وأرسله لـ Claude ليترجمه للعربية.`:'لم أجد كلاماً في هذا المقطع';
+  }catch(e){st.textContent='تعذّر التفريغ: '+(e.message||e);pr.hidden=true}
+  $('#tGo').disabled=false;
 };
 
 /* ---------- canvas interaction ---------- */
