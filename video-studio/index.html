@@ -684,9 +684,7 @@ $('#tGo').onclick=async()=>{
     const {pipeline}=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2');
     const files={};
     const cb=d=>{if(d.status==='progress'){files[d.file]=d.progress;const v=Object.values(files);pr.value=v.reduce((a,b)=>a+b,0)/v.length/100;st.textContent='تحميل النموذج… '+Math.round(pr.value*100)+'%'}};
-    let asr;
-    try{asr=await pipeline('automatic-speech-recognition',$('#tModel').value,{device:navigator.gpu?'webgpu':'wasm',dtype:navigator.gpu?{encoder_model:'fp32',decoder_model_merged:'q4'}:undefined,progress_callback:cb})}
-    catch{asr=await pipeline('automatic-speech-recognition',$('#tModel').value,{progress_callback:cb})}
+    const asr=await pipeline('automatic-speech-recognition',$('#tModel').value,{device:'wasm',dtype:'q8',progress_callback:cb});
     pr.removeAttribute('value');st.textContent='جارٍ تفريغ الكلام… قد يستغرق دقائق';
     const i0=Math.floor(c.offset*16000),i1=Math.min(pcm.length,Math.floor((c.offset+c.dur*c.speed)*16000));
     const out=await asr(pcm.slice(i0,i1),{language:$('#tLang').value,task:'transcribe',return_timestamps:true,chunk_length_s:30,stride_length_s:5});
