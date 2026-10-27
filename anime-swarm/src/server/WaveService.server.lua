@@ -34,25 +34,41 @@ upgrade.OnServerEvent:Connect(function(player)
 	end
 end)
 
-local function makeEnemy(wave, position)
+-- hp / speed multipliers, body scale and coin bonus per enemy type
+local TYPES = {
+	Swarmling = { hp = 1,   speed = 1,   scale = 1, coins = 0,   color = Color3.fromRGB(120, 20, 40) },
+	Runner    = { hp = 0.5, speed = 1.6, scale = 0.8, coins = 2, color = Color3.fromRGB(230, 180, 30) },
+	Tank      = { hp = 3,   speed = 0.6, scale = 1.5, coins = 8, color = Color3.fromRGB(60, 60, 90) },
+	Boss      = { hp = 40,  speed = 0.8, scale = 3,   coins = 150, color = Color3.fromRGB(150, 0, 0) },
+}
+
+local function pickType(wave)
+	if wave >= 3 and math.random() < 0.2 then return "Runner" end
+	if wave >= 5 and math.random() < 0.15 then return "Tank" end
+	return "Swarmling"
+end
+
+local function makeEnemy(wave, position, kind)
+	kind = kind or "Swarmling"
+	local t = TYPES[kind]
 	local m = Instance.new("Model")
-	m.Name = "Swarmling"
+	m.Name = kind
 
 	local root = Instance.new("Part")
-	root.Name, root.Size, root.Position = "HumanoidRootPart", Vector3.new(2, 2, 1), position
-	root.Color = Color3.fromRGB(60 + math.min(wave * 8, 180), 20, 40)
+	root.Name, root.Size, root.Position = "HumanoidRootPart", Vector3.new(2, 2, 1) * t.scale, position
+	root.Color = t.color
 	root.Parent = m
 	local head = Instance.new("Part")
-	head.Name, head.Shape, head.Size = "Head", Enum.PartType.Ball, Vector3.new(1.6, 1.6, 1.6)
-	head.Color, head.Position = root.Color, position + Vector3.new(0, 1.8, 0)
+	head.Name, head.Shape, head.Size = "Head", Enum.PartType.Ball, Vector3.one * 1.6 * t.scale
+	head.Color, head.Position = root.Color, position + Vector3.new(0, 1.8 * t.scale, 0)
 	head.Parent = m
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0, weld.Part1, weld.Parent = root, head, root
 
 	local hum = Instance.new("Humanoid")
-	hum.MaxHealth = 60 + wave * 25
+	hum.MaxHealth = (60 + wave * 25) * t.hp
 	hum.Health = hum.MaxHealth
-	hum.WalkSpeed = math.min(10 + wave * 0.6, 24)
+	hum.WalkSpeed = math.min(10 + wave * 0.6, 24) * t.speed
 	hum.Parent = m
 	m.PrimaryPart = root
 	m.Parent = workspace
@@ -61,7 +77,7 @@ local function makeEnemy(wave, position)
 	hum.Died:Connect(function()
 		local killer = Players:GetPlayerByUserId(hum:GetAttribute("LastHitBy") or 0)
 		if killer and killer:FindFirstChild("leaderstats") then
-			killer.leaderstats.Coins.Value += 5 + wave
+			killer.leaderstats.Coins.Value += 5 + wave + t.coins
 			killer.leaderstats.Kills.Value += 1
 		end
 		task.wait(0.5)
@@ -83,9 +99,9 @@ local function makeEnemy(wave, position)
 			end
 			if best then
 				hum:MoveTo(best.Character.HumanoidRootPart.Position)
-				if bestDist < 4 and os.clock() - lastBite > 1 then
+				if bestDist < 4 * t.scale and os.clock() - lastBite > 1 then
 					lastBite = os.clock()
-					best.Character.Humanoid:TakeDamage(5 + wave)
+					best.Character.Humanoid:TakeDamage((5 + wave) * (kind == "Boss" and 3 or 1))
 				end
 			end
 			task.wait(0.2)
@@ -107,9 +123,13 @@ task.spawn(function()
 			task.wait(1)
 		end
 		local count = 5 + wave * 3
+		if wave % 5 == 0 then
+			makeEnemy(wave, Vector3.new(SPAWN_RADIUS, 4, 0), "Boss")
+			waveInfo:FireAllClients(wave, "BOSS WAVE!")
+		end
 		for i = 1, count do
 			local angle = math.random() * math.pi * 2
-			makeEnemy(wave, Vector3.new(math.cos(angle) * SPAWN_RADIUS, 4, math.sin(angle) * SPAWN_RADIUS))
+			makeEnemy(wave, Vector3.new(math.cos(angle) * SPAWN_RADIUS, 4, math.sin(angle) * SPAWN_RADIUS), pickType(wave))
 			waveInfo:FireAllClients(wave, ("Enemies left: %d"):format(alive()))
 			task.wait(0.4)
 		end

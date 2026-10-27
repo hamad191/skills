@@ -109,6 +109,15 @@ function handlers.beam(player, root, s, dmg)
 	end
 end
 
+function handlers.clones(player, root, s, dmg)
+	-- three delayed clone strikes around the caster
+	for _ = 1, 3 do
+		handlers.aoe(player, root, s, dmg)
+		task.wait(0.5)
+		if not root.Parent then return end
+	end
+end
+
 useSkill.OnServerEvent:Connect(function(player, index)
 	local s = type(index) == "number" and Skills[index]
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -118,7 +127,7 @@ useSkill.OnServerEvent:Connect(function(player, index)
 	if os.clock() - (lastUsed[player][index] or -1e9) < s.cooldown then return end
 	lastUsed[player][index] = os.clock()
 
-	handlers[s.kind](player, root, s, s.damage * damageMult(player))
+	task.spawn(handlers[s.kind], player, root, s, s.damage * damageMult(player))
 end)
 
 Players.PlayerRemoving:Connect(function(p) lastUsed[p] = nil end)

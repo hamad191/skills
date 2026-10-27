@@ -9,7 +9,11 @@ Wave-survival game for Roblox (Luau, Rojo project). Survive endless, growing wav
 | 3 | Spirit Burst (AoE) |
 | 4 | Gravity Crush (pull + slam) |
 | 5 | Ultimate Dragon Wave (beam) |
+| 6 | Spiral Orb (short, wide orb) |
+| 7 | Shadow Clones (3 clone strikes) |
 | U | Buy damage upgrade (50 x level coins) |
+
+Enemies: Swarmling, Runner (fast, wave 3+), Tank (slow, wave 5+), and a Boss every 5th wave.
 
 ## Run
 1. Install Rojo and the Rojo Studio plugin.

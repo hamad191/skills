@@ -7,7 +7,7 @@ local useSkill = RS:WaitForChild("UseSkill")
 local waveInfo = RS:WaitForChild("WaveInfo")
 local buyDamage = RS:WaitForChild("BuyDamage")
 
-local KEYS = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five }
+local KEYS = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five, Enum.KeyCode.Six, Enum.KeyCode.Seven }
 
 local gui = Instance.new("ScreenGui")
 gui.ResetOnSpawn = false
@@ -25,7 +25,7 @@ end)
 local buttons, readyAt = {}, {}
 for i, s in Skills do
 	local b = Instance.new("TextButton")
-	b.Size, b.Position = UDim2.new(0, 110, 0, 60), UDim2.new(0.5, -290 + (i - 1) * 120, 1, -80)
+	b.Size, b.Position = UDim2.new(0, 110, 0, 60), UDim2.new(0.5, -420 + (i - 1) * 120, 1, -80)
 	b.BackgroundColor3, b.TextColor3 = s.color, Color3.new(0, 0, 0)
 	b.TextWrapped, b.Font = true, Enum.Font.GothamBold
 	b.Text = ("[%d] %s"):format(i, s.name)
