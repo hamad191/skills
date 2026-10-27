@@ -84,9 +84,9 @@ end
 
 local function buildSlots(root)
 	local column = Theme.new("Frame", {
-		Size = UDim2.fromOffset(220, 420), Position = UDim2.new(0, 14, 0.5, -190), BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(220, 470), Position = UDim2.new(0, 14, 0.5, -215), BackgroundTransparency = 1,
 	}, root)
-	Theme.new("UIListLayout", { Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }, column)
+	Theme.new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, column)
 	ui.weaponSlots, ui.passiveSlots = {}, {}
 
 	local order = 0
@@ -96,18 +96,18 @@ local function buildSlots(root)
 	end
 	local function slot()
 		order += 1
-		local frame = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Theme.CARD, BackgroundTransparency = 0.15, LayoutOrder = order }, column)
+		local frame = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = Theme.CARD, BackgroundTransparency = 0.15, LayoutOrder = order }, column)
 		Theme.corner(frame, 8)
 		Theme.stroke(frame, Color3.new(0, 0, 0), 1, 0.6)
 		local stripe = Theme.new("Frame", { Size = UDim2.new(0, 6, 1, -8), Position = UDim2.fromOffset(4, 4), BackgroundColor3 = Theme.MUTED, BorderSizePixel = 0 }, frame)
 		Theme.corner(stripe, 3)
-		local name = Theme.text({ Size = UDim2.new(1, -70, 1, -10), Position = UDim2.fromOffset(16, 5), TextXAlignment = Enum.TextXAlignment.Left, MaxSize = 16 }, frame)
-		local level = Theme.title({ Size = UDim2.new(0, 50, 1, -12), Position = UDim2.new(1, -56, 0, 6), TextXAlignment = Enum.TextXAlignment.Right, MaxSize = 18 }, frame)
-		return { stripe = stripe, name = name, level = level }
+		local name = Theme.text({ Size = UDim2.new(1, -70, 1, -10), Position = UDim2.fromOffset(16, 5), TextXAlignment = Enum.TextXAlignment.Left, MaxSize = 15 }, frame)
+		local level = Theme.title({ Size = UDim2.new(0, 50, 1, -10), Position = UDim2.new(1, -56, 0, 5), TextXAlignment = Enum.TextXAlignment.Right, MaxSize = 16 }, frame)
+		return { frame = frame, stripe = stripe, name = name, level = level }
 	end
 
 	header("SKILLS")
-	for i = 1, Config.WEAPON_SLOTS do
+	for i = 1, Config.WEAPON_SLOTS_MAX do
 		ui.weaponSlots[i] = slot()
 	end
 	header("PASSIVES")
@@ -116,7 +116,15 @@ local function buildSlots(root)
 	end
 end
 
-local function fillSlot(slot, info, isWeapon)
+local function fillSlot(slot, info, isWeapon, locked)
+	slot.frame.BackgroundTransparency = locked and 0.6 or 0.15
+	if locked then
+		slot.stripe.BackgroundColor3 = Color3.fromRGB(45, 48, 65)
+		slot.name.Text = "Buy slot in Shop"
+		slot.name.TextColor3 = Color3.fromRGB(110, 115, 140)
+		slot.level.Text = "🔒"
+		return
+	end
 	if not info then
 		slot.stripe.BackgroundColor3 = Color3.fromRGB(70, 75, 100)
 		slot.name.Text = "Empty"
@@ -286,7 +294,7 @@ function Hud.init(gui, cb)
 	buildSlots(root)
 	buildLevelUp(gui)
 	buildBanners(gui)
-	Hud.setStats({ level = 1, xp = 0, need = 1, kills = 0, weapons = {}, passives = {} })
+	Hud.setStats({ level = 1, xp = 0, need = 1, kills = 0, weapons = {}, passives = {}, slots = Config.WEAPON_SLOTS_START })
 end
 
 function Hud.setVisible(visible)
@@ -309,8 +317,9 @@ function Hud.setStats(st)
 	ui.xpText.Text = string.format("%d / %d XP", st.xp, st.need)
 	ui.level.Text = tostring(st.level)
 	ui.kills.Text = "💀 " .. Theme.comma(st.kills)
+	local unlocked = st.slots or Config.WEAPON_SLOTS_START
 	for i, slot in ui.weaponSlots do
-		fillSlot(slot, st.weapons[i], true)
+		fillSlot(slot, st.weapons[i], true, i > unlocked)
 	end
 	for i, slot in ui.passiveSlots do
 		fillSlot(slot, st.passives[i], false)

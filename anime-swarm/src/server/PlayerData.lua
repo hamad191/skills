@@ -50,7 +50,8 @@ function PlayerData.release(player)
 end
 
 function PlayerData.metaCost(name, level)
-	return math.floor(Config.Meta[name].cost * Config.META_GROWTH ^ level)
+	local meta = Config.Meta[name]
+	return math.floor(meta.cost * (meta.growth or Config.META_GROWTH) ^ level)
 end
 
 function PlayerData.buy(player, name)

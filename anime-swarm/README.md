@@ -19,7 +19,7 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
    - Enemies drop **XP orbs** (blue, or purple for big ones). Walk near them to collect.
    - **Level up** and choose 1 of 3 cards: a new skill, a skill upgrade, or a passive.
      Press **1 / 2 / 3** or click. Press **R** to reroll (if you bought rerolls).
-   - Up to **4 skills** and **4 passives**, each up to level 5.
+   - **3 skill slots** to start (buy up to **8**) and **4 passive** slots; everything levels up to 5.
    - **Evolution:** max a skill and its partner passive, and the next level-up offers its evolved form.
    - A **Vice Admiral** every 2 minutes, and the **Admiral** when the timer runs out. Defeat it to win.
 4. **Results:** earn gold from kills, time survived, bosses and a victory bonus, then sail back to the island.
@@ -38,12 +38,28 @@ If you are knocked out, your crew fights on; you return to the island when the a
 | Robin | Cien Fleur | -10% cooldowns |
 | Chopper | Kung Fu Point | Heals you and nearby allies |
 
-## Skills and evolutions
+## Skills
 
-Any character can pick up any skill from level-up cards.
+Every character has **6 skills**. You start a run with your character's first (signature) skill.
+Level-ups mostly offer your own character's skills; now and then a crewmate's skill shows up as a
+rare **Crew Skill** card.
 
-| Skill | Partner passive | Evolves into |
-| ----- | --------------- | ------------ |
+You start with **3 skill slots**. Buy more with the **Skill Slot** upgrade in the Shop, up to **8**.
+
+| Character | Skills (signature first) |
+| --------- | ------------------------ |
+| Luffy | Gum-Gum Pistol, Gum-Gum Bazooka, Gum-Gum Whip, Gum-Gum Balloon, Gum-Gum Elephant Gun, Red Hawk |
+| Zoro | Three Sword Style, 360 Pound Cannon, Oni Giri, Tatsumaki, Shishi Sonson, Black Rope Dragon |
+| Nami | Thunderbolt Tempo, Cyclone Tempo, Mirage Tempo, Thunder Lance Tempo, Weather Egg, Black Ball |
+| Sanji | Diable Jambe, Concasse, Party Table Kick, Mouton Shot, Poele a Frire, Flambage Shot |
+| Ace | Fire Fist, Fire Gun, Firefly, Fire Pillar, Fire Fence, Cross Fire |
+| Robin | Cien Fleur, Seis Fleur, Mil Fleur, Flower Storm, Gigante Fleur, Petal Guard |
+| Chopper | Kung Fu Point, Heavy Gong, Horn Point, Rumble Ball, Cherry Blossom Hoof, Medicine Bomb |
+
+Signature skills evolve when the skill and its partner passive are both max level:
+
+| Signature skill | Partner passive | Evolves into |
+| --------------- | --------------- | ------------ |
 | Gum-Gum Pistol | Vitality | Gum-Gum Gatling |
 | Three Sword Style | Haki | Asura: Nine Sword Style |
 | Thunderbolt Tempo | Treasure Magnet | Zeus Thunderstorm |

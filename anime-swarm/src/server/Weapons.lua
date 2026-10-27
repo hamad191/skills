@@ -110,7 +110,7 @@ function fire.chain(player, _s, root, st)
 			break
 		end
 	end
-	Fx.emit(st.w.fx, { p = player, anim = st.w.anim, c = st.w.color, pts = points, hits = hits })
+	Fx.emit(st.w.fx, { p = player, anim = st.w.anim, c = st.w.color, cloud = st.w.cloud, pts = points, hits = hits })
 	return true
 end
 
@@ -124,11 +124,11 @@ function fire.projectile(player, _s, root, st)
 		nextShotId += 1
 		local shot = {
 			id = nextShotId, player = player, pos = root.Position, dir = directionTo(root, target),
-			left = st.range, damage = st.damage, radius = st.radius, color = st.w.color,
+			left = st.range, damage = st.damage, radius = st.radius, color = st.w.color, fire = st.w.fire,
 		}
 		table.insert(projectiles, shot)
 		Fx.emit("shot", {
-			id = shot.id, p = player, anim = i == 1 and st.w.anim or nil, c = st.w.color,
+			id = shot.id, p = player, anim = i == 1 and st.w.anim or nil, c = st.w.color, fire = st.w.fire,
 			o = shot.pos, d = shot.dir, len = st.range, speed = PROJECTILE_SPEED, size = 1.5 + st.radius / 4,
 		})
 	end
@@ -191,8 +191,8 @@ function fire.line(player, _s, root, st)
 			end
 		end
 		Fx.emit(st.w.fx, {
-			p = player, anim = i == 1 and st.w.anim or nil, c = st.w.color,
-			o = origin, d = dir, len = st.range, i = i, hits = hits,
+			p = player, anim = i == 1 and st.w.anim or nil, c = st.w.color, arm = st.w.arm,
+			o = origin, d = dir, len = st.range, w = st.w.width, i = i, hits = hits,
 		})
 	end
 	return true
@@ -207,7 +207,10 @@ function fire.aura(player, _s, root, st)
 	for _, e in nearby do
 		strike(player, e, st.damage, hits)
 	end
-	Fx.emit(st.w.fx, { p = player, anim = st.w.anim, c = st.w.color, o = root.Position, r = st.range, hits = hits })
+	Fx.emit(st.w.fx, {
+		p = player, anim = st.w.anim, c = st.w.color, fire = st.w.fire,
+		o = root.Position, pos = root.Position, r = st.range, hits = hits,
+	})
 	return true
 end
 
@@ -222,7 +225,7 @@ local function stepProjectiles(dt)
 			for _, e in Enemies.inRadius(p.pos, p.radius) do
 				strike(p.player, e, p.damage, hits)
 			end
-			Fx.emit("boom", { id = p.id, pos = p.pos, r = p.radius, c = p.color, hits = hits })
+			Fx.emit("boom", { id = p.id, pos = p.pos, r = p.radius, c = p.color, fire = p.fire, hits = hits })
 			table.remove(projectiles, i)
 		end
 	end

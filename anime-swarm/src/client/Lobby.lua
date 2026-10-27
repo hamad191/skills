@@ -28,14 +28,21 @@ end
 
 local function buildCrew(root)
 	local panel = Theme.panel({
-		Name = "Crew", Size = UDim2.fromOffset(740, 520), Position = UDim2.new(0.5, -370, 0.5, -250),
+		Name = "Crew", Size = UDim2.fromOffset(740, 600), Position = UDim2.new(0.5, -370, 0.5, -300),
 		Visible = false, ZIndex = 10,
 	}, root)
 	panels.crew = { frame = panel, scale = Theme.new("UIScale", {}, panel) }
 	Theme.title({ Size = UDim2.new(1, -120, 0, 50), Position = UDim2.fromOffset(24, 14), Text = "CHOOSE YOUR PIRATE", TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 11 }, panel)
 	closeButton(panel, "crew")
 
-	local grid = Theme.new("Frame", { Size = UDim2.new(1, -40, 1, -90), Position = UDim2.fromOffset(20, 76), BackgroundTransparency = 1, ZIndex = 11 }, panel)
+	local grid = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 430), Position = UDim2.fromOffset(20, 76), BackgroundTransparency = 1, ZIndex = 11 }, panel)
+	local details = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 74), Position = UDim2.new(0, 20, 1, -88), BackgroundColor3 = Theme.CARD, ZIndex = 11 }, panel)
+	Theme.corner(details, 12)
+	ui.detailsTitle = Theme.title({ Size = UDim2.new(1, -24, 0, 24), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12 }, details)
+	ui.detailsSkills = Theme.text({
+		Size = UDim2.new(1, -24, 0, 36), Position = UDim2.fromOffset(12, 32), TextXAlignment = Enum.TextXAlignment.Left,
+		TextWrapped = true, TextColor3 = Theme.TEXT, ZIndex = 12, MaxSize = 16,
+	}, details)
 	Theme.new("UIGridLayout", {
 		CellSize = UDim2.fromOffset(166, 206), CellPadding = UDim2.fromOffset(12, 12),
 		HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder,
@@ -69,9 +76,11 @@ local function buildCrew(root)
 
 		card.MouseEnter:Connect(function()
 			Theme.tween(scale, 0.12, { Scale = 1.05 })
+			Lobby.showSkills(name)
 		end)
 		card.MouseLeave:Connect(function()
 			Theme.tween(scale, 0.12, { Scale = 1 })
+			Lobby.showSkills(meta.class)
 		end)
 		card.Activated:Connect(function()
 			callbacks.selectClass(name)
@@ -84,7 +93,7 @@ end
 
 local function buildShop(root)
 	local panel = Theme.panel({
-		Name = "Shop", Size = UDim2.fromOffset(600, 480), Position = UDim2.new(0.5, -300, 0.5, -230),
+		Name = "Shop", Size = UDim2.fromOffset(600, 560), Position = UDim2.new(0.5, -300, 0.5, -280),
 		Visible = false, ZIndex = 10,
 	}, root)
 	panels.shop = { frame = panel, scale = Theme.new("UIScale", {}, panel) }
@@ -198,8 +207,24 @@ function Lobby.toggle(name, open)
 	panel.frame.Visible = open
 end
 
+-- Lists a character's 6 skills under the character cards.
+function Lobby.showSkills(name)
+	local class = Config.Classes[name]
+	if not class then
+		return
+	end
+	local names = {}
+	for _, key in class.skills do
+		table.insert(names, Config.Weapons[key].name)
+	end
+	ui.detailsTitle.Text = name:upper() .. "'S 6 SKILLS"
+	ui.detailsTitle.TextColor3 = class.color:Lerp(Color3.new(1, 1, 1), 0.3)
+	ui.detailsSkills.Text = table.concat(names, "  -  ")
+end
+
 function Lobby.setMeta(data)
 	meta = data
+	Lobby.showSkills(data.class)
 	ui.gold.Text = "💰 " .. Theme.comma(data.gold)
 	ui.crewName.Text = data.class and "Playing as " .. data.class or ""
 	for name, card in classCards do

@@ -37,7 +37,8 @@ Config.Adventures = {
 }
 Config.ADVENTURE_ORDER = { "EastBlue", "GrandLine", "NewWorld" }
 
-Config.WEAPON_SLOTS = 4
+Config.WEAPON_SLOTS_START = 3 -- buy more with the "Skill Slot" upgrade
+Config.WEAPON_SLOTS_MAX = 8
 Config.PASSIVE_SLOTS = 4
 Config.WEAPON_MAX = 5
 Config.PASSIVE_MAX = 5
@@ -47,96 +48,291 @@ Config.BASE_HEALTH = 100
 Config.BASE_SPEED = 16
 Config.BASE_MAGNET = 10
 
--- Weapons fire on their own. A weapon evolves when it is max level and its
--- `evolveWith` passive is also max level.
+-- Skills fire on their own. Each character owns 6 skills (see Config.Classes); level-ups mostly
+-- offer your own character's skills, and now and then a crewmate's ("crew skill").
+-- A signature skill evolves when it is max level and its `evolveWith` passive is also max level.
 -- kind: how it hits (cone | chain | projectile | clones | orbit | line | aura)
--- fx / anim: the visual effect and character animation players see
+-- fx: the effect players see (punch | slash | lightning | grab | shot | kick | nova | hands | strike | wave | orbit)
+-- anim: the character's attack animation (punch | slash | kick | throw | cast | cross)
+-- Optional look tweaks: arcs (slash lines), arm (punch arm color), cloud (lightning from a cloud), fire (flames)
+local function rgb(r, g, b)
+	return Color3.fromRGB(r, g, b)
+end
+
 Config.Weapons = {
+	-- Luffy -------------------------------------------------------------------------
 	GumGumPistol = {
 		name = "Gum-Gum Pistol", desc = "Stretchy punches that pierce through enemies.",
 		fx = "punch", anim = "punch",
 		kind = "line", damage = 16, cooldown = 1.4, range = 35, width = 3, count = 1,
-		color = Color3.fromRGB(230, 60, 60), evolveWith = "Vitality", evolvesInto = "GumGumGatling",
+		color = rgb(230, 60, 60), evolveWith = "Vitality", evolvesInto = "GumGumGatling",
 	},
+	GumGumBazooka = {
+		name = "Gum-Gum Bazooka", desc = "A two-palm blast that smashes a straight line.",
+		fx = "punch", anim = "punch",
+		kind = "line", damage = 42, cooldown = 3.2, range = 22, width = 5, count = 1, color = rgb(230, 60, 60),
+	},
+	GumGumWhip = {
+		name = "Gum-Gum Whip", desc = "A stretching leg sweeps everything in front.",
+		fx = "slash", anim = "kick", arcs = 1,
+		kind = "cone", damage = 24, cooldown = 1.8, range = 18, angle = 160, color = rgb(255, 120, 90),
+	},
+	GumGumBalloon = {
+		name = "Gum-Gum Balloon", desc = "Puff up and bounce enemies away.",
+		fx = "nova", anim = "cast",
+		kind = "aura", damage = 16, cooldown = 2.4, range = 10, color = rgb(255, 170, 120),
+	},
+	GumGumElephantGun = {
+		name = "Gum-Gum Elephant Gun", desc = "A giant fist crashes down on a crowd.",
+		fx = "strike", anim = "punch",
+		kind = "clones", damage = 65, cooldown = 5, range = 9, count = 1, color = rgb(220, 40, 40),
+	},
+	RedHawk = {
+		name = "Red Hawk", desc = "A blazing punch that explodes on impact.",
+		fx = "shot", anim = "punch", fire = true,
+		kind = "projectile", damage = 45, cooldown = 3, range = 45, radius = 6, color = rgb(255, 90, 40),
+	},
+
+	-- Zoro --------------------------------------------------------------------------
 	ThreeSwordStyle = {
 		name = "Three Sword Style", desc = "Slashes the nearest enemies with three swords.",
 		fx = "slash", anim = "slash", arcs = 3,
 		kind = "cone", damage = 20, cooldown = 1.3, range = 14, angle = 110,
-		color = Color3.fromRGB(80, 220, 120), evolveWith = "Power", evolvesInto = "NineSwordStyle",
+		color = rgb(80, 220, 120), evolveWith = "Power", evolvesInto = "NineSwordStyle",
 	},
+	PoundCannon = {
+		name = "360 Pound Cannon", desc = "A flying slash wave cuts down a line.",
+		fx = "wave", anim = "slash",
+		kind = "line", damage = 28, cooldown = 2.2, range = 45, width = 3, count = 1, color = rgb(120, 255, 160),
+	},
+	OniGiri = {
+		name = "Oni Giri", desc = "Demon Slash: three blades thrust forward.",
+		fx = "slash", anim = "slash", arcs = 3,
+		kind = "cone", damage = 34, cooldown = 2.6, range = 22, angle = 45, color = rgb(60, 200, 90),
+	},
+	Tatsumaki = {
+		name = "Tatsumaki", desc = "Dragon Twister: a cyclone of blades around you.",
+		fx = "nova", anim = "slash",
+		kind = "aura", damage = 18, cooldown = 2.2, range = 12, color = rgb(160, 255, 190),
+	},
+	ShishiSonson = {
+		name = "Shishi Sonson", desc = "Lion's Song: a lightning-fast cut that leaps between foes.",
+		fx = "lightning", anim = "slash",
+		kind = "chain", damage = 24, cooldown = 2, range = 28, count = 4, color = rgb(200, 255, 210),
+	},
+	BlackRopeDragon = {
+		name = "Black Rope Dragon", desc = "Black tornadoes of blades crash down.",
+		fx = "strike", anim = "slash",
+		kind = "clones", damage = 38, cooldown = 4.2, range = 8, count = 2, color = rgb(30, 110, 60),
+	},
+
+	-- Nami --------------------------------------------------------------------------
 	ThunderTempo = {
 		name = "Thunderbolt Tempo", desc = "Clima-Tact lightning jumps between enemies.",
-		fx = "lightning", anim = "cast",
+		fx = "lightning", anim = "cast", cloud = true,
 		kind = "chain", damage = 14, cooldown = 1.6, range = 30, count = 3,
-		color = Color3.fromRGB(255, 240, 90), evolveWith = "Magnet", evolvesInto = "ZeusTempo",
+		color = rgb(255, 240, 90), evolveWith = "Magnet", evolvesInto = "ZeusTempo",
 	},
+	CycloneTempo = {
+		name = "Cyclone Tempo", desc = "Gusts of wind blast through the swarm.",
+		fx = "wave", anim = "cast",
+		kind = "line", damage = 18, cooldown = 2, range = 35, width = 3, count = 2, color = rgb(200, 240, 255),
+	},
+	MirageTempo = {
+		name = "Mirage Tempo", desc = "Mirage copies of Nami burst with light.",
+		fx = "nova", anim = "cast",
+		kind = "aura", damage = 14, cooldown = 1.6, range = 9, color = rgb(255, 190, 90),
+	},
+	ThunderLance = {
+		name = "Thunder Lance Tempo", desc = "Bolts of lightning strike from above.",
+		fx = "strike", anim = "cast",
+		kind = "clones", damage = 40, cooldown = 3.6, range = 6, count = 2, color = rgb(255, 240, 90),
+	},
+	WeatherEgg = {
+		name = "Weather Egg", desc = "A weather bubble that bursts into a storm.",
+		fx = "shot", anim = "throw",
+		kind = "projectile", damage = 30, cooldown = 2.6, range = 50, radius = 8, color = rgb(120, 200, 255),
+	},
+	BlackBall = {
+		name = "Black Ball", desc = "Thunderclouds circle you, shocking anyone close.",
+		fx = "orbit",
+		kind = "orbit", damage = 9, cooldown = 0.5, range = 9, count = 2, color = rgb(90, 90, 140),
+	},
+
+	-- Sanji -------------------------------------------------------------------------
 	DiableJambe = {
 		name = "Diable Jambe", desc = "Burning kicks hit everything around you.",
-		fx = "kick", anim = "kick",
+		fx = "kick", anim = "kick", fire = true,
 		kind = "aura", damage = 12, cooldown = 0.8, range = 8,
-		color = Color3.fromRGB(255, 90, 40), evolveWith = "Swiftness", evolvesInto = "IfritJambe",
+		color = rgb(255, 90, 40), evolveWith = "Swiftness", evolvesInto = "IfritJambe",
 	},
+	Concasse = {
+		name = "Concasse", desc = "A crushing heel drop from the sky.",
+		fx = "strike", anim = "kick",
+		kind = "clones", damage = 46, cooldown = 3.6, range = 8, count = 1, color = rgb(255, 200, 80),
+	},
+	PartyTable = {
+		name = "Party Table Kick", desc = "A whirlwind of kicks while standing on your hands.",
+		fx = "kick", anim = "kick",
+		kind = "aura", damage = 10, cooldown = 1.2, range = 7, color = rgb(255, 250, 225),
+	},
+	MoutonShot = {
+		name = "Mouton Shot", desc = "A kick so fast it fires a shockwave.",
+		fx = "wave", anim = "kick",
+		kind = "line", damage = 30, cooldown = 2.5, range = 28, width = 4, count = 1, color = rgb(255, 230, 150),
+	},
+	PoeleAFrire = {
+		name = "Poele a Frire", desc = "Burning kicks rake a wide arc.",
+		fx = "slash", anim = "kick", arcs = 2,
+		kind = "cone", damage = 22, cooldown = 1.6, range = 13, angle = 140, color = rgb(255, 120, 40),
+	},
+	FlambageShot = {
+		name = "Flambage Shot", desc = "A flaming kick that launches a fireball.",
+		fx = "shot", anim = "kick", fire = true,
+		kind = "projectile", damage = 34, cooldown = 2.6, range = 50, radius = 7, color = rgb(255, 110, 30),
+	},
+
+	-- Ace ---------------------------------------------------------------------------
 	FireFist = {
 		name = "Fire Fist", desc = "Launches a fireball that explodes.",
-		fx = "fireball", anim = "throw",
+		fx = "shot", anim = "throw", fire = true,
 		kind = "projectile", damage = 30, cooldown = 2.2, range = 60, radius = 7,
-		color = Color3.fromRGB(255, 140, 30), evolveWith = "Area", evolvesInto = "FlameEmperor",
+		color = rgb(255, 140, 30), evolveWith = "Area", evolvesInto = "FlameEmperor",
 	},
+	FireGun = {
+		name = "Fire Gun", desc = "Bullets of flame fly from his fingertips.",
+		fx = "wave", anim = "throw",
+		kind = "line", damage = 14, cooldown = 1.5, range = 40, width = 2, count = 3, color = rgb(255, 150, 50),
+	},
+	Firefly = {
+		name = "Firefly", desc = "Glowing fireflies circle you and burn enemies.",
+		fx = "orbit",
+		kind = "orbit", damage = 8, cooldown = 0.45, range = 8, count = 3, color = rgb(220, 255, 120),
+	},
+	FirePillar = {
+		name = "Fire Pillar", desc = "Pillars of fire erupt under enemies.",
+		fx = "strike", anim = "cast",
+		kind = "clones", damage = 32, cooldown = 3, range = 7, count = 2, color = rgb(255, 90, 20),
+	},
+	FireFence = {
+		name = "Fire Fence", desc = "A ring of flame bursts around you.",
+		fx = "nova", anim = "cast",
+		kind = "aura", damage = 16, cooldown = 2, range = 11, color = rgb(255, 140, 40),
+	},
+	CrossFire = {
+		name = "Cross Fire", desc = "Blasts of flame forward and back.",
+		fx = "slash", anim = "throw", arcs = 1,
+		kind = "cone", damage = 26, cooldown = 2, range = 20, angle = 50, count = 2, color = rgb(255, 170, 60),
+	},
+
+	-- Robin -------------------------------------------------------------------------
 	CienFleur = {
 		name = "Cien Fleur", desc = "Arms sprout from the ground and crush enemies.",
 		fx = "hands", anim = "cross",
 		kind = "clones", damage = 22, cooldown = 3, range = 7, count = 2,
-		color = Color3.fromRGB(200, 120, 255), evolveWith = "Haste", evolvesInto = "GigantescoMano",
+		color = rgb(200, 120, 255), evolveWith = "Haste", evolvesInto = "GigantescoMano",
 	},
-	KungFuPoint = {
-		name = "Kung Fu Point", desc = "Fists circle you and hit enemies.",
-		fx = "fists",
-		kind = "orbit", damage = 10, cooldown = 0.5, range = 7, count = 2,
-		color = Color3.fromRGB(255, 150, 190), evolveWith = "Vitality", evolvesInto = "MonsterPoint",
+	SeisFleur = {
+		name = "Seis Fleur", desc = "Arms grab enemy after enemy.",
+		fx = "grab", anim = "cross",
+		kind = "chain", damage = 22, cooldown = 2, range = 28, count = 4, color = rgb(200, 120, 255),
+	},
+	MilFleur = {
+		name = "Mil Fleur", desc = "A field of arms sprouts all around you.",
+		fx = "hands", anim = "cross",
+		kind = "aura", damage = 18, cooldown = 2.4, range = 10, color = rgb(170, 90, 230),
+	},
+	FlowerStorm = {
+		name = "Flower Storm", desc = "A storm of petals cuts through the swarm.",
+		fx = "wave", anim = "cross",
+		kind = "line", damage = 18, cooldown = 2, range = 35, width = 3, count = 2, color = rgb(255, 150, 210),
+	},
+	GiganteFleur = {
+		name = "Gigante Fleur", desc = "A giant hand slams down on a crowd.",
+		fx = "strike", anim = "cross",
+		kind = "clones", damage = 50, cooldown = 4.4, range = 10, count = 1, color = rgb(160, 80, 220),
+	},
+	PetalGuard = {
+		name = "Petal Guard", desc = "Petals swirl around you and slice anything close.",
+		fx = "orbit",
+		kind = "orbit", damage = 8, cooldown = 0.5, range = 7, count = 3, color = rgb(255, 160, 220),
 	},
 
-	-- Evolutions (cannot be picked directly, always level 1)
+	-- Chopper -----------------------------------------------------------------------
+	KungFuPoint = {
+		name = "Kung Fu Point", desc = "Fists circle you and hit enemies.",
+		fx = "orbit",
+		kind = "orbit", damage = 10, cooldown = 0.5, range = 7, count = 2,
+		color = rgb(255, 150, 190), evolveWith = "Vitality", evolvesInto = "MonsterPoint",
+	},
+	HeavyGong = {
+		name = "Heavy Gong", desc = "Heavy Point: one huge furry punch.",
+		fx = "punch", anim = "punch", arm = rgb(150, 100, 60),
+		kind = "line", damage = 36, cooldown = 3, range = 16, width = 4, count = 1, color = rgb(255, 130, 180),
+	},
+	HornPoint = {
+		name = "Horn Point", desc = "Charge with giant antlers.",
+		fx = "slash", anim = "punch", arcs = 1,
+		kind = "cone", damage = 20, cooldown = 1.5, range = 10, angle = 90, color = rgb(220, 170, 120),
+	},
+	RumbleBall = {
+		name = "Rumble Ball", desc = "A burst of monster energy.",
+		fx = "nova", anim = "cast",
+		kind = "aura", damage = 12, cooldown = 2, range = 9, color = rgb(255, 150, 200),
+	},
+	CherryBlossom = {
+		name = "Cherry Blossom Hoof", desc = "Hoof strikes that bloom from foe to foe.",
+		fx = "lightning", anim = "punch",
+		kind = "chain", damage = 18, cooldown = 1.8, range = 26, count = 4, color = rgb(255, 180, 220),
+	},
+	MedicineBomb = {
+		name = "Medicine Bomb", desc = "Throws a medicine bomb that bursts.",
+		fx = "shot", anim = "throw",
+		kind = "projectile", damage = 28, cooldown = 2.4, range = 45, radius = 7, color = rgb(150, 255, 180),
+	},
+
+	-- Evolutions (cannot be picked directly, always level 1) --------------------------
 	GumGumGatling = {
 		name = "Gum-Gum Gatling", desc = "A storm of rubber punches in every direction.",
 		fx = "punch", anim = "punch",
 		kind = "line", damage = 50, cooldown = 0.8, range = 45, width = 4, count = 10,
-		color = Color3.fromRGB(255, 40, 40), evolved = true, from = "GumGumPistol",
+		color = rgb(255, 40, 40), evolved = true, from = "GumGumPistol",
 	},
 	NineSwordStyle = {
 		name = "Asura: Nine Sword Style", desc = "Nine blades slash in every direction.",
 		fx = "slash", anim = "slash", arcs = 3,
 		kind = "cone", damage = 90, cooldown = 1, range = 22, angle = 120, count = 4,
-		color = Color3.fromRGB(40, 200, 90), evolved = true, from = "ThreeSwordStyle",
+		color = rgb(40, 200, 90), evolved = true, from = "ThreeSwordStyle",
 	},
 	ZeusTempo = {
 		name = "Zeus Thunderstorm", desc = "Lightning chains through the whole swarm.",
-		fx = "lightning", anim = "cast",
+		fx = "lightning", anim = "cast", cloud = true,
 		kind = "chain", damage = 70, cooldown = 0.9, range = 45, count = 10,
-		color = Color3.fromRGB(255, 255, 160), evolved = true, from = "ThunderTempo",
+		color = rgb(255, 255, 160), evolved = true, from = "ThunderTempo",
 	},
 	IfritJambe = {
 		name = "Ifrit Jambe", desc = "Blue-hot kicks scorch a huge area around you.",
-		fx = "kick", anim = "kick",
+		fx = "kick", anim = "kick", fire = true,
 		kind = "aura", damage = 45, cooldown = 0.5, range = 14,
-		color = Color3.fromRGB(80, 160, 255), evolved = true, from = "DiableJambe",
+		color = rgb(80, 160, 255), evolved = true, from = "DiableJambe",
 	},
 	FlameEmperor = {
 		name = "Flame Emperor", desc = "Giant fireballs that wipe out crowds.",
-		fx = "fireball", anim = "throw",
+		fx = "shot", anim = "throw", fire = true,
 		kind = "projectile", damage = 160, cooldown = 1.8, range = 70, radius = 16, count = 3,
-		color = Color3.fromRGB(255, 80, 0), evolved = true, from = "FireFist",
+		color = rgb(255, 80, 0), evolved = true, from = "FireFist",
 	},
 	GigantescoMano = {
 		name = "Gigantesco Mano", desc = "Giant arms smash the battlefield.",
 		fx = "hands", anim = "cross",
 		kind = "clones", damage = 80, cooldown = 2.2, range = 9, count = 8,
-		color = Color3.fromRGB(170, 80, 255), evolved = true, from = "CienFleur",
+		color = rgb(170, 80, 255), evolved = true, from = "CienFleur",
 	},
 	MonsterPoint = {
 		name = "Monster Point", desc = "A huge ring of fists shreds anything close.",
-		fx = "fists",
+		fx = "orbit",
 		kind = "orbit", damage = 35, cooldown = 0.35, range = 10, count = 8,
-		color = Color3.fromRGB(255, 100, 160), evolved = true, from = "KungFuPoint",
+		color = rgb(255, 100, 160), evolved = true, from = "KungFuPoint",
 	},
 }
 
@@ -154,34 +350,56 @@ Config.DEFAULT_CLASS = "Luffy"
 Config.Classes = {
 	Luffy = {
 		title = "Straw Hat", perk = "+30 max HP", color = Color3.fromRGB(220, 50, 50),
-		weapon = "GumGumPistol", bonus = { health = 30 },
+		weapon = "GumGumPistol",
+		skills = { "GumGumPistol", "GumGumBazooka", "GumGumWhip", "GumGumBalloon", "GumGumElephantGun", "RedHawk" },
+		bonus = { health = 30 },
 	},
 	Zoro = {
 		title = "Pirate Hunter", perk = "+10% damage", color = Color3.fromRGB(60, 190, 90),
-		weapon = "ThreeSwordStyle", bonus = { damage = 0.10 },
+		weapon = "ThreeSwordStyle",
+		skills = { "ThreeSwordStyle", "PoundCannon", "OniGiri", "Tatsumaki", "ShishiSonson", "BlackRopeDragon" },
+		bonus = { damage = 0.10 },
 	},
 	Nami = {
 		title = "Cat Burglar", perk = "+25% gold", color = Color3.fromRGB(255, 150, 40),
-		weapon = "ThunderTempo", bonus = { gold = 0.25 },
+		weapon = "ThunderTempo",
+		skills = { "ThunderTempo", "CycloneTempo", "MirageTempo", "ThunderLance", "WeatherEgg", "BlackBall" },
+		bonus = { gold = 0.25 },
 	},
 	Sanji = {
 		title = "Black Leg", perk = "+15% move speed", color = Color3.fromRGB(240, 200, 60),
-		weapon = "DiableJambe", bonus = { speed = 0.15 },
+		weapon = "DiableJambe",
+		skills = { "DiableJambe", "Concasse", "PartyTable", "MoutonShot", "PoeleAFrire", "FlambageShot" },
+		bonus = { speed = 0.15 },
 	},
 	Ace = {
 		title = "Fire Fist", perk = "+15% area", color = Color3.fromRGB(255, 100, 30),
-		weapon = "FireFist", bonus = { area = 0.15 },
+		weapon = "FireFist",
+		skills = { "FireFist", "FireGun", "Firefly", "FirePillar", "FireFence", "CrossFire" },
+		bonus = { area = 0.15 },
 	},
 	Robin = {
 		title = "Devil Child", perk = "-10% cooldowns", color = Color3.fromRGB(150, 90, 220),
-		weapon = "CienFleur", bonus = { cooldown = 0.10 },
+		weapon = "CienFleur",
+		skills = { "CienFleur", "SeisFleur", "MilFleur", "FlowerStorm", "GiganteFleur", "PetalGuard" },
+		bonus = { cooldown = 0.10 },
 	},
 	Chopper = {
 		title = "Cotton Candy Lover", perk = "Heals nearby allies", color = Color3.fromRGB(255, 130, 180),
-		weapon = "KungFuPoint", bonus = { heal = 2 },
+		weapon = "KungFuPoint",
+		skills = { "KungFuPoint", "HeavyGong", "HornPoint", "RumbleBall", "CherryBlossom", "MedicineBomb" },
+		bonus = { heal = 2 },
 	},
 }
 Config.CLASS_ORDER = { "Luffy", "Zoro", "Nami", "Sanji", "Ace", "Robin", "Chopper" }
+
+-- Which character each skill belongs to (filled in from the skill lists above).
+Config.SkillOwner = {}
+for className, class in Config.Classes do
+	for _, skill in class.skills do
+		Config.SkillOwner[skill] = className
+	end
+end
 
 -- color = clothes, accent = cap and pants, skin = head and hands, eyes = glowing eye color
 local SKIN = Color3.fromRGB(255, 205, 160)
@@ -210,15 +428,18 @@ Config.Enemies = {
 	},
 }
 
--- Permanent upgrades bought with gold between runs. Cost = cost * META_GROWTH ^ level.
+-- Permanent upgrades bought with gold between runs. Cost = cost * (growth or META_GROWTH) ^ level.
 Config.Meta = {
+	SkillSlot = {
+		name = "Skill Slot", desc = "+1 skill slot", stat = "slots", per = 1, max = 5, cost = 300, growth = 1.7,
+	},
 	Might = { name = "Might", desc = "+5% damage", stat = "damage", per = 0.05, max = 10, cost = 100 },
 	Toughness = { name = "Toughness", desc = "+10 max HP", stat = "health", per = 10, max = 10, cost = 100 },
 	Greed = { name = "Greed", desc = "+10% gold", stat = "gold", per = 0.10, max = 10, cost = 150 },
 	Reach = { name = "Reach", desc = "+10% pickup range", stat = "magnet", per = 0.10, max = 5, cost = 120 },
 	Reroll = { name = "Reroll", desc = "+1 reroll per run", stat = "reroll", per = 1, max = 5, cost = 300 },
 }
-Config.META_ORDER = { "Might", "Toughness", "Greed", "Reach", "Reroll" }
+Config.META_ORDER = { "SkillSlot", "Might", "Toughness", "Greed", "Reach", "Reroll" }
 Config.META_GROWTH = 1.5
 
 return Config
@@ -997,7 +1218,8 @@ function PlayerData.release(player)
 end
 
 function PlayerData.metaCost(name, level)
-	return math.floor(Config.Meta[name].cost * Config.META_GROWTH ^ level)
+	local meta = Config.Meta[name]
+	return math.floor(meta.cost * (meta.growth or Config.META_GROWTH) ^ level)
 end
 
 function PlayerData.buy(player, name)
@@ -1283,6 +1505,11 @@ function Progression.magnet(s)
 	return Config.BASE_MAGNET * (1 + Progression.bonus(s, "magnet"))
 end
 
+-- Skill slots: a few to start, more from the "Skill Slot" upgrade.
+function Progression.slots(s)
+	return math.min(Config.WEAPON_SLOTS_MAX, Config.WEAPON_SLOTS_START + math.floor(Progression.bonus(s, "slots")))
+end
+
 function Progression.xpNeeded(level)
 	return 5 + level * 3
 end
@@ -1296,9 +1523,12 @@ function Progression.all()
 end
 
 function Progression.start(player, className, meta)
-	local class = Config.Classes[className] or Config.Classes[Config.DEFAULT_CLASS]
+	if not Config.Classes[className] then
+		className = Config.DEFAULT_CLASS
+	end
+	local class = Config.Classes[className]
 	local s = {
-		level = 1, xp = 0, kills = 0, bonusGold = 0, dead = false,
+		class = className, level = 1, xp = 0, kills = 0, bonusGold = 0, dead = false,
 		weapons = { [class.weapon] = 1 }, passives = {}, timers = {},
 		classBonus = class.bonus, meta = meta, choices = nil, pending = 0,
 	}
@@ -1343,7 +1573,7 @@ function Progression.sync(player)
 	end
 	remotes.Stats:FireClient(player, {
 		level = s.level, xp = s.xp, need = Progression.xpNeeded(s.level),
-		kills = s.kills, weapons = weapons, passives = passives,
+		kills = s.kills, weapons = weapons, passives = passives, slots = Progression.slots(s),
 	})
 end
 
@@ -1356,6 +1586,25 @@ local function hasEvolutionOf(s, baseName)
 	return false
 end
 
+-- How likely each kind of card is. Crewmates' skills are rare so your own character's 6 come first.
+local WEIGHT = { upgrade = 4, ownSkill = 3, crewSkill = 0.15, passive = 2 }
+
+-- Removes and returns one entry, picked by weight.
+local function takeWeighted(pool)
+	local total = 0
+	for _, c in pool do
+		total += c.weight
+	end
+	local roll = math.random() * total
+	for i, c in pool do
+		roll -= c.weight
+		if roll <= 0 then
+			return table.remove(pool, i)
+		end
+	end
+	return table.remove(pool)
+end
+
 local function buildChoices(s)
 	local picks, pool = {}, {}
 	for name, level in s.weapons do
@@ -1363,25 +1612,26 @@ local function buildChoices(s)
 		if w.evolvesInto and level >= Config.WEAPON_MAX and (s.passives[w.evolveWith] or 0) >= Config.PASSIVE_MAX then
 			table.insert(picks, { type = "evolve", key = name })
 		elseif not w.evolved and level < Config.WEAPON_MAX then
-			table.insert(pool, { type = "weapon", key = name })
+			table.insert(pool, { type = "weapon", key = name, weight = WEIGHT.upgrade })
 		end
 	end
-	if count(s.weapons) < Config.WEAPON_SLOTS then
+	if count(s.weapons) < Progression.slots(s) then
 		for name, w in Config.Weapons do
 			if not w.evolved and not s.weapons[name] and not hasEvolutionOf(s, name) then
-				table.insert(pool, { type = "weapon", key = name })
+				local own = Config.SkillOwner[name] == s.class
+				table.insert(pool, { type = "weapon", key = name, weight = own and WEIGHT.ownSkill or WEIGHT.crewSkill })
 			end
 		end
 	end
 	for name, level in s.passives do
 		if level < Config.PASSIVE_MAX then
-			table.insert(pool, { type = "passive", key = name })
+			table.insert(pool, { type = "passive", key = name, weight = WEIGHT.passive })
 		end
 	end
 	if count(s.passives) < Config.PASSIVE_SLOTS then
 		for name in Config.Passives do
 			if not s.passives[name] then
-				table.insert(pool, { type = "passive", key = name })
+				table.insert(pool, { type = "passive", key = name, weight = WEIGHT.passive })
 			end
 		end
 	end
@@ -1390,7 +1640,7 @@ local function buildChoices(s)
 		table.remove(picks)
 	end
 	while #picks < Config.CHOICES and #pool > 0 do
-		table.insert(picks, table.remove(pool, math.random(#pool)))
+		table.insert(picks, takeWeighted(pool))
 	end
 	if #picks == 0 then
 		picks = { { type = "heal" }, { type = "gold" } }
@@ -1402,10 +1652,12 @@ local function describe(s, c)
 	if c.type == "weapon" then
 		local w = Config.Weapons[c.key]
 		local level = (s.weapons[c.key] or 0) + 1
+		local owner = Config.SkillOwner[c.key]
+		local crew = level == 1 and owner ~= s.class
 		return {
 			title = w.name, color = w.color, level = level, max = Config.WEAPON_MAX,
-			tag = level == 1 and "NEW SKILL" or "UPGRADE",
-			text = level == 1 and w.desc or "More damage, faster attacks, more hits.",
+			tag = crew and "CREW SKILL" or level == 1 and "NEW SKILL" or "UPGRADE",
+			text = crew and owner .. "'s skill: " .. w.desc or level == 1 and w.desc or "More damage, faster attacks, more hits.",
 		}
 	elseif c.type == "passive" then
 		local p = Config.Passives[c.key]
@@ -1604,7 +1856,7 @@ function fire.chain(player, _s, root, st)
 			break
 		end
 	end
-	Fx.emit(st.w.fx, { p = player, anim = st.w.anim, c = st.w.color, pts = points, hits = hits })
+	Fx.emit(st.w.fx, { p = player, anim = st.w.anim, c = st.w.color, cloud = st.w.cloud, pts = points, hits = hits })
 	return true
 end
 
@@ -1618,11 +1870,11 @@ function fire.projectile(player, _s, root, st)
 		nextShotId += 1
 		local shot = {
 			id = nextShotId, player = player, pos = root.Position, dir = directionTo(root, target),
-			left = st.range, damage = st.damage, radius = st.radius, color = st.w.color,
+			left = st.range, damage = st.damage, radius = st.radius, color = st.w.color, fire = st.w.fire,
 		}
 		table.insert(projectiles, shot)
 		Fx.emit("shot", {
-			id = shot.id, p = player, anim = i == 1 and st.w.anim or nil, c = st.w.color,
+			id = shot.id, p = player, anim = i == 1 and st.w.anim or nil, c = st.w.color, fire = st.w.fire,
 			o = shot.pos, d = shot.dir, len = st.range, speed = PROJECTILE_SPEED, size = 1.5 + st.radius / 4,
 		})
 	end
@@ -1685,8 +1937,8 @@ function fire.line(player, _s, root, st)
 			end
 		end
 		Fx.emit(st.w.fx, {
-			p = player, anim = i == 1 and st.w.anim or nil, c = st.w.color,
-			o = origin, d = dir, len = st.range, i = i, hits = hits,
+			p = player, anim = i == 1 and st.w.anim or nil, c = st.w.color, arm = st.w.arm,
+			o = origin, d = dir, len = st.range, w = st.w.width, i = i, hits = hits,
 		})
 	end
 	return true
@@ -1701,7 +1953,10 @@ function fire.aura(player, _s, root, st)
 	for _, e in nearby do
 		strike(player, e, st.damage, hits)
 	end
-	Fx.emit(st.w.fx, { p = player, anim = st.w.anim, c = st.w.color, o = root.Position, r = st.range, hits = hits })
+	Fx.emit(st.w.fx, {
+		p = player, anim = st.w.anim, c = st.w.color, fire = st.w.fire,
+		o = root.Position, pos = root.Position, r = st.range, hits = hits,
+	})
 	return true
 end
 
@@ -1716,7 +1971,7 @@ local function stepProjectiles(dt)
 			for _, e in Enemies.inRadius(p.pos, p.radius) do
 				strike(p.player, e, p.damage, hits)
 			end
-			Fx.emit("boom", { id = p.id, pos = p.pos, r = p.radius, c = p.color, hits = hits })
+			Fx.emit("boom", { id = p.id, pos = p.pos, r = p.radius, c = p.color, fire = p.fire, hits = hits })
 			table.remove(projectiles, i)
 		end
 	end
@@ -1896,8 +2151,9 @@ RunService.Stepped:Connect(function()
 end)
 
 return Animate
-]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX01323"><Properties><string name="Name">Effects</string><ProtectedString name="Source"><![CDATA[-- Draws every skill effect on this client: stretching arms, sword arcs, lightning,
--- fireballs, fire kicks, sprouting arms, orbiting fists, hit sparks and damage numbers.
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX01323"><Properties><string name="Name">Effects</string><ProtectedString name="Source"><![CDATA[-- Draws every skill effect on this client: stretching arms, sword arcs, lightning, projectiles,
+-- spin kicks, energy bursts, sky strikes, flying waves, sprouting arms, orbiting objects,
+-- hit sparks and damage numbers.
 -- The server sends batches of events (see server/Fx.lua); nothing here affects gameplay.
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
@@ -1920,6 +2176,7 @@ local TEX_SPARK = "rbxasset://textures/particles/sparkles_main.dds"
 local TEX_FIRE = "rbxasset://textures/particles/fire_main.dds"
 local TEX_SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 local SMOOTH = Enum.Material.SmoothPlastic
+local UPRIGHT = CFrame.Angles(0, 0, math.pi / 2) -- stands a cylinder's length (X axis) upright
 
 -- helpers -------------------------------------------------------------------
 
@@ -2035,12 +2292,13 @@ local function ignite(player, partName, color, time)
 end
 
 -- Attaches a glowing trail to a moving part.
-local function addTrail(p, color, width, life)
+local function addTrail(p, color, width, life, axis)
+	local offset = axis == "X" and Vector3.new(width / 2, 0, 0) or Vector3.new(0, width / 2, 0)
 	local a0 = Instance.new("Attachment")
-	a0.Position = Vector3.new(0, width / 2, 0)
+	a0.Position = offset
 	a0.Parent = p
 	local a1 = Instance.new("Attachment")
-	a1.Position = Vector3.new(0, -width / 2, 0)
+	a1.Position = -offset
 	a1.Parent = p
 	local trail = Instance.new("Trail")
 	trail.Attachment0, trail.Attachment1 = a0, a1
@@ -2150,27 +2408,30 @@ end
 
 -- Handlers: one per effect kind the server sends ---------------------------------
 
--- Luffy: the arm stretches out to full range and snaps back.
+-- Stretching punch (Luffy, Chopper): the arm shoots out to full range and snaps back.
 function handlers.punch(ev)
 	task.delay(((ev.i or 1) - 1) * 0.035, function()
 		local root = rootOf(ev.p)
 		local start = (root and root.Position or ev.o) + Vector3.new(0, 0.5, 0)
-		local dir, length, thick = ev.d, ev.len, 1.1
+		local dir, length = ev.d, ev.len
+		local size = (ev.w or 3) / 3
+		local thick = 1.1 * size
+		local skin = ev.arm or SKIN
 		local arm = part({
-			Shape = Enum.PartType.Cylinder, Material = SMOOTH, Color = SKIN,
+			Shape = Enum.PartType.Cylinder, Material = SMOOTH, Color = skin,
 			Size = Vector3.new(0.2, thick, thick), CFrame = along(start, dir, 0.1),
 		})
 		local sleeve = part({
 			Shape = Enum.PartType.Cylinder, Material = SMOOTH, Color = ev.c,
 			Size = Vector3.new(1.5, thick * 1.3, thick * 1.3), CFrame = along(start, dir, 0.75),
 		})
-		local fist = part({ Shape = Enum.PartType.Ball, Material = SMOOTH, Color = SKIN, Size = Vector3.one * 2.4, CFrame = CFrame.new(start) })
+		local fist = part({ Shape = Enum.PartType.Ball, Material = SMOOTH, Color = skin, Size = Vector3.one * 2.4 * size, CFrame = CFrame.new(start) })
 		local out = 0.09
 		tween(arm, out, { Size = Vector3.new(length, thick, thick), CFrame = along(start, dir, length / 2) }, Enum.EasingStyle.Linear)
 		tween(fist, out, { CFrame = CFrame.new(start + dir * length) }, Enum.EasingStyle.Linear)
 		task.delay(out, function()
 			local tip = start + dir * length
-			shockwave(tip, 3, WHITE, 0.2)
+			shockwave(tip, 3 * size, WHITE, 0.2)
 			burst(tip, ev.c, 8, { size = 1.2, speed = 16 })
 			local back = 0.12
 			tween(arm, back, { Size = Vector3.new(0.2, thick, thick), CFrame = along(start, dir, 0.1) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
@@ -2183,7 +2444,7 @@ function handlers.punch(ev)
 	end)
 end
 
--- Zoro: three sword arcs at different heights.
+-- Sword or kick arcs sweeping in front (several lines for Zoro's three swords).
 function handlers.slash(ev)
 	local radius = ev.r * 0.75
 	for j = 1, ev.arcs do
@@ -2193,23 +2454,30 @@ function handlers.slash(ev)
 	showHits(ev.hits, ev.c)
 end
 
--- Nami: a storm cloud strikes the first enemy, then lightning chains on.
+-- Lightning that jumps from enemy to enemy; Nami's starts from a storm cloud.
 function handlers.lightning(ev)
 	local points = ev.pts
 	if #points == 0 then
 		return
 	end
 	local first = points[1]
-	local cloud = first + Vector3.new(0, 22, 0)
-	for _ = 1, 5 do
-		local puff = part({
-			Shape = Enum.PartType.Ball, Material = SMOOTH, Color = Color3.fromRGB(70, 70, 90), Transparency = 0.15,
-			Size = Vector3.one * (5 + math.random() * 3),
-			Position = cloud + Vector3.new(math.random(-5, 5), math.random() * 1.5, math.random(-5, 5)),
-		})
-		fadeOut(puff, 0.7)
+	if ev.cloud then
+		local cloud = first + Vector3.new(0, 22, 0)
+		for _ = 1, 5 do
+			local puff = part({
+				Shape = Enum.PartType.Ball, Material = SMOOTH, Color = Color3.fromRGB(70, 70, 90), Transparency = 0.15,
+				Size = Vector3.one * (5 + math.random() * 3),
+				Position = cloud + Vector3.new(math.random(-5, 5), math.random() * 1.5, math.random(-5, 5)),
+			})
+			fadeOut(puff, 0.7)
+		end
+		bolt(cloud, first, ev.c, 0.7)
+	else
+		local root = rootOf(ev.p)
+		if root then
+			bolt(root.Position, first, ev.c, 0.45)
+		end
 	end
-	bolt(cloud, first, ev.c, 0.7)
 	flashLight(first, ev.c, 18, 0.3)
 	for i = 1, #points - 1 do
 		task.delay(i * 0.04, function()
@@ -2220,20 +2488,68 @@ function handlers.lightning(ev)
 	showHits(ev.hits, ev.c)
 end
 
--- Ace: flying fireballs. The server says where each one explodes ("boom").
+-- Arms that sprout from the ground (Robin). Returns nothing; parts clean themselves up.
+local function sproutArms(ground, spread, count, scale, color)
+	for i = 1, count do
+		local a = i / count * 2 * math.pi + math.random()
+		local d = math.random() * spread
+		local base = CFrame.new(ground + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d))
+			* CFrame.Angles(math.rad(math.random(-20, 20)), 0, math.rad(math.random(-20, 20)))
+		local height = (3.5 + math.random() * 2) * scale
+		local width = 0.7 * scale
+		local arm = part({ Material = SMOOTH, Color = SKIN, Size = Vector3.new(width, 0.1, width), CFrame = base })
+		local cuff = part({ Color = color, Size = Vector3.new(width * 1.4, 0.5 * scale, width * 1.4), CFrame = base * CFrame.new(0, 0.25 * scale, 0) })
+		local hand = part({ Shape = Enum.PartType.Ball, Material = SMOOTH, Color = SKIN, Size = Vector3.one * width * 1.7, CFrame = base })
+		tween(arm, 0.14, { Size = Vector3.new(width, height, width), CFrame = base * CFrame.new(0, height / 2, 0) }, Enum.EasingStyle.Back)
+		tween(hand, 0.14, { CFrame = base * CFrame.new(0, height, 0) }, Enum.EasingStyle.Back)
+		task.delay(0.45, function()
+			for _, p in { arm, cuff, hand } do
+				fadeOut(p, 0.2)
+			end
+		end)
+	end
+end
+
+local PETALS = Color3.fromRGB(255, 160, 220)
+
+-- A patch of arms bursting up with petals.
+function handlers.hands(ev)
+	local ground = groundAt(ev.pos or ev.o)
+	local scale = math.min(ev.r / 7, 1.6)
+	shockwave(ground + Vector3.new(0, 0.15, 0), ev.r, ev.c, 0.5)
+	sproutArms(ground, ev.r * 0.6, ev.r > 8 and 7 or 4, scale, ev.c)
+	burst(ground + Vector3.new(0, 2, 0), PETALS, 16, { size = 1.2, speed = 8, life = 0.6, gravity = Vector3.new(0, -6, 0) })
+	showHits(ev.hits, ev.c)
+end
+
+-- Arms grabbing one enemy after another.
+function handlers.grab(ev)
+	for i, point in ev.pts do
+		task.delay((i - 1) * 0.06, function()
+			local ground = groundAt(point)
+			sproutArms(ground, 1, 2, 0.7, ev.c)
+			burst(ground + Vector3.new(0, 2, 0), PETALS, 6, { size = 1, speed = 6, life = 0.5 })
+		end)
+	end
+	showHits(ev.hits, ev.c)
+end
+
+-- Projectiles: fireballs or glowing orbs. The server says where each one bursts ("boom").
 local shots = {}
 
 function handlers.shot(ev)
 	local size = ev.size or 2
 	local ball = part({ Shape = Enum.PartType.Ball, Color = ev.c, Transparency = 0.1, Size = Vector3.one * size, Position = ev.o })
-	local fire = Instance.new("Fire")
-	fire.Color, fire.SecondaryColor = ev.c, Color3.fromRGB(255, 220, 90)
-	fire.Size, fire.Heat = size * 2, 0
-	fire.Parent = ball
+	if ev.fire then
+		local flames = Instance.new("Fire")
+		flames.Color, flames.SecondaryColor = ev.c, Color3.fromRGB(255, 220, 90)
+		flames.Size, flames.Heat = size * 2, 0
+		flames.Parent = ball
+		ignite(ev.p, "RightHand", ev.c, 0.3)
+	end
 	addTrail(ball, ev.c, size, 0.25)
 	shots[ev.id] = { part = ball, pos = ev.o, dir = ev.d, left = ev.len, speed = ev.speed }
 	Debris:AddItem(ball, ev.len / ev.speed + 1)
-	ignite(ev.p, "RightHand", ev.c, 0.3)
 end
 
 function handlers.boom(ev)
@@ -2242,22 +2558,27 @@ function handlers.boom(ev)
 		shot.part:Destroy()
 		shots[ev.id] = nil
 	end
-	local explosion = Instance.new("Explosion")
-	explosion.Position = ev.pos
-	explosion.BlastRadius = ev.r
-	explosion.BlastPressure = 0 -- visual only
-	explosion.DestroyJointRadiusPercent = 0
-	explosion.ExplosionType = Enum.ExplosionType.NoCraters
-	explosion.Parent = workspace
 	local sphere = part({ Shape = Enum.PartType.Ball, Color = ev.c, Transparency = 0.1, Size = Vector3.one * 2, Position = ev.pos })
 	fadeOut(sphere, 0.35, { Size = Vector3.one * ev.r * 2 })
-	burst(ev.pos, ev.c, 25, { texture = TEX_FIRE, size = 3, speed = ev.r * 2.5, life = 0.5 })
-	burst(ev.pos, Color3.fromRGB(90, 90, 90), 10, { texture = TEX_SMOKE, size = 4, speed = ev.r, life = 0.8, gravity = Vector3.new(0, 8, 0) })
+	if ev.fire then
+		local explosion = Instance.new("Explosion")
+		explosion.Position = ev.pos
+		explosion.BlastRadius = ev.r
+		explosion.BlastPressure = 0 -- visual only
+		explosion.DestroyJointRadiusPercent = 0
+		explosion.ExplosionType = Enum.ExplosionType.NoCraters
+		explosion.Parent = workspace
+		burst(ev.pos, ev.c, 25, { texture = TEX_FIRE, size = 3, speed = ev.r * 2.5, life = 0.5 })
+		burst(ev.pos, Color3.fromRGB(90, 90, 90), 10, { texture = TEX_SMOKE, size = 4, speed = ev.r, life = 0.8, gravity = Vector3.new(0, 8, 0) })
+	else
+		shockwave(groundAt(ev.pos) + Vector3.new(0, 0.2, 0), ev.r, ev.c, 0.35)
+		burst(ev.pos, ev.c, 20, { size = 1.5, speed = ev.r * 2, life = 0.45 })
+	end
 	flashLight(ev.pos, ev.c, ev.r * 2.5, 0.4)
 	showHits(ev.hits, ev.c)
 end
 
--- Sanji: a flaming spin kick around the player.
+-- Spin kick around the player; Sanji's burning kicks add flames.
 function handlers.kick(ev)
 	local root = rootOf(ev.p)
 	local center = root and root.Position or ev.o
@@ -2268,41 +2589,80 @@ function handlers.kick(ev)
 	for i = 1, 8 do
 		local a = i * math.pi / 4
 		local pos = ground + Vector3.new(math.cos(a) * ev.r * 0.8, 1, math.sin(a) * ev.r * 0.8)
-		burst(pos, ev.c, 4, { texture = TEX_FIRE, size = 2.5, speed = 3, life = 0.45, gravity = Vector3.new(0, 15, 0) })
+		if ev.fire then
+			burst(pos, ev.c, 4, { texture = TEX_FIRE, size = 2.5, speed = 3, life = 0.45, gravity = Vector3.new(0, 15, 0) })
+		else
+			burst(pos, ev.c, 3, { size = 1, speed = 6, life = 0.3 })
+		end
 	end
-	ignite(ev.p, "RightFoot", ev.c, 0.35)
+	if ev.fire then
+		ignite(ev.p, "RightFoot", ev.c, 0.35)
+	end
 	showHits(ev.hits, ev.c)
 end
 
--- Robin: arms sprout from the ground in a circle of petals.
-function handlers.hands(ev)
+-- Energy bursting out around the player (balloon, cyclone, fire fence, rumble ball...).
+function handlers.nova(ev)
+	local root = rootOf(ev.p)
+	local center = root and root.Position or ev.o
+	local ground = groundAt(center)
+	local sphere = part({ Shape = Enum.PartType.Ball, Material = Enum.Material.ForceField, Color = ev.c, Size = Vector3.one * 2, Position = center })
+	fadeOut(sphere, 0.4, { Size = Vector3.one * ev.r * 2 })
+	shockwave(ground + Vector3.new(0, 0.25, 0), ev.r, ev.c, 0.35)
+	burst(center, ev.c, 16, { size = 1.4, speed = ev.r * 2, life = 0.35 })
+	flashLight(center, ev.c, ev.r * 2, 0.25)
+	showHits(ev.hits, ev.c)
+end
+
+-- A column crashing down from the sky (giant fist, heel drop, fire pillar, thunder lance...).
+function handlers.strike(ev)
 	local ground = groundAt(ev.pos)
-	local scale = ev.r / 7
-	shockwave(ground + Vector3.new(0, 0.15, 0), ev.r, ev.c, 0.5)
-	local count = scale > 1.2 and 7 or 4
-	for i = 1, count do
-		local a = i / count * 2 * math.pi + math.random()
-		local d = math.random() * ev.r * 0.6
-		local base = CFrame.new(ground + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d))
-			* CFrame.Angles(math.rad(math.random(-20, 20)), 0, math.rad(math.random(-20, 20)))
-		local height = (3.5 + math.random() * 2) * scale
-		local width = 0.7 * scale
-		local arm = part({ Material = SMOOTH, Color = SKIN, Size = Vector3.new(width, 0.1, width), CFrame = base })
-		local cuff = part({ Color = ev.c, Size = Vector3.new(width * 1.4, 0.5 * scale, width * 1.4), CFrame = base * CFrame.new(0, 0.25 * scale, 0) })
-		local hand = part({ Shape = Enum.PartType.Ball, Material = SMOOTH, Color = SKIN, Size = Vector3.one * width * 1.7, CFrame = base })
-		tween(arm, 0.14, { Size = Vector3.new(width, height, width), CFrame = base * CFrame.new(0, height / 2, 0) }, Enum.EasingStyle.Back)
-		tween(hand, 0.14, { CFrame = base * CFrame.new(0, height, 0) }, Enum.EasingStyle.Back)
-		task.delay(0.45, function()
-			for _, p in { arm, cuff, hand } do
-				fadeOut(p, 0.2)
-			end
-		end)
-	end
-	burst(ground + Vector3.new(0, 2, 0), Color3.fromRGB(255, 160, 220), 16, { size = 1.2, speed = 8, life = 0.6, gravity = Vector3.new(0, -6, 0) })
+	local width = ev.r * 1.1
+	local column = part({
+		Shape = Enum.PartType.Cylinder, Color = ev.c, Transparency = 0.15,
+		Size = Vector3.new(60, width, width), CFrame = CFrame.new(ground + Vector3.new(0, 30, 0)) * UPRIGHT,
+	})
+	local core = part({
+		Shape = Enum.PartType.Cylinder, Color = WHITE,
+		Size = Vector3.new(60, width * 0.35, width * 0.35), CFrame = column.CFrame,
+	})
+	fadeOut(column, 0.35, { Size = Vector3.new(60, width * 0.2, width * 0.2) })
+	fadeOut(core, 0.2)
+	shockwave(ground + Vector3.new(0, 0.2, 0), ev.r * 1.3, ev.c, 0.4)
+	burst(ground + Vector3.new(0, 1, 0), ev.c, 14, { size = 2, speed = ev.r * 2, life = 0.4 })
+	flashLight(ground + Vector3.new(0, 3, 0), ev.c, ev.r * 3, 0.3)
 	showHits(ev.hits, ev.c)
 end
 
--- Chopper: fists circling the player (positions follow server time).
+-- A crescent wave flying down a line (sword waves, wind, petals, fire bullets...).
+function handlers.wave(ev)
+	task.delay(((ev.i or 1) - 1) * 0.06, function()
+		local root = rootOf(ev.p)
+		local start = root and root.Position or ev.o
+		local finish = start + ev.d * ev.len
+		local width = (ev.w or 3) * 1.6
+		local travel = ev.len / 90
+		local pieces = {}
+		for side = -1, 1 do
+			-- a center blade and two swept-back wings make the crescent
+			local offset = CFrame.new(side * width * 0.42, 0, math.abs(side) * width * 0.25) * CFrame.Angles(0, -side * math.rad(28), 0)
+			local blade = part({
+				Color = side == 0 and WHITE or ev.c, Transparency = side == 0 and 0 or 0.15,
+				Size = Vector3.new(side == 0 and width * 0.5 or width * 0.45, 0.3, 0.8),
+				CFrame = CFrame.lookAt(start, finish) * offset,
+			})
+			table.insert(pieces, { part = blade, offset = offset })
+		end
+		addTrail(pieces[2].part, ev.c, width, 0.2, "X")
+		for _, piece in pieces do
+			tween(piece.part, travel, { CFrame = CFrame.lookAt(finish, finish + ev.d) * piece.offset }, Enum.EasingStyle.Linear)
+			Debris:AddItem(piece.part, travel + 0.05)
+		end
+		showHits(ev.hits, ev.c)
+	end)
+end
+
+-- Things circling the player: fists, clouds, fireflies, petals (positions follow server time).
 local orbits = {} -- [player] = { [weaponName] = { parts = {}, r = radius } }
 
 local function clearOrbits(player)
@@ -2500,9 +2860,9 @@ end
 
 local function buildSlots(root)
 	local column = Theme.new("Frame", {
-		Size = UDim2.fromOffset(220, 420), Position = UDim2.new(0, 14, 0.5, -190), BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(220, 470), Position = UDim2.new(0, 14, 0.5, -215), BackgroundTransparency = 1,
 	}, root)
-	Theme.new("UIListLayout", { Padding = UDim.new(0, 5), SortOrder = Enum.SortOrder.LayoutOrder }, column)
+	Theme.new("UIListLayout", { Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder }, column)
 	ui.weaponSlots, ui.passiveSlots = {}, {}
 
 	local order = 0
@@ -2512,18 +2872,18 @@ local function buildSlots(root)
 	end
 	local function slot()
 		order += 1
-		local frame = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Theme.CARD, BackgroundTransparency = 0.15, LayoutOrder = order }, column)
+		local frame = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 30), BackgroundColor3 = Theme.CARD, BackgroundTransparency = 0.15, LayoutOrder = order }, column)
 		Theme.corner(frame, 8)
 		Theme.stroke(frame, Color3.new(0, 0, 0), 1, 0.6)
 		local stripe = Theme.new("Frame", { Size = UDim2.new(0, 6, 1, -8), Position = UDim2.fromOffset(4, 4), BackgroundColor3 = Theme.MUTED, BorderSizePixel = 0 }, frame)
 		Theme.corner(stripe, 3)
-		local name = Theme.text({ Size = UDim2.new(1, -70, 1, -10), Position = UDim2.fromOffset(16, 5), TextXAlignment = Enum.TextXAlignment.Left, MaxSize = 16 }, frame)
-		local level = Theme.title({ Size = UDim2.new(0, 50, 1, -12), Position = UDim2.new(1, -56, 0, 6), TextXAlignment = Enum.TextXAlignment.Right, MaxSize = 18 }, frame)
-		return { stripe = stripe, name = name, level = level }
+		local name = Theme.text({ Size = UDim2.new(1, -70, 1, -10), Position = UDim2.fromOffset(16, 5), TextXAlignment = Enum.TextXAlignment.Left, MaxSize = 15 }, frame)
+		local level = Theme.title({ Size = UDim2.new(0, 50, 1, -10), Position = UDim2.new(1, -56, 0, 5), TextXAlignment = Enum.TextXAlignment.Right, MaxSize = 16 }, frame)
+		return { frame = frame, stripe = stripe, name = name, level = level }
 	end
 
 	header("SKILLS")
-	for i = 1, Config.WEAPON_SLOTS do
+	for i = 1, Config.WEAPON_SLOTS_MAX do
 		ui.weaponSlots[i] = slot()
 	end
 	header("PASSIVES")
@@ -2532,7 +2892,15 @@ local function buildSlots(root)
 	end
 end
 
-local function fillSlot(slot, info, isWeapon)
+local function fillSlot(slot, info, isWeapon, locked)
+	slot.frame.BackgroundTransparency = locked and 0.6 or 0.15
+	if locked then
+		slot.stripe.BackgroundColor3 = Color3.fromRGB(45, 48, 65)
+		slot.name.Text = "Buy slot in Shop"
+		slot.name.TextColor3 = Color3.fromRGB(110, 115, 140)
+		slot.level.Text = "🔒"
+		return
+	end
 	if not info then
 		slot.stripe.BackgroundColor3 = Color3.fromRGB(70, 75, 100)
 		slot.name.Text = "Empty"
@@ -2702,7 +3070,7 @@ function Hud.init(gui, cb)
 	buildSlots(root)
 	buildLevelUp(gui)
 	buildBanners(gui)
-	Hud.setStats({ level = 1, xp = 0, need = 1, kills = 0, weapons = {}, passives = {} })
+	Hud.setStats({ level = 1, xp = 0, need = 1, kills = 0, weapons = {}, passives = {}, slots = Config.WEAPON_SLOTS_START })
 end
 
 function Hud.setVisible(visible)
@@ -2725,8 +3093,9 @@ function Hud.setStats(st)
 	ui.xpText.Text = string.format("%d / %d XP", st.xp, st.need)
 	ui.level.Text = tostring(st.level)
 	ui.kills.Text = "💀 " .. Theme.comma(st.kills)
+	local unlocked = st.slots or Config.WEAPON_SLOTS_START
 	for i, slot in ui.weaponSlots do
-		fillSlot(slot, st.weapons[i], true)
+		fillSlot(slot, st.weapons[i], true, i > unlocked)
 	end
 	for i, slot in ui.passiveSlots do
 		fillSlot(slot, st.passives[i], false)
@@ -2847,14 +3216,21 @@ end
 
 local function buildCrew(root)
 	local panel = Theme.panel({
-		Name = "Crew", Size = UDim2.fromOffset(740, 520), Position = UDim2.new(0.5, -370, 0.5, -250),
+		Name = "Crew", Size = UDim2.fromOffset(740, 600), Position = UDim2.new(0.5, -370, 0.5, -300),
 		Visible = false, ZIndex = 10,
 	}, root)
 	panels.crew = { frame = panel, scale = Theme.new("UIScale", {}, panel) }
 	Theme.title({ Size = UDim2.new(1, -120, 0, 50), Position = UDim2.fromOffset(24, 14), Text = "CHOOSE YOUR PIRATE", TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 11 }, panel)
 	closeButton(panel, "crew")
 
-	local grid = Theme.new("Frame", { Size = UDim2.new(1, -40, 1, -90), Position = UDim2.fromOffset(20, 76), BackgroundTransparency = 1, ZIndex = 11 }, panel)
+	local grid = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 430), Position = UDim2.fromOffset(20, 76), BackgroundTransparency = 1, ZIndex = 11 }, panel)
+	local details = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 74), Position = UDim2.new(0, 20, 1, -88), BackgroundColor3 = Theme.CARD, ZIndex = 11 }, panel)
+	Theme.corner(details, 12)
+	ui.detailsTitle = Theme.title({ Size = UDim2.new(1, -24, 0, 24), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12 }, details)
+	ui.detailsSkills = Theme.text({
+		Size = UDim2.new(1, -24, 0, 36), Position = UDim2.fromOffset(12, 32), TextXAlignment = Enum.TextXAlignment.Left,
+		TextWrapped = true, TextColor3 = Theme.TEXT, ZIndex = 12, MaxSize = 16,
+	}, details)
 	Theme.new("UIGridLayout", {
 		CellSize = UDim2.fromOffset(166, 206), CellPadding = UDim2.fromOffset(12, 12),
 		HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder,
@@ -2888,9 +3264,11 @@ local function buildCrew(root)
 
 		card.MouseEnter:Connect(function()
 			Theme.tween(scale, 0.12, { Scale = 1.05 })
+			Lobby.showSkills(name)
 		end)
 		card.MouseLeave:Connect(function()
 			Theme.tween(scale, 0.12, { Scale = 1 })
+			Lobby.showSkills(meta.class)
 		end)
 		card.Activated:Connect(function()
 			callbacks.selectClass(name)
@@ -2903,7 +3281,7 @@ end
 
 local function buildShop(root)
 	local panel = Theme.panel({
-		Name = "Shop", Size = UDim2.fromOffset(600, 480), Position = UDim2.new(0.5, -300, 0.5, -230),
+		Name = "Shop", Size = UDim2.fromOffset(600, 560), Position = UDim2.new(0.5, -300, 0.5, -280),
 		Visible = false, ZIndex = 10,
 	}, root)
 	panels.shop = { frame = panel, scale = Theme.new("UIScale", {}, panel) }
@@ -3017,8 +3395,24 @@ function Lobby.toggle(name, open)
 	panel.frame.Visible = open
 end
 
+-- Lists a character's 6 skills under the character cards.
+function Lobby.showSkills(name)
+	local class = Config.Classes[name]
+	if not class then
+		return
+	end
+	local names = {}
+	for _, key in class.skills do
+		table.insert(names, Config.Weapons[key].name)
+	end
+	ui.detailsTitle.Text = name:upper() .. "'S 6 SKILLS"
+	ui.detailsTitle.TextColor3 = class.color:Lerp(Color3.new(1, 1, 1), 0.3)
+	ui.detailsSkills.Text = table.concat(names, "  -  ")
+end
+
 function Lobby.setMeta(data)
 	meta = data
+	Lobby.showSkills(data.class)
 	ui.gold.Text = "💰 " .. Theme.comma(data.gold)
 	ui.crewName.Text = data.class and "Playing as " .. data.class or ""
 	for name, card in classCards do

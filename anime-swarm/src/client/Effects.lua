@@ -1,5 +1,6 @@
--- Draws every skill effect on this client: stretching arms, sword arcs, lightning,
--- fireballs, fire kicks, sprouting arms, orbiting fists, hit sparks and damage numbers.
+-- Draws every skill effect on this client: stretching arms, sword arcs, lightning, projectiles,
+-- spin kicks, energy bursts, sky strikes, flying waves, sprouting arms, orbiting objects,
+-- hit sparks and damage numbers.
 -- The server sends batches of events (see server/Fx.lua); nothing here affects gameplay.
 local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
@@ -22,6 +23,7 @@ local TEX_SPARK = "rbxasset://textures/particles/sparkles_main.dds"
 local TEX_FIRE = "rbxasset://textures/particles/fire_main.dds"
 local TEX_SMOKE = "rbxasset://textures/particles/smoke_main.dds"
 local SMOOTH = Enum.Material.SmoothPlastic
+local UPRIGHT = CFrame.Angles(0, 0, math.pi / 2) -- stands a cylinder's length (X axis) upright
 
 -- helpers -------------------------------------------------------------------
 
@@ -137,12 +139,13 @@ local function ignite(player, partName, color, time)
 end
 
 -- Attaches a glowing trail to a moving part.
-local function addTrail(p, color, width, life)
+local function addTrail(p, color, width, life, axis)
+	local offset = axis == "X" and Vector3.new(width / 2, 0, 0) or Vector3.new(0, width / 2, 0)
 	local a0 = Instance.new("Attachment")
-	a0.Position = Vector3.new(0, width / 2, 0)
+	a0.Position = offset
 	a0.Parent = p
 	local a1 = Instance.new("Attachment")
-	a1.Position = Vector3.new(0, -width / 2, 0)
+	a1.Position = -offset
 	a1.Parent = p
 	local trail = Instance.new("Trail")
 	trail.Attachment0, trail.Attachment1 = a0, a1
@@ -252,27 +255,30 @@ end
 
 -- Handlers: one per effect kind the server sends ---------------------------------
 
--- Luffy: the arm stretches out to full range and snaps back.
+-- Stretching punch (Luffy, Chopper): the arm shoots out to full range and snaps back.
 function handlers.punch(ev)
 	task.delay(((ev.i or 1) - 1) * 0.035, function()
 		local root = rootOf(ev.p)
 		local start = (root and root.Position or ev.o) + Vector3.new(0, 0.5, 0)
-		local dir, length, thick = ev.d, ev.len, 1.1
+		local dir, length = ev.d, ev.len
+		local size = (ev.w or 3) / 3
+		local thick = 1.1 * size
+		local skin = ev.arm or SKIN
 		local arm = part({
-			Shape = Enum.PartType.Cylinder, Material = SMOOTH, Color = SKIN,
+			Shape = Enum.PartType.Cylinder, Material = SMOOTH, Color = skin,
 			Size = Vector3.new(0.2, thick, thick), CFrame = along(start, dir, 0.1),
 		})
 		local sleeve = part({
 			Shape = Enum.PartType.Cylinder, Material = SMOOTH, Color = ev.c,
 			Size = Vector3.new(1.5, thick * 1.3, thick * 1.3), CFrame = along(start, dir, 0.75),
 		})
-		local fist = part({ Shape = Enum.PartType.Ball, Material = SMOOTH, Color = SKIN, Size = Vector3.one * 2.4, CFrame = CFrame.new(start) })
+		local fist = part({ Shape = Enum.PartType.Ball, Material = SMOOTH, Color = skin, Size = Vector3.one * 2.4 * size, CFrame = CFrame.new(start) })
 		local out = 0.09
 		tween(arm, out, { Size = Vector3.new(length, thick, thick), CFrame = along(start, dir, length / 2) }, Enum.EasingStyle.Linear)
 		tween(fist, out, { CFrame = CFrame.new(start + dir * length) }, Enum.EasingStyle.Linear)
 		task.delay(out, function()
 			local tip = start + dir * length
-			shockwave(tip, 3, WHITE, 0.2)
+			shockwave(tip, 3 * size, WHITE, 0.2)
 			burst(tip, ev.c, 8, { size = 1.2, speed = 16 })
 			local back = 0.12
 			tween(arm, back, { Size = Vector3.new(0.2, thick, thick), CFrame = along(start, dir, 0.1) }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
@@ -285,7 +291,7 @@ function handlers.punch(ev)
 	end)
 end
 
--- Zoro: three sword arcs at different heights.
+-- Sword or kick arcs sweeping in front (several lines for Zoro's three swords).
 function handlers.slash(ev)
 	local radius = ev.r * 0.75
 	for j = 1, ev.arcs do
@@ -295,23 +301,30 @@ function handlers.slash(ev)
 	showHits(ev.hits, ev.c)
 end
 
--- Nami: a storm cloud strikes the first enemy, then lightning chains on.
+-- Lightning that jumps from enemy to enemy; Nami's starts from a storm cloud.
 function handlers.lightning(ev)
 	local points = ev.pts
 	if #points == 0 then
 		return
 	end
 	local first = points[1]
-	local cloud = first + Vector3.new(0, 22, 0)
-	for _ = 1, 5 do
-		local puff = part({
-			Shape = Enum.PartType.Ball, Material = SMOOTH, Color = Color3.fromRGB(70, 70, 90), Transparency = 0.15,
-			Size = Vector3.one * (5 + math.random() * 3),
-			Position = cloud + Vector3.new(math.random(-5, 5), math.random() * 1.5, math.random(-5, 5)),
-		})
-		fadeOut(puff, 0.7)
+	if ev.cloud then
+		local cloud = first + Vector3.new(0, 22, 0)
+		for _ = 1, 5 do
+			local puff = part({
+				Shape = Enum.PartType.Ball, Material = SMOOTH, Color = Color3.fromRGB(70, 70, 90), Transparency = 0.15,
+				Size = Vector3.one * (5 + math.random() * 3),
+				Position = cloud + Vector3.new(math.random(-5, 5), math.random() * 1.5, math.random(-5, 5)),
+			})
+			fadeOut(puff, 0.7)
+		end
+		bolt(cloud, first, ev.c, 0.7)
+	else
+		local root = rootOf(ev.p)
+		if root then
+			bolt(root.Position, first, ev.c, 0.45)
+		end
 	end
-	bolt(cloud, first, ev.c, 0.7)
 	flashLight(first, ev.c, 18, 0.3)
 	for i = 1, #points - 1 do
 		task.delay(i * 0.04, function()
@@ -322,20 +335,68 @@ function handlers.lightning(ev)
 	showHits(ev.hits, ev.c)
 end
 
--- Ace: flying fireballs. The server says where each one explodes ("boom").
+-- Arms that sprout from the ground (Robin). Returns nothing; parts clean themselves up.
+local function sproutArms(ground, spread, count, scale, color)
+	for i = 1, count do
+		local a = i / count * 2 * math.pi + math.random()
+		local d = math.random() * spread
+		local base = CFrame.new(ground + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d))
+			* CFrame.Angles(math.rad(math.random(-20, 20)), 0, math.rad(math.random(-20, 20)))
+		local height = (3.5 + math.random() * 2) * scale
+		local width = 0.7 * scale
+		local arm = part({ Material = SMOOTH, Color = SKIN, Size = Vector3.new(width, 0.1, width), CFrame = base })
+		local cuff = part({ Color = color, Size = Vector3.new(width * 1.4, 0.5 * scale, width * 1.4), CFrame = base * CFrame.new(0, 0.25 * scale, 0) })
+		local hand = part({ Shape = Enum.PartType.Ball, Material = SMOOTH, Color = SKIN, Size = Vector3.one * width * 1.7, CFrame = base })
+		tween(arm, 0.14, { Size = Vector3.new(width, height, width), CFrame = base * CFrame.new(0, height / 2, 0) }, Enum.EasingStyle.Back)
+		tween(hand, 0.14, { CFrame = base * CFrame.new(0, height, 0) }, Enum.EasingStyle.Back)
+		task.delay(0.45, function()
+			for _, p in { arm, cuff, hand } do
+				fadeOut(p, 0.2)
+			end
+		end)
+	end
+end
+
+local PETALS = Color3.fromRGB(255, 160, 220)
+
+-- A patch of arms bursting up with petals.
+function handlers.hands(ev)
+	local ground = groundAt(ev.pos or ev.o)
+	local scale = math.min(ev.r / 7, 1.6)
+	shockwave(ground + Vector3.new(0, 0.15, 0), ev.r, ev.c, 0.5)
+	sproutArms(ground, ev.r * 0.6, ev.r > 8 and 7 or 4, scale, ev.c)
+	burst(ground + Vector3.new(0, 2, 0), PETALS, 16, { size = 1.2, speed = 8, life = 0.6, gravity = Vector3.new(0, -6, 0) })
+	showHits(ev.hits, ev.c)
+end
+
+-- Arms grabbing one enemy after another.
+function handlers.grab(ev)
+	for i, point in ev.pts do
+		task.delay((i - 1) * 0.06, function()
+			local ground = groundAt(point)
+			sproutArms(ground, 1, 2, 0.7, ev.c)
+			burst(ground + Vector3.new(0, 2, 0), PETALS, 6, { size = 1, speed = 6, life = 0.5 })
+		end)
+	end
+	showHits(ev.hits, ev.c)
+end
+
+-- Projectiles: fireballs or glowing orbs. The server says where each one bursts ("boom").
 local shots = {}
 
 function handlers.shot(ev)
 	local size = ev.size or 2
 	local ball = part({ Shape = Enum.PartType.Ball, Color = ev.c, Transparency = 0.1, Size = Vector3.one * size, Position = ev.o })
-	local fire = Instance.new("Fire")
-	fire.Color, fire.SecondaryColor = ev.c, Color3.fromRGB(255, 220, 90)
-	fire.Size, fire.Heat = size * 2, 0
-	fire.Parent = ball
+	if ev.fire then
+		local flames = Instance.new("Fire")
+		flames.Color, flames.SecondaryColor = ev.c, Color3.fromRGB(255, 220, 90)
+		flames.Size, flames.Heat = size * 2, 0
+		flames.Parent = ball
+		ignite(ev.p, "RightHand", ev.c, 0.3)
+	end
 	addTrail(ball, ev.c, size, 0.25)
 	shots[ev.id] = { part = ball, pos = ev.o, dir = ev.d, left = ev.len, speed = ev.speed }
 	Debris:AddItem(ball, ev.len / ev.speed + 1)
-	ignite(ev.p, "RightHand", ev.c, 0.3)
 end
 
 function handlers.boom(ev)
@@ -344,22 +405,27 @@ function handlers.boom(ev)
 		shot.part:Destroy()
 		shots[ev.id] = nil
 	end
-	local explosion = Instance.new("Explosion")
-	explosion.Position = ev.pos
-	explosion.BlastRadius = ev.r
-	explosion.BlastPressure = 0 -- visual only
-	explosion.DestroyJointRadiusPercent = 0
-	explosion.ExplosionType = Enum.ExplosionType.NoCraters
-	explosion.Parent = workspace
 	local sphere = part({ Shape = Enum.PartType.Ball, Color = ev.c, Transparency = 0.1, Size = Vector3.one * 2, Position = ev.pos })
 	fadeOut(sphere, 0.35, { Size = Vector3.one * ev.r * 2 })
-	burst(ev.pos, ev.c, 25, { texture = TEX_FIRE, size = 3, speed = ev.r * 2.5, life = 0.5 })
-	burst(ev.pos, Color3.fromRGB(90, 90, 90), 10, { texture = TEX_SMOKE, size = 4, speed = ev.r, life = 0.8, gravity = Vector3.new(0, 8, 0) })
+	if ev.fire then
+		local explosion = Instance.new("Explosion")
+		explosion.Position = ev.pos
+		explosion.BlastRadius = ev.r
+		explosion.BlastPressure = 0 -- visual only
+		explosion.DestroyJointRadiusPercent = 0
+		explosion.ExplosionType = Enum.ExplosionType.NoCraters
+		explosion.Parent = workspace
+		burst(ev.pos, ev.c, 25, { texture = TEX_FIRE, size = 3, speed = ev.r * 2.5, life = 0.5 })
+		burst(ev.pos, Color3.fromRGB(90, 90, 90), 10, { texture = TEX_SMOKE, size = 4, speed = ev.r, life = 0.8, gravity = Vector3.new(0, 8, 0) })
+	else
+		shockwave(groundAt(ev.pos) + Vector3.new(0, 0.2, 0), ev.r, ev.c, 0.35)
+		burst(ev.pos, ev.c, 20, { size = 1.5, speed = ev.r * 2, life = 0.45 })
+	end
 	flashLight(ev.pos, ev.c, ev.r * 2.5, 0.4)
 	showHits(ev.hits, ev.c)
 end
 
--- Sanji: a flaming spin kick around the player.
+-- Spin kick around the player; Sanji's burning kicks add flames.
 function handlers.kick(ev)
 	local root = rootOf(ev.p)
 	local center = root and root.Position or ev.o
@@ -370,41 +436,80 @@ function handlers.kick(ev)
 	for i = 1, 8 do
 		local a = i * math.pi / 4
 		local pos = ground + Vector3.new(math.cos(a) * ev.r * 0.8, 1, math.sin(a) * ev.r * 0.8)
-		burst(pos, ev.c, 4, { texture = TEX_FIRE, size = 2.5, speed = 3, life = 0.45, gravity = Vector3.new(0, 15, 0) })
+		if ev.fire then
+			burst(pos, ev.c, 4, { texture = TEX_FIRE, size = 2.5, speed = 3, life = 0.45, gravity = Vector3.new(0, 15, 0) })
+		else
+			burst(pos, ev.c, 3, { size = 1, speed = 6, life = 0.3 })
+		end
 	end
-	ignite(ev.p, "RightFoot", ev.c, 0.35)
+	if ev.fire then
+		ignite(ev.p, "RightFoot", ev.c, 0.35)
+	end
 	showHits(ev.hits, ev.c)
 end
 
--- Robin: arms sprout from the ground in a circle of petals.
-function handlers.hands(ev)
+-- Energy bursting out around the player (balloon, cyclone, fire fence, rumble ball...).
+function handlers.nova(ev)
+	local root = rootOf(ev.p)
+	local center = root and root.Position or ev.o
+	local ground = groundAt(center)
+	local sphere = part({ Shape = Enum.PartType.Ball, Material = Enum.Material.ForceField, Color = ev.c, Size = Vector3.one * 2, Position = center })
+	fadeOut(sphere, 0.4, { Size = Vector3.one * ev.r * 2 })
+	shockwave(ground + Vector3.new(0, 0.25, 0), ev.r, ev.c, 0.35)
+	burst(center, ev.c, 16, { size = 1.4, speed = ev.r * 2, life = 0.35 })
+	flashLight(center, ev.c, ev.r * 2, 0.25)
+	showHits(ev.hits, ev.c)
+end
+
+-- A column crashing down from the sky (giant fist, heel drop, fire pillar, thunder lance...).
+function handlers.strike(ev)
 	local ground = groundAt(ev.pos)
-	local scale = ev.r / 7
-	shockwave(ground + Vector3.new(0, 0.15, 0), ev.r, ev.c, 0.5)
-	local count = scale > 1.2 and 7 or 4
-	for i = 1, count do
-		local a = i / count * 2 * math.pi + math.random()
-		local d = math.random() * ev.r * 0.6
-		local base = CFrame.new(ground + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d))
-			* CFrame.Angles(math.rad(math.random(-20, 20)), 0, math.rad(math.random(-20, 20)))
-		local height = (3.5 + math.random() * 2) * scale
-		local width = 0.7 * scale
-		local arm = part({ Material = SMOOTH, Color = SKIN, Size = Vector3.new(width, 0.1, width), CFrame = base })
-		local cuff = part({ Color = ev.c, Size = Vector3.new(width * 1.4, 0.5 * scale, width * 1.4), CFrame = base * CFrame.new(0, 0.25 * scale, 0) })
-		local hand = part({ Shape = Enum.PartType.Ball, Material = SMOOTH, Color = SKIN, Size = Vector3.one * width * 1.7, CFrame = base })
-		tween(arm, 0.14, { Size = Vector3.new(width, height, width), CFrame = base * CFrame.new(0, height / 2, 0) }, Enum.EasingStyle.Back)
-		tween(hand, 0.14, { CFrame = base * CFrame.new(0, height, 0) }, Enum.EasingStyle.Back)
-		task.delay(0.45, function()
-			for _, p in { arm, cuff, hand } do
-				fadeOut(p, 0.2)
-			end
-		end)
-	end
-	burst(ground + Vector3.new(0, 2, 0), Color3.fromRGB(255, 160, 220), 16, { size = 1.2, speed = 8, life = 0.6, gravity = Vector3.new(0, -6, 0) })
+	local width = ev.r * 1.1
+	local column = part({
+		Shape = Enum.PartType.Cylinder, Color = ev.c, Transparency = 0.15,
+		Size = Vector3.new(60, width, width), CFrame = CFrame.new(ground + Vector3.new(0, 30, 0)) * UPRIGHT,
+	})
+	local core = part({
+		Shape = Enum.PartType.Cylinder, Color = WHITE,
+		Size = Vector3.new(60, width * 0.35, width * 0.35), CFrame = column.CFrame,
+	})
+	fadeOut(column, 0.35, { Size = Vector3.new(60, width * 0.2, width * 0.2) })
+	fadeOut(core, 0.2)
+	shockwave(ground + Vector3.new(0, 0.2, 0), ev.r * 1.3, ev.c, 0.4)
+	burst(ground + Vector3.new(0, 1, 0), ev.c, 14, { size = 2, speed = ev.r * 2, life = 0.4 })
+	flashLight(ground + Vector3.new(0, 3, 0), ev.c, ev.r * 3, 0.3)
 	showHits(ev.hits, ev.c)
 end
 
--- Chopper: fists circling the player (positions follow server time).
+-- A crescent wave flying down a line (sword waves, wind, petals, fire bullets...).
+function handlers.wave(ev)
+	task.delay(((ev.i or 1) - 1) * 0.06, function()
+		local root = rootOf(ev.p)
+		local start = root and root.Position or ev.o
+		local finish = start + ev.d * ev.len
+		local width = (ev.w or 3) * 1.6
+		local travel = ev.len / 90
+		local pieces = {}
+		for side = -1, 1 do
+			-- a center blade and two swept-back wings make the crescent
+			local offset = CFrame.new(side * width * 0.42, 0, math.abs(side) * width * 0.25) * CFrame.Angles(0, -side * math.rad(28), 0)
+			local blade = part({
+				Color = side == 0 and WHITE or ev.c, Transparency = side == 0 and 0 or 0.15,
+				Size = Vector3.new(side == 0 and width * 0.5 or width * 0.45, 0.3, 0.8),
+				CFrame = CFrame.lookAt(start, finish) * offset,
+			})
+			table.insert(pieces, { part = blade, offset = offset })
+		end
+		addTrail(pieces[2].part, ev.c, width, 0.2, "X")
+		for _, piece in pieces do
+			tween(piece.part, travel, { CFrame = CFrame.lookAt(finish, finish + ev.d) * piece.offset }, Enum.EasingStyle.Linear)
+			Debris:AddItem(piece.part, travel + 0.05)
+		end
+		showHits(ev.hits, ev.c)
+	end)
+end
+
+-- Things circling the player: fists, clouds, fireflies, petals (positions follow server time).
 local orbits = {} -- [player] = { [weaponName] = { parts = {}, r = radius } }
 
 local function clearOrbits(player)

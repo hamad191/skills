@@ -53,6 +53,11 @@ function Progression.magnet(s)
 	return Config.BASE_MAGNET * (1 + Progression.bonus(s, "magnet"))
 end
 
+-- Skill slots: a few to start, more from the "Skill Slot" upgrade.
+function Progression.slots(s)
+	return math.min(Config.WEAPON_SLOTS_MAX, Config.WEAPON_SLOTS_START + math.floor(Progression.bonus(s, "slots")))
+end
+
 function Progression.xpNeeded(level)
 	return 5 + level * 3
 end
@@ -66,9 +71,12 @@ function Progression.all()
 end
 
 function Progression.start(player, className, meta)
-	local class = Config.Classes[className] or Config.Classes[Config.DEFAULT_CLASS]
+	if not Config.Classes[className] then
+		className = Config.DEFAULT_CLASS
+	end
+	local class = Config.Classes[className]
 	local s = {
-		level = 1, xp = 0, kills = 0, bonusGold = 0, dead = false,
+		class = className, level = 1, xp = 0, kills = 0, bonusGold = 0, dead = false,
 		weapons = { [class.weapon] = 1 }, passives = {}, timers = {},
 		classBonus = class.bonus, meta = meta, choices = nil, pending = 0,
 	}
@@ -113,7 +121,7 @@ function Progression.sync(player)
 	end
 	remotes.Stats:FireClient(player, {
 		level = s.level, xp = s.xp, need = Progression.xpNeeded(s.level),
-		kills = s.kills, weapons = weapons, passives = passives,
+		kills = s.kills, weapons = weapons, passives = passives, slots = Progression.slots(s),
 	})
 end
 
@@ -126,6 +134,25 @@ local function hasEvolutionOf(s, baseName)
 	return false
 end
 
+-- How likely each kind of card is. Crewmates' skills are rare so your own character's 6 come first.
+local WEIGHT = { upgrade = 4, ownSkill = 3, crewSkill = 0.15, passive = 2 }
+
+-- Removes and returns one entry, picked by weight.
+local function takeWeighted(pool)
+	local total = 0
+	for _, c in pool do
+		total += c.weight
+	end
+	local roll = math.random() * total
+	for i, c in pool do
+		roll -= c.weight
+		if roll <= 0 then
+			return table.remove(pool, i)
+		end
+	end
+	return table.remove(pool)
+end
+
 local function buildChoices(s)
 	local picks, pool = {}, {}
 	for name, level in s.weapons do
@@ -133,25 +160,26 @@ local function buildChoices(s)
 		if w.evolvesInto and level >= Config.WEAPON_MAX and (s.passives[w.evolveWith] or 0) >= Config.PASSIVE_MAX then
 			table.insert(picks, { type = "evolve", key = name })
 		elseif not w.evolved and level < Config.WEAPON_MAX then
-			table.insert(pool, { type = "weapon", key = name })
+			table.insert(pool, { type = "weapon", key = name, weight = WEIGHT.upgrade })
 		end
 	end
-	if count(s.weapons) < Config.WEAPON_SLOTS then
+	if count(s.weapons) < Progression.slots(s) then
 		for name, w in Config.Weapons do
 			if not w.evolved and not s.weapons[name] and not hasEvolutionOf(s, name) then
-				table.insert(pool, { type = "weapon", key = name })
+				local own = Config.SkillOwner[name] == s.class
+				table.insert(pool, { type = "weapon", key = name, weight = own and WEIGHT.ownSkill or WEIGHT.crewSkill })
 			end
 		end
 	end
 	for name, level in s.passives do
 		if level < Config.PASSIVE_MAX then
-			table.insert(pool, { type = "passive", key = name })
+			table.insert(pool, { type = "passive", key = name, weight = WEIGHT.passive })
 		end
 	end
 	if count(s.passives) < Config.PASSIVE_SLOTS then
 		for name in Config.Passives do
 			if not s.passives[name] then
-				table.insert(pool, { type = "passive", key = name })
+				table.insert(pool, { type = "passive", key = name, weight = WEIGHT.passive })
 			end
 		end
 	end
@@ -160,7 +188,7 @@ local function buildChoices(s)
 		table.remove(picks)
 	end
 	while #picks < Config.CHOICES and #pool > 0 do
-		table.insert(picks, table.remove(pool, math.random(#pool)))
+		table.insert(picks, takeWeighted(pool))
 	end
 	if #picks == 0 then
 		picks = { { type = "heal" }, { type = "gold" } }
@@ -172,10 +200,12 @@ local function describe(s, c)
 	if c.type == "weapon" then
 		local w = Config.Weapons[c.key]
 		local level = (s.weapons[c.key] or 0) + 1
+		local owner = Config.SkillOwner[c.key]
+		local crew = level == 1 and owner ~= s.class
 		return {
 			title = w.name, color = w.color, level = level, max = Config.WEAPON_MAX,
-			tag = level == 1 and "NEW SKILL" or "UPGRADE",
-			text = level == 1 and w.desc or "More damage, faster attacks, more hits.",
+			tag = crew and "CREW SKILL" or level == 1 and "NEW SKILL" or "UPGRADE",
+			text = crew and owner .. "'s skill: " .. w.desc or level == 1 and w.desc or "More damage, faster attacks, more hits.",
 		}
 	elseif c.type == "passive" then
 		local p = Config.Passives[c.key]
