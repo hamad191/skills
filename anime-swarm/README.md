@@ -1,10 +1,10 @@
 # Anime Swarm
 
-A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every weapon is an anime-style skill.
+A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every weapon is an anime skill and you play as One Piece characters.
 
 ## How it plays
 
-1. **Lobby:** pick a class and spend gold on permanent upgrades.
+1. **Lobby:** pick a character and spend gold on permanent upgrades.
 2. **Run (10 minutes):** your skills fire on their own. Move to dodge the swarm.
    - Enemies drop **XP orbs** (blue, or purple for big ones). Walk near them to collect.
    - **Level up** and choose 1 of 3 cards: a new weapon, a weapon upgrade, or a passive.
@@ -16,25 +16,31 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
 
 Co-op works: everyone shares the swarm. If you die you are out until the next run.
 
-## Classes
+## Characters (One Piece fan game)
 
-| Class | Starting skill | Bonus |
-| ----- | -------------- | ----- |
-| Swordsman | Flame Slash | +30 max HP |
-| Ninja | Shadow Clones | +15% move speed |
-| Mage | Spiral Orb | +15% area |
-| Healer | Spirit Orbs | Heals you and nearby allies |
+| Character | Starting skill | Bonus |
+| --------- | -------------- | ----- |
+| Luffy | Gum-Gum Pistol | +30 max HP |
+| Zoro | Three Sword Style | +10% damage |
+| Nami | Thunderbolt Tempo | +25% gold |
+| Sanji | Diable Jambe | +15% move speed |
+| Ace | Fire Fist | +15% area |
+| Robin | Cien Fleur | -10% cooldowns |
+| Chopper | Kung Fu Point | Heals you and nearby allies |
 
 ## Skills and evolutions
 
+Any character can pick up any skill from level-up cards.
+
 | Skill | Partner passive | Evolves into |
 | ----- | --------------- | ------------ |
-| Flame Slash | Chakra Power | Inferno Dragon Slash |
-| Lightning Chain | Haste | Thunder God's Wrath |
-| Spiral Orb | Expansion | Giant Spiral Bomb |
-| Shadow Clones | Swift Feet | Thousand Shadow Army |
-| Spirit Orbs | Vitality | Guardian Spirit Ring |
-| Wind Blades | Spirit Magnet | Hurricane Barrage |
+| Gum-Gum Pistol | Vitality | Gum-Gum Gatling |
+| Three Sword Style | Haki | Asura: Nine Sword Style |
+| Thunderbolt Tempo | Treasure Magnet | Zeus Thunderstorm |
+| Diable Jambe | Swift Feet | Ifrit Jambe |
+| Fire Fist | Expansion | Flame Emperor |
+| Cien Fleur | Haste | Gigantesco Mano |
+| Kung Fu Point | Vitality | Monster Point |
 
 ## Run it
 

@@ -197,6 +197,18 @@ function fire.line(player, _s, root, st)
 	return true
 end
 
+function fire.aura(player, _s, root, st)
+	local nearby = Enemies.inRadius(root.Position, st.range)
+	if #nearby == 0 then
+		return false
+	end
+	fx(CFrame.new(root.Position), Vector3.one * st.range * 2, st.w.color, Enum.PartType.Ball, 0.25)
+	for _, e in nearby do
+		Enemies.damage(e, st.damage, player)
+	end
+	return true
+end
+
 local function stepProjectiles(dt)
 	for i = #projectiles, 1, -1 do
 		local p = projectiles[i]

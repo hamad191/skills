@@ -37,14 +37,14 @@ local function sendMeta(player)
 	end
 	remotes.Meta:FireClient(player, {
 		gold = data.gold, levels = data.meta, costs = costs,
-		class = selectedClass[player] or "Swordsman",
+		class = selectedClass[player] or Config.DEFAULT_CLASS,
 	})
 end
 
 local function startPlayer(player)
 	local data = PlayerData.get(player)
 	if data then
-		Progression.start(player, selectedClass[player] or "Swordsman", data.meta)
+		Progression.start(player, selectedClass[player] or Config.DEFAULT_CLASS, data.meta)
 		Progression.sync(player)
 	end
 end

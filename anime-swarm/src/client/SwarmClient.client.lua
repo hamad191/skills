@@ -139,16 +139,14 @@ UIS.InputBegan:Connect(function(input, processed)
 end)
 
 -- Lobby: classes and permanent upgrades -----------------------------------
-local lobby = new("Frame", {
-	Size = UDim2.new(0, 340, 0, 470), Position = UDim2.new(1, -350, 0.5, -235),
-	BackgroundColor3 = DARK, BackgroundTransparency = 0.1,
-}, gui)
+local ROW = 32
+local lobby = new("Frame", { BackgroundColor3 = DARK, BackgroundTransparency = 0.1 }, gui)
 new("UICorner", {}, lobby)
 local goldText = text("TextLabel", { Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 8), TextColor3 = GOLD, Text = "Gold: 0" }, lobby)
 
 local function lobbyButton(y, onClick)
 	local b = text("TextButton", {
-		Size = UDim2.new(1, -20, 0, 34), Position = UDim2.new(0, 10, 0, y),
+		Size = UDim2.new(1, -20, 0, ROW - 3), Position = UDim2.new(0, 10, 0, y),
 		BackgroundTransparency = 0, BackgroundColor3 = CARD,
 		TextScaled = false, TextSize = 14, TextWrapped = true, Font = Enum.Font.Gotham,
 	}, lobby)
@@ -160,21 +158,24 @@ end
 text("TextLabel", { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.new(0, 10, 0, 44), Text = "CHOOSE CLASS" }, lobby)
 local classButtons = {}
 for i, name in Config.CLASS_ORDER do
-	local b = lobbyButton(70 + (i - 1) * 38, function()
+	local b = lobbyButton(70 + (i - 1) * ROW, function()
 		remotes.SelectClass:FireServer(name)
 	end)
 	b.Text = name .. ": " .. Config.Classes[name].desc
 	classButtons[name] = b
 end
 
-local metaTop = 70 + #Config.CLASS_ORDER * 38 + 8
+local metaTop = 70 + #Config.CLASS_ORDER * ROW + 8
 text("TextLabel", { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.new(0, 10, 0, metaTop), Text = "PERMANENT UPGRADES" }, lobby)
 local metaButtons = {}
 for i, name in Config.META_ORDER do
-	metaButtons[name] = lobbyButton(metaTop + 26 + (i - 1) * 38, function()
+	metaButtons[name] = lobbyButton(metaTop + 26 + (i - 1) * ROW, function()
 		remotes.BuyMeta:FireServer(name)
 	end)
 end
+local lobbyHeight = metaTop + 26 + #Config.META_ORDER * ROW + 8
+lobby.Size = UDim2.new(0, 340, 0, lobbyHeight)
+lobby.Position = UDim2.new(1, -350, 0.5, -lobbyHeight / 2)
 
 remotes.Meta.OnClientEvent:Connect(function(data)
 	goldText.Text = "Gold: " .. data.gold

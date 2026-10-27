@@ -66,7 +66,7 @@ function Progression.all()
 end
 
 function Progression.start(player, className, meta)
-	local class = Config.Classes[className] or Config.Classes.Swordsman
+	local class = Config.Classes[className] or Config.Classes[Config.DEFAULT_CLASS]
 	local s = {
 		level = 1, xp = 0, kills = 0, bonusGold = 0, dead = false,
 		weapons = { [class.weapon] = 1 }, passives = {}, timers = {},
@@ -191,7 +191,7 @@ local function describe(s, c)
 		local evo = Config.Weapons[Config.Weapons[c.key].evolvesInto]
 		return { title = "EVOLVE: " .. evo.name, text = evo.desc, color = evo.color }
 	elseif c.type == "heal" then
-		return { title = "Ramen Bowl", text = "Heal 50 HP.", color = Color3.fromRGB(255, 200, 150) }
+		return { title = "Meat on the Bone", text = "Heal 50 HP.", color = Color3.fromRGB(255, 200, 150) }
 	end
 	return { title = "Gold Pouch", text = "+25 gold at the end of the run.", color = Color3.fromRGB(255, 215, 0) }
 end
