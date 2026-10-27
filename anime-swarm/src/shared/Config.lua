@@ -39,9 +39,12 @@ Config.ADVENTURE_ORDER = { "EastBlue", "GrandLine", "NewWorld" }
 Config.WEAPON_SLOTS_START = 3 -- buy more with the "Skill Slot" upgrade
 Config.WEAPON_SLOTS_MAX = 8
 Config.PASSIVE_SLOTS = 4
-Config.WEAPON_MAX = 5
+Config.WEAPON_MAX = 10
 Config.PASSIVE_MAX = 5
 Config.CHOICES = 3
+
+-- A fused skill fires both of its skills, each boosted like this.
+Config.FUSION = { damage = 2, cooldown = 0.8, area = 1.15, extraHits = 1 }
 
 Config.BASE_HEALTH = 100
 Config.BASE_SPEED = 16
@@ -50,6 +53,7 @@ Config.BASE_MAGNET = 10
 -- Skills fire on their own. Each character owns 6 skills (see Config.Classes); level-ups mostly
 -- offer your own character's skills, and now and then a crewmate's ("crew skill").
 -- A signature skill evolves when it is max level and its `evolveWith` passive is also max level.
+-- Any two max-level (or evolved) skills can be fused into one stronger skill (see Config.FUSION).
 -- kind: how it hits (cone | chain | projectile | clones | orbit | line | aura)
 -- fx: the effect players see (punch | slash | lightning | grab | shot | kick | nova | hands | strike | wave | orbit)
 -- anim: the character's attack animation (punch | slash | kick | throw | cast | cross)

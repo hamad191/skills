@@ -135,7 +135,10 @@ local function fillSlot(slot, info, isWeapon, locked)
 	slot.stripe.BackgroundColor3 = info.color or Color3.fromRGB(200, 210, 230)
 	slot.name.Text = info.name
 	slot.name.TextColor3 = Theme.TEXT
-	if info.evo then
+	if info.fused then
+		slot.level.Text = "FUSED"
+		slot.level.TextColor3 = Color3.fromRGB(120, 230, 255)
+	elseif info.evo then
 		slot.level.Text = "EVO"
 		slot.level.TextColor3 = Color3.fromRGB(255, 120, 255)
 	else
@@ -228,12 +231,14 @@ local function setPips(container, level, max, color)
 	if not level or not max then
 		return
 	end
+	local size = max > 6 and 12 or 14
+	container:FindFirstChildOfClass("UIListLayout").Padding = UDim.new(0, max > 6 and 4 or 6)
 	for i = 1, max do
 		local pip = Theme.new("Frame", {
-			Size = UDim2.fromOffset(14, 14), ZIndex = 24,
+			Size = UDim2.fromOffset(size, size), ZIndex = 24,
 			BackgroundColor3 = i <= level and color or Color3.fromRGB(60, 65, 90),
 		}, container)
-		Theme.corner(pip, 7)
+		Theme.corner(pip, size / 2)
 		Theme.stroke(pip, Color3.new(0, 0, 0), 1, 0.4)
 	end
 end
@@ -335,7 +340,9 @@ function Hud.showLevelUp(list, rerolls)
 		local c = list[i]
 		card.button.Visible = c ~= nil
 		if c then
-			local tint = c.tag == "EVOLUTION" and Color3.fromRGB(255, 120, 255) or c.color
+			local tint = c.tag == "EVOLUTION" and Color3.fromRGB(255, 120, 255)
+				or c.tag == "FUSION" and Color3.fromRGB(120, 230, 255)
+				or c.color
 			card.tag.Text = c.tag or ""
 			card.header.BackgroundColor3 = tint
 			card.header.Square.BackgroundColor3 = tint

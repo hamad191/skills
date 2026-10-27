@@ -25,11 +25,11 @@ local function stats(s, name, level)
 	local up = level - 1
 	return {
 		w = w,
-		damage = w.damage * (1 + 0.25 * up) * Progression.damageMult(s),
-		cooldown = w.cooldown * (1 - 0.06 * up) * Progression.cooldownMult(s),
+		damage = w.damage * (1 + 0.2 * up) * Progression.damageMult(s),
+		cooldown = w.cooldown * (1 - 0.04 * up) * Progression.cooldownMult(s),
 		range = w.range * Progression.areaMult(s),
 		radius = (w.radius or 0) * Progression.areaMult(s),
-		count = (w.count or 1) + math.floor(up / 2),
+		count = (w.count or 1) + math.floor(up / 3),
 	}
 end
 
@@ -257,6 +257,17 @@ function Weapons.cleanup(player)
 	end
 end
 
+-- Draws orbiting weapons and fires the weapon when its cooldown is up. `key` names its timer.
+local function useWeapon(player, s, root, key, st, now)
+	if st.w.kind == "orbit" then
+		syncOrbit(player, key, st)
+	end
+	if now >= (s.timers[key] or 0) then
+		local fired = fire[st.w.kind](player, s, root, st)
+		s.timers[key] = now + (fired and st.cooldown or 0.2)
+	end
+end
+
 function Weapons.step(dt)
 	local now = os.clock()
 	if now >= nextOrbitResync then
@@ -276,19 +287,27 @@ function Weapons.step(dt)
 			Weapons.cleanup(player)
 			continue
 		end
-		for name in orbitSent[player] or {} do
-			if not s.weapons[name] then
-				syncOrbit(player, name, nil) -- evolved away
+		for key in orbitSent[player] or {} do
+			local owner = key:match("^(.-)#%d+$") or key -- fused parts are "<fusion>#1" and "<fusion>#2"
+			if not s.weapons[owner] then
+				syncOrbit(player, key, nil) -- evolved or fused away
 			end
 		end
 		for name, level in s.weapons do
-			local st = stats(s, name, level)
-			if st.w.kind == "orbit" then
-				syncOrbit(player, name, st)
-			end
-			if now >= (s.timers[name] or 0) then
-				local fired = fire[st.w.kind](player, s, root, st)
-				s.timers[name] = now + (fired and st.cooldown or 0.2)
+			local def = Progression.def(name)
+			if def.fused then
+				-- a fusion fires both of its skills at max level, boosted
+				for i, part in def.parts do
+					local st = stats(s, part, Config.Weapons[part].evolved and 1 or Config.WEAPON_MAX)
+					st.damage *= Config.FUSION.damage
+					st.cooldown *= Config.FUSION.cooldown
+					st.range *= Config.FUSION.area
+					st.radius *= Config.FUSION.area
+					st.count += Config.FUSION.extraHits
+					useWeapon(player, s, root, name .. "#" .. i, st, now)
+				end
+			else
+				useWeapon(player, s, root, name, stats(s, name, level), now)
 			end
 		end
 	end

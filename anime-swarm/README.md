@@ -19,7 +19,9 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
    - Enemies drop **XP orbs** (blue, or purple for big ones). Walk near them to collect.
    - **Level up** and choose 1 of 3 cards: a new skill, a skill upgrade, or a passive.
      Press **1 / 2 / 3** or click. Press **R** to reroll (if you bought rerolls).
-   - **3 skill slots** to start (buy up to **8**) and **4 passive** slots; everything levels up to 5.
+   - **3 skill slots** to start (buy up to **8**) and **4 passive** slots. Skills level up to **10**, passives to 5.
+   - **Fusion:** once two skills are max level (or evolved), a FUSION card can merge them into one skill
+     that fires both together with double damage, faster attacks and an extra hit, and frees a slot.
    - **Evolution:** max a skill and its partner passive, and the next level-up offers its evolved form.
    - A **Vice Admiral** every 2 minutes, and the **Admiral** when the timer runs out. Defeat it to win.
 4. **Results:** earn gold from kills, time survived, bosses and a victory bonus, then sail back to the island.
@@ -56,7 +58,11 @@ You start with **3 skill slots**. Buy more with the **Skill Slot** upgrade in th
 | Robin | Cien Fleur, Seis Fleur, Mil Fleur, Flower Storm, Gigante Fleur, Petal Guard |
 | Chopper | Kung Fu Point, Heavy Gong, Horn Point, Rumble Ball, Cherry Blossom Hoof, Medicine Bomb |
 
-Signature skills evolve when the skill and its partner passive are both max level:
+**Fusion:** any two max-level (or evolved) skills can be fused into one. The fused skill fires both
+skills together with x2 damage, 20% faster attacks, 15% more area and +1 hit, and takes only one slot.
+Tune it with `Config.FUSION`.
+
+Signature skills also evolve when the skill and its partner passive are both max level:
 
 | Signature skill | Partner passive | Evolves into |
 | --------------- | --------------- | ------------ |

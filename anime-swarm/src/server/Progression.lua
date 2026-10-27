@@ -59,7 +59,31 @@ function Progression.slots(s)
 end
 
 function Progression.xpNeeded(level)
-	return 5 + level * 3
+	return 5 + level * 2
+end
+
+-- Fused skills are made on the fly from any two skills, so they live here instead of Config.
+local fusionDefs = {} -- [fusionKey] = { name, desc, color, fused = true, parts = { a, b } }
+
+local function fusionKey(a, b)
+	if a > b then
+		a, b = b, a
+	end
+	local key = "Fusion_" .. a .. "_" .. b
+	if not fusionDefs[key] then
+		local wa, wb = Config.Weapons[a], Config.Weapons[b]
+		fusionDefs[key] = {
+			name = wa.name .. " x " .. wb.name,
+			desc = "Fires " .. wa.name .. " and " .. wb.name .. " together, much stronger.",
+			color = wa.color:Lerp(wb.color, 0.5), fused = true, parts = { a, b },
+		}
+	end
+	return key
+end
+
+-- Definition of any skill a player can own: a Config skill, an evolution or a fusion.
+function Progression.def(name)
+	return Config.Weapons[name] or fusionDefs[name]
 end
 
 function Progression.get(player)
@@ -113,8 +137,10 @@ function Progression.sync(player)
 	end
 	local weapons, passives = {}, {}
 	for name, level in s.weapons do
-		local w = Config.Weapons[name]
-		table.insert(weapons, { name = w.name, level = level, evo = w.evolved == true, color = w.color })
+		local w = Progression.def(name)
+		table.insert(weapons, {
+			name = w.name, level = level, evo = w.evolved == true, fused = w.fused == true, color = w.color,
+		})
 	end
 	for name, level in s.passives do
 		table.insert(passives, { name = Config.Passives[name].name, level = level })
@@ -125,13 +151,23 @@ function Progression.sync(player)
 	})
 end
 
-local function hasEvolutionOf(s, baseName)
+-- True if the player already has this skill, its evolution, or a fusion containing either.
+local function ownsSkill(s, key)
 	for name in s.weapons do
-		if Config.Weapons[name].from == baseName then
-			return true
+		local def = Progression.def(name)
+		for _, part in def.fused and def.parts or { name } do
+			if part == key or Config.Weapons[part].from == key then
+				return true
+			end
 		end
 	end
 	return false
+end
+
+-- A skill can be fused once it is max level or evolved. Fusions can't be fused again.
+local function fusionReady(name, level)
+	local w = Config.Weapons[name]
+	return w ~= nil and (w.evolved or level >= Config.WEAPON_MAX)
 end
 
 -- How likely each kind of card is. Crewmates' skills are rare so your own character's 6 come first.
@@ -154,18 +190,26 @@ local function takeWeighted(pool)
 end
 
 local function buildChoices(s)
-	local picks, pool = {}, {}
+	local picks, pool, ready = {}, {}, {}
 	for name, level in s.weapons do
-		local w = Config.Weapons[name]
+		local w = Progression.def(name)
 		if w.evolvesInto and level >= Config.WEAPON_MAX and (s.passives[w.evolveWith] or 0) >= Config.PASSIVE_MAX then
 			table.insert(picks, { type = "evolve", key = name })
-		elseif not w.evolved and level < Config.WEAPON_MAX then
+		elseif not w.evolved and not w.fused and level < Config.WEAPON_MAX then
 			table.insert(pool, { type = "weapon", key = name, weight = WEIGHT.upgrade })
 		end
+		if fusionReady(name, level) then
+			table.insert(ready, name)
+		end
+	end
+	if #ready >= 2 then
+		-- offer one random pair of maxed skills to fuse (reroll for a different pair)
+		local a = table.remove(ready, math.random(#ready))
+		table.insert(picks, { type = "fuse", a = a, b = ready[math.random(#ready)] })
 	end
 	if count(s.weapons) < Progression.slots(s) then
 		for name, w in Config.Weapons do
-			if not w.evolved and not s.weapons[name] and not hasEvolutionOf(s, name) then
+			if not w.evolved and not ownsSkill(s, name) then
 				local own = Config.SkillOwner[name] == s.class
 				table.insert(pool, { type = "weapon", key = name, weight = own and WEIGHT.ownSkill or WEIGHT.crewSkill })
 			end
@@ -217,6 +261,12 @@ local function describe(s, c)
 	elseif c.type == "evolve" then
 		local evo = Config.Weapons[Config.Weapons[c.key].evolvesInto]
 		return { title = evo.name, text = evo.desc, color = evo.color, tag = "EVOLUTION" }
+	elseif c.type == "fuse" then
+		local fused = Progression.def(fusionKey(c.a, c.b))
+		return {
+			title = fused.name, color = fused.color, tag = "FUSION",
+			text = "Fuse two maxed skills into one: both fire together with double damage. Frees a slot!",
+		}
 	elseif c.type == "heal" then
 		return { title = "Meat on the Bone", text = "Heal 50 HP.", color = Color3.fromRGB(255, 170, 120), tag = "BONUS" }
 	end
@@ -264,6 +314,10 @@ function Progression.choose(player, index)
 		s.weapons[c.key] = nil
 		s.timers[c.key] = nil
 		s.weapons[Config.Weapons[c.key].evolvesInto] = 1
+	elseif c.type == "fuse" then
+		s.weapons[c.a], s.weapons[c.b] = nil, nil
+		s.timers[c.a], s.timers[c.b] = nil, nil
+		s.weapons[fusionKey(c.a, c.b)] = 1
 	elseif c.type == "heal" then
 		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 		if hum then
