@@ -78,14 +78,12 @@ function Progression.start(player, className, meta)
 end
 
 function Progression.stop(player)
-	states[player] = nil
-end
-
-function Progression.clear()
-	for player in states do
-		remotes.LevelUp:FireClient(player, nil)
+	if states[player] then
+		states[player] = nil
+		if player.Parent then
+			remotes.LevelUp:FireClient(player, nil)
+		end
 	end
-	table.clear(states)
 end
 
 function Progression.applyStats(player)
@@ -108,10 +106,10 @@ function Progression.sync(player)
 	local weapons, passives = {}, {}
 	for name, level in s.weapons do
 		local w = Config.Weapons[name]
-		table.insert(weapons, w.name .. (w.evolved and " (EVO)" or " Lv" .. level))
+		table.insert(weapons, { name = w.name, level = level, evo = w.evolved == true, color = w.color })
 	end
 	for name, level in s.passives do
-		table.insert(passives, Config.Passives[name].name .. " Lv" .. level)
+		table.insert(passives, { name = Config.Passives[name].name, level = level })
 	end
 	remotes.Stats:FireClient(player, {
 		level = s.level, xp = s.xp, need = Progression.xpNeeded(s.level),
@@ -175,25 +173,24 @@ local function describe(s, c)
 		local w = Config.Weapons[c.key]
 		local level = (s.weapons[c.key] or 0) + 1
 		return {
-			title = w.name,
-			text = level == 1 and "NEW! " .. w.desc or "Level " .. level .. ": more damage, faster, more hits",
-			color = w.color,
+			title = w.name, color = w.color, level = level, max = Config.WEAPON_MAX,
+			tag = level == 1 and "NEW SKILL" or "UPGRADE",
+			text = level == 1 and w.desc or "More damage, faster attacks, more hits.",
 		}
 	elseif c.type == "passive" then
 		local p = Config.Passives[c.key]
 		local level = (s.passives[c.key] or 0) + 1
 		return {
-			title = p.name,
-			text = (level == 1 and "NEW! " or "Level " .. level .. ": ") .. p.desc,
-			color = Color3.fromRGB(220, 220, 220),
+			title = p.name, text = p.desc, color = Color3.fromRGB(200, 210, 230),
+			tag = level == 1 and "NEW PASSIVE" or "PASSIVE", level = level, max = Config.PASSIVE_MAX,
 		}
 	elseif c.type == "evolve" then
 		local evo = Config.Weapons[Config.Weapons[c.key].evolvesInto]
-		return { title = "EVOLVE: " .. evo.name, text = evo.desc, color = evo.color }
+		return { title = evo.name, text = evo.desc, color = evo.color, tag = "EVOLUTION" }
 	elseif c.type == "heal" then
-		return { title = "Meat on the Bone", text = "Heal 50 HP.", color = Color3.fromRGB(255, 200, 150) }
+		return { title = "Meat on the Bone", text = "Heal 50 HP.", color = Color3.fromRGB(255, 170, 120), tag = "BONUS" }
 	end
-	return { title = "Gold Pouch", text = "+25 gold at the end of the run.", color = Color3.fromRGB(255, 215, 0) }
+	return { title = "Gold Pouch", text = "+25 gold at the end of the run.", color = Color3.fromRGB(255, 215, 0), tag = "BONUS" }
 end
 
 function Progression.offer(player)

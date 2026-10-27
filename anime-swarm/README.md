@@ -4,19 +4,27 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
 
 ## How it plays
 
-1. **Lobby:** pick a character and spend gold on permanent upgrades.
-2. **Run (10 minutes):** your skills fire on their own. Move to dodge the swarm.
+1. **Spawn island:** explore the island, pick a pirate in **CREW** and buy permanent upgrades in **SHOP**.
+2. **Portals:** walk onto the glowing pad in front of a portal. After a 10 second countdown,
+   everyone standing on that pad sets sail together.
+
+   | Portal | Difficulty | Arena | Run length | Gold |
+   | ------ | ---------- | ----- | ---------- | ---- |
+   | East Blue | Easy | Grassland with palms | 5 min | x1 |
+   | Grand Line | Normal | Desert with cacti and ruins | 8 min | x1.75 |
+   | New World | Hard | Volcanic rock with lava cracks | 10 min | x3 |
+
+   Different crews can be on different adventures at the same time.
+3. **Adventure:** your skills fire on their own. Move to dodge the swarm.
    - Enemies drop **XP orbs** (blue, or purple for big ones). Walk near them to collect.
-   - **Level up** and choose 1 of 3 cards: a new weapon, a weapon upgrade, or a passive.
+   - **Level up** and choose 1 of 3 cards: a new skill, a skill upgrade, or a passive.
      Press **1 / 2 / 3** or click. Press **R** to reroll (if you bought rerolls).
-   - Up to **4 weapons** and **4 passives**, each up to level 5.
-   - **Evolution:** max a weapon and its partner passive, and the next level-up offers its evolved form.
-   - A **mini-boss** every 2 minutes, and the **final boss** at 10:00. Kill it to win.
-3. **Results:** earn gold from kills, time survived, bosses, and a victory bonus. Gold is saved.
+   - Up to **4 skills** and **4 passives**, each up to level 5.
+   - **Evolution:** max a skill and its partner passive, and the next level-up offers its evolved form.
+   - A **Vice Admiral** every 2 minutes, and the **Admiral** when the timer runs out. Defeat it to win.
+4. **Results:** earn gold from kills, time survived, bosses and a victory bonus, then sail back to the island.
 
-Enemies are Marines, Fishmen, Pacifistas, a Vice Admiral mini-boss and an Admiral final boss.
-
-Co-op works: everyone shares the swarm. If you die you are out until the next run.
+If you are knocked out, your crew fights on; you return to the island when the adventure ends.
 
 ## Characters (One Piece fan game)
 
@@ -47,7 +55,7 @@ Any character can pick up any skill from level-up cards.
 ## Run it
 
 **Easiest:** open `AnimeSwarm.rbxlx` in Roblox Studio (File > Open from File) and press Play.
-The arena and the spawn island (beach, palm trees, dock, pirate ship) are already built. After editing code, rebuild it with `python3 tools/build_place.py`.
+The spawn island and all three arenas are already built (the portals appear when you press Play). After editing code, rebuild it with `python3 tools/build_place.py`.
 
 **With Rojo (live sync while you edit):**
 
@@ -61,14 +69,18 @@ The arena and the spawn island (beach, palm trees, dock, pirate ship) are alread
 
 | File | What it does |
 | ---- | ------------ |
-| `src/shared/Config.lua` | All balance: skills, passives, classes, enemies, upgrades, run length |
-| `src/server/Main.server.lua` | Lobby, run, and results loop; spawning; bosses; gold |
+| `src/shared/Config.lua` | All balance: skills, passives, characters, enemies, adventures, upgrades |
+| `src/server/Main.server.lua` | Portal boarding, running each adventure, spawning, bosses, rewards |
+| `src/server/Portals.lua` | Builds the portals and tracks who is standing on their pads |
 | `src/server/Weapons.lua` | How each skill fires and hits |
-| `src/server/Enemies.lua` | Enemy movement, damage, XP orbs |
+| `src/server/Enemies.lua` | Enemy bodies, movement, damage, XP orbs |
 | `src/server/Progression.lua` | XP, level-up cards, evolutions |
 | `src/server/PlayerData.lua` | Saving gold and permanent upgrades |
 | `src/server/Fx.lua` | Sends effect events (what happened) to every client |
-| `src/client/SwarmClient.client.lua` | HUD, level-up cards, lobby menus |
-| `src/client/Effects.lua` | Draws every skill effect, hit sparks, damage numbers |
+| `src/client/SwarmClient.client.lua` | Connects the UI to the server |
+| `src/client/Theme.lua` | Colors, fonts and UI building blocks |
+| `src/client/Hud.lua` | In-run HUD, level-up cards, announcements, results screen |
+| `src/client/Lobby.lua` | Character select, upgrade shop, gold, portal boarding banner |
+| `src/client/Effects.lua` | Skill effects, hit sparks, damage numbers, portal swirls |
 | `src/client/Animate.lua` | Punch, slash, kick, throw and cast animations (R15) |
-| `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the map (arena + spawn island) and all scripts |
+| `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the spawn island, arenas, lighting and all scripts |

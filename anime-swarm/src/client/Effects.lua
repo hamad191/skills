@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local Debris = game:GetService("Debris")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local CollectionService = game:GetService("CollectionService")
 
 local Animate = require(script.Parent.Animate)
 
@@ -477,6 +478,14 @@ RunService.RenderStepped:Connect(function(dt)
 				local a = now * 3 + i * 2 * math.pi / n
 				p.CFrame = CFrame.new(root.Position + Vector3.new(math.cos(a) * o.r, 0, math.sin(a) * o.r))
 			end
+		end
+	end
+
+	-- spin the swirl blades inside the island's portals
+	for _, blade in CollectionService:GetTagged("PortalSwirl") do
+		local center = blade:GetAttribute("Center")
+		if center then
+			blade.CFrame = center * CFrame.Angles(0, 0, now * 1.5 + (blade:GetAttribute("Phase") or 0))
 		end
 	end
 end)

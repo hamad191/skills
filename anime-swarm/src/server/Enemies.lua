@@ -82,12 +82,14 @@ local function makeBar(part, scale, name)
 	return fill
 end
 
-local function dropOrb(pos, xp)
-	-- merge into an existing orb when there are too many on the map
+local function dropOrb(pos, xp, runKey)
+	-- merge into an existing orb of the same run when there are too many on the map
 	if #orbs >= 250 then
 		local o = orbs[math.random(#orbs)]
-		o.xp += xp
-		return
+		if o.run == runKey then
+			o.xp += xp
+			return
+		end
 	end
 	local big = xp >= 10
 	local part = makePart({
@@ -97,7 +99,7 @@ local function dropOrb(pos, xp)
 		Color = big and Color3.fromRGB(180, 80, 255) or Color3.fromRGB(70, 160, 255),
 		Position = pos,
 	}, orbFolder)
-	table.insert(orbs, { part = part, xp = xp })
+	table.insert(orbs, { part = part, xp = xp, run = runKey })
 end
 
 local function flash(e)
@@ -132,7 +134,8 @@ local BODY = {
 }
 local LEG_DEPTH = 2.6 -- torso center to the soles of the feet
 
-function Enemies.spawn(kind, x, z, hpScale, dmgScale)
+-- runKey: which adventure this enemy belongs to; it only chases that crew.
+function Enemies.spawn(kind, x, z, hpScale, dmgScale, runKey)
 	local def = Config.Enemies[kind]
 	local y = groundY(x, z)
 	if not y then
@@ -164,7 +167,7 @@ function Enemies.spawn(kind, x, z, hpScale, dmgScale)
 
 	local hp = def.hp * hpScale
 	local e = {
-		model = model, root = torso, head = parts.Head, def = def, kind = kind,
+		model = model, root = torso, head = parts.Head, def = def, kind = kind, run = runKey,
 		hp = hp, maxHp = hp, damage = def.damage * dmgScale,
 		radius = 1.2 * s, lastHit = 0, phase = math.random() * 10,
 	}
@@ -189,15 +192,17 @@ function Enemies.damage(e, amount, player)
 	end
 	e.dead = true
 	if e.def.xp > 0 then
-		dropOrb(e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale - 0.8, 0), e.def.xp)
+		dropOrb(e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale - 0.8, 0), e.def.xp, e.run)
 	end
 	Fx.emit("death", { pos = e.root.Position, c = e.def.color, s = e.def.scale })
 	Enemies.onKilled(e, player)
 	e.model:Destroy()
 end
 
--- targets: array of { player, root, hum, magnet }
-function Enemies.step(dt, targets)
+local NO_TARGETS = {}
+
+-- targetsByRun: [runKey] = array of { player, root, hum, magnet }
+function Enemies.step(dt, targetsByRun)
 	local now = os.clock()
 	for i = #list, 1, -1 do
 		local e = list[i]
@@ -206,7 +211,7 @@ function Enemies.step(dt, targets)
 			continue
 		end
 		local best, bestDist
-		for _, t in targets do
+		for _, t in targetsByRun[e.run] or NO_TARGETS do
 			local d = flat(t.root.Position - e.root.Position).Magnitude
 			if not bestDist or d < bestDist then
 				best, bestDist = t, d
@@ -235,7 +240,7 @@ function Enemies.step(dt, targets)
 			t, o.target = nil, nil
 		end
 		if not t then
-			for _, candidate in targets do
+			for _, candidate in targetsByRun[o.run] or NO_TARGETS do
 				if (candidate.root.Position - o.part.Position).Magnitude <= candidate.magnet then
 					t, o.target = candidate, candidate
 					break
@@ -299,20 +304,32 @@ function Enemies.inRadius(pos, r)
 	return out
 end
 
-function Enemies.count()
-	return #list
+function Enemies.count(runKey)
+	local n = 0
+	for _, e in list do
+		if e.run == runKey and not e.dead then
+			n += 1
+		end
+	end
+	return n
 end
 
-function Enemies.clear()
-	for _, e in list do
-		e.dead = true
-		e.model:Destroy()
+-- Removes one adventure's enemies and XP orbs.
+function Enemies.clear(runKey)
+	for i = #list, 1, -1 do
+		local e = list[i]
+		if e.run == runKey then
+			e.dead = true
+			e.model:Destroy()
+			table.remove(list, i)
+		end
 	end
-	table.clear(list)
-	for _, o in orbs do
-		o.part:Destroy()
+	for i = #orbs, 1, -1 do
+		if orbs[i].run == runKey then
+			orbs[i].part:Destroy()
+			table.remove(orbs, i)
+		end
 	end
-	table.clear(orbs)
 end
 
 return Enemies

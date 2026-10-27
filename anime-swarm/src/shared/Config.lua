@@ -1,17 +1,40 @@
 -- All game balance lives here.
 local Config = {}
 
-Config.RUN_LENGTH = 600 -- seconds until the final boss appears
 Config.MINIBOSS_EVERY = 120
-Config.INTERMISSION = 20
 Config.RESULTS_TIME = 8
 Config.MAX_ENEMIES = 150
 Config.SPAWN_MIN, Config.SPAWN_MAX = 55, 85 -- spawn distance from players
 
--- Players wait on the spawn island, then get teleported here when a run starts.
-Config.ARENA_CENTER = Vector3.new(0, 0, 0)
+-- Spawn island and adventure portals. Keep these in sync with tools/build_place.py.
+Config.ISLAND_CENTER = Vector3.new(0, 0, 1400)
+Config.PORTAL_RADIUS = 7 -- stand this close to a portal's pad to board
+Config.PORTAL_COUNTDOWN = 10
 Config.ARENA_DROP_RADIUS = 25
-Config.ARENA_HALF_SIZE = 500 -- the arena floor is 1000 x 1000
+Config.ARENA_HALF_SIZE = 500 -- every arena floor is 1000 x 1000
+
+-- Each portal leads to an adventure with its own arena. hp / damage / gold multiply the base values.
+Config.Adventures = {
+	EastBlue = {
+		name = "East Blue", difficulty = "Easy", stars = 1, color = Color3.fromRGB(70, 190, 255),
+		desc = "Calm seas. Great for new pirates.",
+		center = Vector3.new(0, 0, 0), portal = Vector3.new(-34, 0, 1488),
+		runLength = 300, hp = 0.7, damage = 0.7, gold = 1,
+	},
+	GrandLine = {
+		name = "Grand Line", difficulty = "Normal", stars = 2, color = Color3.fromRGB(255, 190, 50),
+		desc = "Desert kingdoms and tougher Marines.",
+		center = Vector3.new(-1600, 0, 0), portal = Vector3.new(0, 0, 1500),
+		runLength = 480, hp = 1.2, damage = 1.1, gold = 1.75,
+	},
+	NewWorld = {
+		name = "New World", difficulty = "Hard", stars = 3, color = Color3.fromRGB(255, 70, 70),
+		desc = "Only the strongest survive. Huge rewards.",
+		center = Vector3.new(1600, 0, 0), portal = Vector3.new(34, 0, 1488),
+		runLength = 600, hp = 2, damage = 1.6, gold = 3,
+	},
+}
+Config.ADVENTURE_ORDER = { "EastBlue", "GrandLine", "NewWorld" }
 
 Config.WEAPON_SLOTS = 4
 Config.PASSIVE_SLOTS = 4
@@ -128,13 +151,34 @@ Config.Passives = {
 
 Config.DEFAULT_CLASS = "Luffy"
 Config.Classes = {
-	Luffy = { desc = "Gum-Gum Pistol. +30 max HP.", weapon = "GumGumPistol", bonus = { health = 30 } },
-	Zoro = { desc = "Three Sword Style. +10% damage.", weapon = "ThreeSwordStyle", bonus = { damage = 0.10 } },
-	Nami = { desc = "Thunderbolt Tempo. +25% gold.", weapon = "ThunderTempo", bonus = { gold = 0.25 } },
-	Sanji = { desc = "Diable Jambe. +15% speed.", weapon = "DiableJambe", bonus = { speed = 0.15 } },
-	Ace = { desc = "Fire Fist. +15% area.", weapon = "FireFist", bonus = { area = 0.15 } },
-	Robin = { desc = "Cien Fleur. -10% cooldowns.", weapon = "CienFleur", bonus = { cooldown = 0.10 } },
-	Chopper = { desc = "Kung Fu Point. Heals nearby allies.", weapon = "KungFuPoint", bonus = { heal = 2 } },
+	Luffy = {
+		title = "Straw Hat", perk = "+30 max HP", color = Color3.fromRGB(220, 50, 50),
+		weapon = "GumGumPistol", bonus = { health = 30 },
+	},
+	Zoro = {
+		title = "Pirate Hunter", perk = "+10% damage", color = Color3.fromRGB(60, 190, 90),
+		weapon = "ThreeSwordStyle", bonus = { damage = 0.10 },
+	},
+	Nami = {
+		title = "Cat Burglar", perk = "+25% gold", color = Color3.fromRGB(255, 150, 40),
+		weapon = "ThunderTempo", bonus = { gold = 0.25 },
+	},
+	Sanji = {
+		title = "Black Leg", perk = "+15% move speed", color = Color3.fromRGB(240, 200, 60),
+		weapon = "DiableJambe", bonus = { speed = 0.15 },
+	},
+	Ace = {
+		title = "Fire Fist", perk = "+15% area", color = Color3.fromRGB(255, 100, 30),
+		weapon = "FireFist", bonus = { area = 0.15 },
+	},
+	Robin = {
+		title = "Devil Child", perk = "-10% cooldowns", color = Color3.fromRGB(150, 90, 220),
+		weapon = "CienFleur", bonus = { cooldown = 0.10 },
+	},
+	Chopper = {
+		title = "Cotton Candy Lover", perk = "Heals nearby allies", color = Color3.fromRGB(255, 130, 180),
+		weapon = "KungFuPoint", bonus = { heal = 2 },
+	},
 }
 Config.CLASS_ORDER = { "Luffy", "Zoro", "Nami", "Sanji", "Ace", "Robin", "Chopper" }
 

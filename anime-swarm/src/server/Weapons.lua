@@ -241,17 +241,16 @@ local function syncOrbit(player, name, st)
 	end
 end
 
+-- Stops drawing a player's orbiting weapons and drops their projectiles in flight.
 function Weapons.cleanup(player)
 	if orbitSent[player] then
 		Fx.emit("orbit", { p = player, all = true, n = 0 })
 		orbitSent[player] = nil
 	end
-end
-
-function Weapons.clear()
-	table.clear(projectiles)
-	for player in orbitSent do
-		Weapons.cleanup(player)
+	for i = #projectiles, 1, -1 do
+		if projectiles[i].player == player then
+			table.remove(projectiles, i)
+		end
 	end
 end
 
@@ -261,7 +260,10 @@ function Weapons.step(dt)
 		-- redraw orbits from scratch now and then so players who join mid-run see them too
 		nextOrbitResync = now + 3
 		for player in orbitSent do
-			Weapons.cleanup(player)
+			if orbitSent[player] then
+				Fx.emit("orbit", { p = player, all = true, n = 0 })
+				orbitSent[player] = nil
+			end
 		end
 	end
 	stepProjectiles(dt)
