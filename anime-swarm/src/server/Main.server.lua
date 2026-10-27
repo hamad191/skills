@@ -49,6 +49,19 @@ local function startPlayer(player)
 	end
 end
 
+local function sendToArena(player)
+	local character = player.Character
+	local root = character and character:WaitForChild("HumanoidRootPart", 5)
+	if not root then
+		return
+	end
+	task.wait(0.1) -- let Roblox finish placing the character at the spawn first
+	local a = math.random() * 2 * math.pi
+	local r = math.random() * Config.ARENA_DROP_RADIUS
+	local c = Config.ARENA_CENTER
+	character:PivotTo(CFrame.new(c.X + math.cos(a) * r, c.Y + 5, c.Z + math.sin(a) * r))
+end
+
 local function onCharacter(player, character)
 	local hum = character:WaitForChild("Humanoid")
 	hum.Died:Connect(function()
@@ -65,8 +78,11 @@ local function onCharacter(player, character)
 			player:LoadCharacter()
 		end
 	end)
-	if phase == "Run" and not Progression.get(player) then
-		startPlayer(player) -- joined mid-run
+	if phase == "Run" then
+		if not Progression.get(player) then
+			startPlayer(player) -- joined mid-run
+		end
+		task.spawn(sendToArena, player)
 	end
 	Progression.applyStats(player)
 end
@@ -141,7 +157,18 @@ RunService.Heartbeat:Connect(function(dt)
 end)
 
 local function spawnAround(kind, targets, hpScale, dmgScale)
-	local p = targets[math.random(#targets)].root.Position
+	-- only around players already in the arena, never on the spawn island
+	local inArena = {}
+	for _, t in targets do
+		local offset = t.root.Position - Config.ARENA_CENTER
+		if math.abs(offset.X) <= Config.ARENA_HALF_SIZE and math.abs(offset.Z) <= Config.ARENA_HALF_SIZE then
+			table.insert(inArena, t)
+		end
+	end
+	if #inArena == 0 then
+		return nil
+	end
+	local p = inArena[math.random(#inArena)].root.Position
 	for _ = 1, 6 do
 		local a = math.random() * 2 * math.pi
 		local d = Config.SPAWN_MIN + math.random() * (Config.SPAWN_MAX - Config.SPAWN_MIN)
@@ -184,6 +211,7 @@ local function runGame()
 		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 		if hum and hum.Health > 0 then
 			Progression.applyStats(player)
+			task.spawn(sendToArena, player)
 		else
 			player:LoadCharacter()
 		end
@@ -261,14 +289,14 @@ end
 while true do
 	phase = "Lobby"
 	for _, player in Players:GetPlayers() do
-		player:LoadCharacter() -- fresh character with default stats
+		player:LoadCharacter() -- fresh character with default stats, back on the spawn island
 	end
 	local t = Config.INTERMISSION
 	while t > 0 do
 		if #Players:GetPlayers() > 0 then
 			t -= 1
 		end
-		remotes.State:FireAllClients({ phase = "Lobby", text = "Run starts in " .. t })
+		remotes.State:FireAllClients({ phase = "Lobby", text = "Setting sail in " .. t })
 		task.wait(1)
 	end
 	endGame(runGame())

@@ -8,6 +8,11 @@ Config.RESULTS_TIME = 8
 Config.MAX_ENEMIES = 150
 Config.SPAWN_MIN, Config.SPAWN_MAX = 55, 85 -- spawn distance from players
 
+-- Players wait on the spawn island, then get teleported here when a run starts.
+Config.ARENA_CENTER = Vector3.new(0, 0, 0)
+Config.ARENA_DROP_RADIUS = 25
+Config.ARENA_HALF_SIZE = 500 -- the arena floor is 1000 x 1000
+
 Config.WEAPON_SLOTS = 4
 Config.PASSIVE_SLOTS = 4
 Config.WEAPON_MAX = 5

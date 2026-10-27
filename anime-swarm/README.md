@@ -45,13 +45,13 @@ Any character can pick up any skill from level-up cards.
 ## Run it
 
 **Easiest:** open `AnimeSwarm.rbxlx` in Roblox Studio (File > Open from File) and press Play.
-The baseplate and spawn are already set up. After editing code, rebuild it with `python3 tools/build_place.py`.
+The arena and the spawn island (beach, palm trees, dock, pirate ship) are already built. After editing code, rebuild it with `python3 tools/build_place.py`.
 
 **With Rojo (live sync while you edit):**
 
 1. Install [Rojo](https://rojo.space) and the Rojo Studio plugin.
-2. In this folder run `rojo serve`, then press Connect in the Studio plugin.
-3. In Studio, make the Baseplate big (for example 1000 x 1 x 1000) and add a SpawnLocation.
+2. Open `AnimeSwarm.rbxlx` in Studio (it has the map), then run `rojo serve` here and press Connect.
+3. Rojo now keeps the scripts in sync with the files in `src/` as you edit.
 4. To save gold in Studio, turn on Game Settings > Security > Enable Studio Access to API Services.
 5. Press Play (or use Test > Start with 2+ players for co-op).
 
@@ -66,3 +66,4 @@ The baseplate and spawn are already set up. After editing code, rebuild it with 
 | `src/server/Progression.lua` | XP, level-up cards, evolutions |
 | `src/server/PlayerData.lua` | Saving gold and permanent upgrades |
 | `src/client/SwarmClient.client.lua` | HUD, level-up cards, lobby menus |
+| `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the map (arena + spawn island) and all scripts |
