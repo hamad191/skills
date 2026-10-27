@@ -38,6 +38,11 @@ Co-op works: everyone shares the swarm. If you die you are out until the next ru
 
 ## Run it
 
+**Easiest:** open `AnimeSwarm.rbxlx` in Roblox Studio (File > Open from File) and press Play.
+The baseplate and spawn are already set up. After editing code, rebuild it with `python3 tools/build_place.py`.
+
+**With Rojo (live sync while you edit):**
+
 1. Install [Rojo](https://rojo.space) and the Rojo Studio plugin.
 2. In this folder run `rojo serve`, then press Connect in the Studio plugin.
 3. In Studio, make the Baseplate big (for example 1000 x 1 x 1000) and add a SpawnLocation.

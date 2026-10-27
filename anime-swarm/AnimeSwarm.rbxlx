@@ -1,0 +1,1517 @@
+<roblox version="4"><Item class="Workspace" referent="RBX0003"><Properties><string name="Name">Workspace</string></Properties><Item class="Part" referent="RBX0001"><Properties><string name="Name">Baseplate</string><bool name="Anchored">true</bool><bool name="Locked">true</bool><Vector3 name="size"><X>1000</X><Y>2</Y><Z>1000</Z></Vector3><CoordinateFrame name="CFrame"><X>0</X><Y>-1</Y><Z>0</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame><Color3uint8 name="Color3uint8">4282800710</Color3uint8><token name="Material">512</token></Properties></Item><Item class="SpawnLocation" referent="RBX0002"><Properties><string name="Name">SpawnLocation</string><bool name="Anchored">true</bool><bool name="Locked">true</bool><Vector3 name="size"><X>12</X><Y>1</Y><Z>12</Z></Vector3><CoordinateFrame name="CFrame"><X>0</X><Y>0.5</Y><Z>0</Z><R00>1</R00><R01>0</R01><R02>0</R02><R10>0</R10><R11>1</R11><R12>0</R12><R20>0</R20><R21>0</R21><R22>1</R22></CoordinateFrame><Color3uint8 name="Color3uint8">4284103840</Color3uint8><token name="Material">256</token><bool name="Neutral">true</bool><int name="Duration">3</int></Properties></Item></Item><Item class="ReplicatedStorage" referent="RBX0006"><Properties><string name="Name">ReplicatedStorage</string></Properties><Item class="Folder" referent="RBX0005"><Properties><string name="Name">Shared</string></Properties><Item class="ModuleScript" referent="RBX0004"><Properties><string name="Name">Config</string><ProtectedString name="Source"><![CDATA[-- All game balance lives here.
+local Config = {}
+
+Config.RUN_LENGTH = 600 -- seconds until the final boss appears
+Config.MINIBOSS_EVERY = 120
+Config.INTERMISSION = 20
+Config.RESULTS_TIME = 8
+Config.MAX_ENEMIES = 150
+Config.SPAWN_MIN, Config.SPAWN_MAX = 55, 85 -- spawn distance from players
+
+Config.WEAPON_SLOTS = 4
+Config.PASSIVE_SLOTS = 4
+Config.WEAPON_MAX = 5
+Config.PASSIVE_MAX = 5
+Config.CHOICES = 3
+
+Config.BASE_HEALTH = 100
+Config.BASE_SPEED = 16
+Config.BASE_MAGNET = 10
+
+-- Weapons fire on their own. A weapon evolves when it is max level and its
+-- `evolveWith` passive is also max level.
+-- kind: cone | chain | projectile | clones | orbit | line
+Config.Weapons = {
+	FlameSlash = {
+		name = "Flame Slash", desc = "Slashes fire at the nearest enemy.",
+		kind = "cone", damage = 18, cooldown = 1.3, range = 14, angle = 110,
+		color = Color3.fromRGB(255, 120, 30), evolveWith = "Power", evolvesInto = "InfernoDragon",
+	},
+	LightningChain = {
+		name = "Lightning Chain", desc = "Lightning jumps between enemies.",
+		kind = "chain", damage = 14, cooldown = 1.6, range = 30, count = 3,
+		color = Color3.fromRGB(255, 240, 90), evolveWith = "Haste", evolvesInto = "ThunderGod",
+	},
+	SpiralOrb = {
+		name = "Spiral Orb", desc = "Throws a spinning orb that explodes.",
+		kind = "projectile", damage = 30, cooldown = 2.2, range = 60, radius = 7,
+		color = Color3.fromRGB(80, 160, 255), evolveWith = "Area", evolvesInto = "SpiralBomb",
+	},
+	ShadowClones = {
+		name = "Shadow Clones", desc = "Clones appear and strike around you.",
+		kind = "clones", damage = 22, cooldown = 3, range = 7, count = 2,
+		color = Color3.fromRGB(140, 140, 170), evolveWith = "Swiftness", evolvesInto = "ShadowArmy",
+	},
+	SpiritOrbs = {
+		name = "Spirit Orbs", desc = "Spirits circle you and hit enemies.",
+		kind = "orbit", damage = 10, cooldown = 0.5, range = 7, count = 2,
+		color = Color3.fromRGB(150, 255, 180), evolveWith = "Vitality", evolvesInto = "GuardianRing",
+	},
+	WindBlades = {
+		name = "Wind Blades", desc = "Fires piercing blades of wind.",
+		kind = "line", damage = 16, cooldown = 1.8, range = 40, width = 3, count = 2,
+		color = Color3.fromRGB(200, 255, 255), evolveWith = "Magnet", evolvesInto = "Hurricane",
+	},
+
+	-- Evolutions (cannot be picked directly, always level 1)
+	InfernoDragon = {
+		name = "Inferno Dragon Slash", desc = "Fire dragons slash in every direction.",
+		kind = "cone", damage = 90, cooldown = 1, range = 22, angle = 120, count = 4,
+		color = Color3.fromRGB(255, 70, 20), evolved = true, from = "FlameSlash",
+	},
+	ThunderGod = {
+		name = "Thunder God's Wrath", desc = "Lightning chains through the whole swarm.",
+		kind = "chain", damage = 70, cooldown = 0.9, range = 45, count = 10,
+		color = Color3.fromRGB(255, 255, 160), evolved = true, from = "LightningChain",
+	},
+	SpiralBomb = {
+		name = "Giant Spiral Bomb", desc = "Huge orbs that wipe out crowds.",
+		kind = "projectile", damage = 160, cooldown = 1.8, range = 70, radius = 16, count = 3,
+		color = Color3.fromRGB(40, 110, 255), evolved = true, from = "SpiralOrb",
+	},
+	ShadowArmy = {
+		name = "Thousand Shadow Army", desc = "An army of clones attacks.",
+		kind = "clones", damage = 80, cooldown = 2.2, range = 9, count = 8,
+		color = Color3.fromRGB(90, 90, 130), evolved = true, from = "ShadowClones",
+	},
+	GuardianRing = {
+		name = "Guardian Spirit Ring", desc = "A ring of spirits shreds anything close.",
+		kind = "orbit", damage = 35, cooldown = 0.35, range = 10, count = 8,
+		color = Color3.fromRGB(90, 255, 140), evolved = true, from = "SpiritOrbs",
+	},
+	Hurricane = {
+		name = "Hurricane Barrage", desc = "Wind blades fly everywhere.",
+		kind = "line", damage = 60, cooldown = 1, range = 60, width = 5, count = 10,
+		color = Color3.fromRGB(170, 255, 255), evolved = true, from = "WindBlades",
+	},
+}
+
+-- `per` is added once per passive level to the named stat.
+Config.Passives = {
+	Power = { name = "Chakra Power", desc = "+10% damage", stat = "damage", per = 0.10 },
+	Haste = { name = "Haste", desc = "-8% cooldowns", stat = "cooldown", per = 0.08 },
+	Area = { name = "Expansion", desc = "+10% area", stat = "area", per = 0.10 },
+	Swiftness = { name = "Swift Feet", desc = "+8% move speed", stat = "speed", per = 0.08 },
+	Vitality = { name = "Vitality", desc = "+20 max HP", stat = "health", per = 20 },
+	Magnet = { name = "Spirit Magnet", desc = "+25% pickup range", stat = "magnet", per = 0.25 },
+}
+
+Config.Classes = {
+	Swordsman = { desc = "Flame Slash. +30 max HP.", weapon = "FlameSlash", bonus = { health = 30 } },
+	Ninja = { desc = "Shadow Clones. +15% speed.", weapon = "ShadowClones", bonus = { speed = 0.15 } },
+	Mage = { desc = "Spiral Orb. +15% area.", weapon = "SpiralOrb", bonus = { area = 0.15 } },
+	Healer = { desc = "Spirit Orbs. Heals nearby allies.", weapon = "SpiritOrbs", bonus = { heal = 2 } },
+}
+Config.CLASS_ORDER = { "Swordsman", "Ninja", "Mage", "Healer" }
+
+Config.Enemies = {
+	Grunt = { hp = 20, speed = 11, damage = 6, xp = 1, scale = 1, color = Color3.fromRGB(110, 30, 50) },
+	Runner = { hp = 12, speed = 15, damage = 4, xp = 1, scale = 0.8, color = Color3.fromRGB(220, 170, 40) },
+	Brute = { hp = 110, speed = 8, damage = 14, xp = 6, scale = 1.7, color = Color3.fromRGB(60, 60, 90) },
+	MiniBoss = { hp = 1200, speed = 10, damage = 22, xp = 40, gold = 25, scale = 3, color = Color3.fromRGB(170, 40, 200), healthBar = true },
+	Boss = { hp = 15000, speed = 12, damage = 40, xp = 0, gold = 300, scale = 5, color = Color3.fromRGB(160, 0, 0), healthBar = true },
+}
+
+-- Permanent upgrades bought with gold between runs. Cost = cost * META_GROWTH ^ level.
+Config.Meta = {
+	Might = { name = "Might", desc = "+5% damage", stat = "damage", per = 0.05, max = 10, cost = 100 },
+	Toughness = { name = "Toughness", desc = "+10 max HP", stat = "health", per = 10, max = 10, cost = 100 },
+	Greed = { name = "Greed", desc = "+10% gold", stat = "gold", per = 0.10, max = 10, cost = 150 },
+	Reach = { name = "Reach", desc = "+10% pickup range", stat = "magnet", per = 0.10, max = 5, cost = 120 },
+	Reroll = { name = "Reroll", desc = "+1 reroll per run", stat = "reroll", per = 1, max = 5, cost = 300 },
+}
+Config.META_ORDER = { "Might", "Toughness", "Greed", "Reach", "Reroll" }
+Config.META_GROWTH = 1.5
+
+return Config
+]]></ProtectedString></Properties></Item></Item></Item><Item class="ServerScriptService" referent="RBX0013"><Properties><string name="Name">ServerScriptService</string></Properties><Item class="Folder" referent="RBX0012"><Properties><string name="Name">Server</string></Properties><Item class="ModuleScript" referent="RBX0007"><Properties><string name="Name">Enemies</string><ProtectedString name="Source"><![CDATA[-- Enemy spawning, chasing, damage, and XP orbs.
+-- Enemies are anchored parts moved by the server: cheap enough for big swarms.
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+
+local Config = require(RS.Shared.Config)
+
+local Enemies = {}
+Enemies.onKilled = function(_enemy, _killer) end
+Enemies.onPickup = function(_player, _xp) end
+
+local list, orbs = {}, {}
+
+local folder = Instance.new("Folder")
+folder.Name = "Enemies"
+folder.Parent = workspace
+local orbFolder = Instance.new("Folder")
+orbFolder.Name = "XPOrbs"
+orbFolder.Parent = workspace
+
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function groundY(x, z)
+	local exclude = { folder, orbFolder }
+	local fx = workspace:FindFirstChild("FX")
+	if fx then
+		table.insert(exclude, fx)
+	end
+	for _, p in Players:GetPlayers() do
+		if p.Character then
+			table.insert(exclude, p.Character)
+		end
+	end
+	rayParams.FilterDescendantsInstances = exclude
+	local hit = workspace:Raycast(Vector3.new(x, 200, z), Vector3.new(0, -400, 0), rayParams)
+	return hit and hit.Position.Y
+end
+
+local function makePart(props, parent)
+	local p = Instance.new("Part")
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+	for k, v in props do
+		p[k] = v
+	end
+	p.Parent = parent
+	return p
+end
+
+local function makeBar(part, scale)
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.new(5 * scale, 0, 0.4 * scale, 0)
+	gui.StudsOffset = Vector3.new(0, 2.5 * scale, 0)
+	gui.AlwaysOnTop = true
+	gui.Adornee = part
+	gui.Parent = part
+	local back = Instance.new("Frame")
+	back.Size = UDim2.fromScale(1, 1)
+	back.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
+	back.Parent = gui
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.fromScale(1, 1)
+	fill.BackgroundColor3 = Color3.fromRGB(230, 40, 40)
+	fill.BorderSizePixel = 0
+	fill.Parent = back
+	return fill
+end
+
+local function dropOrb(pos, xp)
+	-- merge into an existing orb when there are too many on the map
+	if #orbs >= 250 then
+		local o = orbs[math.random(#orbs)]
+		o.xp += xp
+		return
+	end
+	local big = xp >= 10
+	local part = makePart({
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.one * (big and 1.6 or 0.9),
+		Material = Enum.Material.Neon,
+		Color = big and Color3.fromRGB(180, 80, 255) or Color3.fromRGB(70, 160, 255),
+		Position = pos,
+	}, orbFolder)
+	table.insert(orbs, { part = part, xp = xp })
+end
+
+local function flash(e)
+	if e.flashing then
+		return
+	end
+	e.flashing = true
+	e.root.Color = Color3.new(1, 1, 1)
+	task.delay(0.07, function()
+		e.flashing = false
+		if not e.dead then
+			e.root.Color = e.def.color
+		end
+	end)
+end
+
+function Enemies.spawn(kind, x, z, hpScale, dmgScale)
+	local def = Config.Enemies[kind]
+	local y = groundY(x, z)
+	if not y then
+		return nil
+	end
+	local s = def.scale
+	local model = Instance.new("Model")
+	model.Name = kind
+	local body = makePart({ Name = "Body", Size = Vector3.new(2, 2.5, 1.5) * s, Color = def.color }, model)
+	body.CFrame = CFrame.new(x, y + body.Size.Y / 2, z)
+	local head = makePart({ Name = "Head", Shape = Enum.PartType.Ball, Size = Vector3.one * 1.6 * s, Color = def.color }, model)
+	head.CFrame = body.CFrame * CFrame.new(0, body.Size.Y / 2 + head.Size.Y / 2 - 0.2 * s, 0)
+	model.PrimaryPart = body
+	model.Parent = folder
+
+	local hp = def.hp * hpScale
+	local e = {
+		model = model, root = body, def = def, kind = kind,
+		hp = hp, maxHp = hp, damage = def.damage * dmgScale,
+		radius = 1.2 * s, lastHit = 0,
+	}
+	if def.healthBar then
+		e.bar = makeBar(body, s)
+	end
+	table.insert(list, e)
+	return e
+end
+
+function Enemies.damage(e, amount, player)
+	if e.dead then
+		return
+	end
+	e.hp -= amount
+	if e.bar then
+		e.bar.Size = UDim2.fromScale(math.max(e.hp, 0) / e.maxHp, 1)
+	end
+	if e.hp > 0 then
+		flash(e)
+		return
+	end
+	e.dead = true
+	if e.def.xp > 0 then
+		dropOrb(e.root.Position - Vector3.new(0, e.root.Size.Y / 2 - 0.8, 0), e.def.xp)
+	end
+	Enemies.onKilled(e, player)
+	e.model:Destroy()
+end
+
+-- targets: array of { player, root, hum, magnet }
+function Enemies.step(dt, targets)
+	local now = os.clock()
+	for i = #list, 1, -1 do
+		local e = list[i]
+		if e.dead then
+			table.remove(list, i)
+			continue
+		end
+		local best, bestDist
+		for _, t in targets do
+			local d = flat(t.root.Position - e.root.Position).Magnitude
+			if not bestDist or d < bestDist then
+				best, bestDist = t, d
+			end
+		end
+		if best then
+			local pos = e.root.Position
+			local to = flat(best.root.Position - pos)
+			local reach = e.radius + 2
+			if bestDist > reach then
+				local newPos = pos + to.Unit * math.min(e.def.speed * dt, bestDist - reach)
+				e.model:PivotTo(CFrame.lookAt(newPos, newPos + to))
+			elseif now - e.lastHit >= 1 then
+				e.lastHit = now
+				best.hum:TakeDamage(e.damage)
+			end
+		end
+	end
+
+	for i = #orbs, 1, -1 do
+		local o = orbs[i]
+		local t = o.target
+		if t and (t.hum.Health <= 0 or not t.root.Parent) then
+			t, o.target = nil, nil
+		end
+		if not t then
+			for _, candidate in targets do
+				if (candidate.root.Position - o.part.Position).Magnitude <= candidate.magnet then
+					t, o.target = candidate, candidate
+					break
+				end
+			end
+		end
+		if t then
+			local to = t.root.Position - o.part.Position
+			if to.Magnitude < 2 then
+				Enemies.onPickup(t.player, o.xp)
+				o.part:Destroy()
+				table.remove(orbs, i)
+			else
+				o.part.Position += to.Unit * math.min(to.Magnitude, 60 * dt)
+			end
+		end
+	end
+end
+
+function Enemies.nearest(pos, maxDist, exclude)
+	local best, bestDist = nil, maxDist
+	for _, e in list do
+		if not e.dead and not (exclude and exclude[e]) then
+			local d = flat(e.root.Position - pos).Magnitude - e.radius
+			if d <= bestDist then
+				best, bestDist = e, d
+			end
+		end
+	end
+	return best
+end
+
+-- up to n enemies within maxDist, closest first
+function Enemies.closest(pos, maxDist, n)
+	local found = {}
+	for _, e in list do
+		if not e.dead then
+			local d = flat(e.root.Position - pos).Magnitude - e.radius
+			if d <= maxDist then
+				table.insert(found, { e = e, d = d })
+			end
+		end
+	end
+	table.sort(found, function(a, b)
+		return a.d < b.d
+	end)
+	local out = {}
+	for i = 1, math.min(n, #found) do
+		out[i] = found[i].e
+	end
+	return out
+end
+
+function Enemies.inRadius(pos, r)
+	local out = {}
+	for _, e in list do
+		if not e.dead and flat(e.root.Position - pos).Magnitude <= r + e.radius then
+			table.insert(out, e)
+		end
+	end
+	return out
+end
+
+function Enemies.count()
+	return #list
+end
+
+function Enemies.clear()
+	for _, e in list do
+		e.dead = true
+		e.model:Destroy()
+	end
+	table.clear(list)
+	for _, o in orbs do
+		o.part:Destroy()
+	end
+	table.clear(orbs)
+end
+
+return Enemies
+]]></ProtectedString></Properties></Item><Item class="Script" referent="RBX0008"><Properties><string name="Name">Main</string><ProtectedString name="Source"><![CDATA[-- Game loop: Lobby (pick class, buy upgrades) -> Run (survive, level up, boss) -> Results (gold).
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local Config = require(RS.Shared.Config)
+local PlayerData = require(script.Parent.PlayerData)
+local Enemies = require(script.Parent.Enemies)
+local Progression = require(script.Parent.Progression)
+local Weapons = require(script.Parent.Weapons)
+
+Players.CharacterAutoLoads = false
+
+local remotes = {}
+local remoteFolder = Instance.new("Folder")
+remoteFolder.Name = "Remotes"
+for _, name in { "State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results" } do
+	local r = Instance.new("RemoteEvent")
+	r.Name = name
+	r.Parent = remoteFolder
+	remotes[name] = r
+end
+remoteFolder.Parent = RS
+Progression.init(remotes)
+
+local phase = "Lobby"
+local selectedClass = {}
+
+local function sendMeta(player)
+	local data = PlayerData.get(player)
+	if not data then
+		return
+	end
+	local costs = {}
+	for name, m in Config.Meta do
+		costs[name] = data.meta[name] < m.max and PlayerData.metaCost(name, data.meta[name]) or false
+	end
+	remotes.Meta:FireClient(player, {
+		gold = data.gold, levels = data.meta, costs = costs,
+		class = selectedClass[player] or "Swordsman",
+	})
+end
+
+local function startPlayer(player)
+	local data = PlayerData.get(player)
+	if data then
+		Progression.start(player, selectedClass[player] or "Swordsman", data.meta)
+		Progression.sync(player)
+	end
+end
+
+local function onCharacter(player, character)
+	local hum = character:WaitForChild("Humanoid")
+	hum.Died:Connect(function()
+		local s = Progression.get(player)
+		if phase == "Run" and s then
+			-- out for the rest of the run
+			s.dead = true
+			Weapons.cleanup(player)
+			remotes.LevelUp:FireClient(player, nil)
+			return
+		end
+		task.wait(3)
+		if phase ~= "Run" and player.Parent then
+			player:LoadCharacter()
+		end
+	end)
+	if phase == "Run" and not Progression.get(player) then
+		startPlayer(player) -- joined mid-run
+	end
+	Progression.applyStats(player)
+end
+
+local function onPlayerAdded(player)
+	PlayerData.load(player)
+	player.CharacterAdded:Connect(function(character)
+		onCharacter(player, character)
+	end)
+	player:LoadCharacter()
+	sendMeta(player)
+end
+
+Players.PlayerAdded:Connect(onPlayerAdded)
+for _, player in Players:GetPlayers() do
+	task.spawn(onPlayerAdded, player)
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	Weapons.cleanup(player)
+	Progression.stop(player)
+	selectedClass[player] = nil
+	PlayerData.release(player)
+end)
+
+remotes.Choose.OnServerEvent:Connect(function(player, index)
+	if typeof(index) == "number" then
+		Progression.choose(player, index)
+	end
+end)
+remotes.Reroll.OnServerEvent:Connect(Progression.reroll)
+remotes.Meta.OnServerEvent:Connect(sendMeta)
+remotes.SelectClass.OnServerEvent:Connect(function(player, name)
+	if phase ~= "Run" and typeof(name) == "string" and Config.Classes[name] then
+		selectedClass[player] = name
+		sendMeta(player)
+	end
+end)
+remotes.BuyMeta.OnServerEvent:Connect(function(player, name)
+	if phase ~= "Run" and typeof(name) == "string" and PlayerData.buy(player, name) then
+		sendMeta(player)
+	end
+end)
+
+Enemies.onKilled = function(enemy, killer)
+	local s = killer and Progression.get(killer)
+	if s then
+		s.kills += 1
+		s.bonusGold += enemy.def.gold or 0
+	end
+end
+Enemies.onPickup = Progression.addXP
+
+local function liveTargets()
+	local targets = {}
+	for player, s in Progression.all() do
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local hum = character and character:FindFirstChildOfClass("Humanoid")
+		if not s.dead and root and hum and hum.Health > 0 then
+			table.insert(targets, { player = player, s = s, root = root, hum = hum, magnet = Progression.magnet(s) })
+		end
+	end
+	return targets
+end
+
+RunService.Heartbeat:Connect(function(dt)
+	if phase == "Run" then
+		Enemies.step(dt, liveTargets())
+		Weapons.step(dt)
+	end
+end)
+
+local function spawnAround(kind, targets, hpScale, dmgScale)
+	local p = targets[math.random(#targets)].root.Position
+	for _ = 1, 6 do
+		local a = math.random() * 2 * math.pi
+		local d = Config.SPAWN_MIN + math.random() * (Config.SPAWN_MAX - Config.SPAWN_MIN)
+		local e = Enemies.spawn(kind, p.X + math.cos(a) * d, p.Z + math.sin(a) * d, hpScale, dmgScale)
+		if e then
+			return e
+		end
+	end
+	-- the player is near the edge of the map: spawn close instead
+	return Enemies.spawn(kind, p.X, p.Z + 15, hpScale, dmgScale)
+end
+
+local function pickKind(minutes)
+	local r = math.random()
+	if minutes >= 3 and r < 0.12 then
+		return "Brute"
+	elseif minutes >= 1 and r < 0.35 then
+		return "Runner"
+	end
+	return "Grunt"
+end
+
+local function healers(targets)
+	for _, healer in targets do
+		local amount = Progression.bonus(healer.s, "heal")
+		if amount > 0 then
+			for _, t in targets do
+				if (t.root.Position - healer.root.Position).Magnitude <= 30 then
+					t.hum.Health = math.min(t.hum.MaxHealth, t.hum.Health + amount)
+				end
+			end
+		end
+	end
+end
+
+local function runGame()
+	phase = "Run"
+	for _, player in Players:GetPlayers() do
+		startPlayer(player)
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health > 0 then
+			Progression.applyStats(player)
+		else
+			player:LoadCharacter()
+		end
+	end
+
+	local start = os.clock()
+	local nextMini = Config.MINIBOSS_EVERY
+	local lastTick = 0
+	local boss
+	while true do
+		local elapsed = os.clock() - start
+		local minutes = elapsed / 60
+		local targets = liveTargets()
+		if #targets == 0 then
+			return "Defeat", elapsed
+		end
+
+		local playerFactor = 1 + 0.3 * (#targets - 1)
+		local hpScale = (1 + minutes * 0.4) * playerFactor
+		local dmgScale = 1 + minutes * 0.15
+		local desired = math.min(Config.MAX_ENEMIES, math.floor((15 + minutes * 12) * playerFactor))
+		for _ = 1, math.min(4, desired - Enemies.count()) do
+			spawnAround(pickKind(minutes), targets, hpScale, dmgScale)
+		end
+		if elapsed >= nextMini and elapsed < Config.RUN_LENGTH then
+			nextMini += Config.MINIBOSS_EVERY
+			spawnAround("MiniBoss", targets, hpScale, dmgScale)
+		end
+		if elapsed >= Config.RUN_LENGTH then
+			if not boss then
+				boss = spawnAround("Boss", targets, playerFactor, 1)
+			elseif boss.dead then
+				return "Victory", elapsed
+			end
+		end
+
+		if os.clock() - lastTick >= 1 then
+			lastTick = os.clock()
+			healers(targets)
+			local left = math.ceil(Config.RUN_LENGTH - elapsed)
+			remotes.State:FireAllClients({
+				phase = "Run",
+				text = left > 0 and string.format("%d:%02d", left // 60, left % 60) or "FINAL BOSS!",
+			})
+			for player in Progression.all() do
+				Progression.sync(player)
+			end
+		end
+		task.wait(0.25)
+	end
+end
+
+local function endGame(result, elapsed)
+	phase = "Results"
+	for player, s in Progression.all() do
+		local data = PlayerData.get(player)
+		if data then
+			local gold = s.kills + math.floor(elapsed / 10) + s.bonusGold + (result == "Victory" and 500 or 0)
+			gold = math.floor(gold * (1 + Progression.bonus(s, "gold")))
+			data.gold += gold
+			task.spawn(PlayerData.save, player)
+			remotes.Results:FireClient(player, {
+				result = result, gold = gold, kills = s.kills, level = s.level, time = math.floor(elapsed),
+			})
+			sendMeta(player)
+		end
+	end
+	Weapons.clear()
+	Enemies.clear()
+	Progression.clear()
+	remotes.State:FireAllClients({ phase = "Results", text = result == "Victory" and "VICTORY!" or "DEFEATED" })
+	task.wait(Config.RESULTS_TIME)
+end
+
+while true do
+	phase = "Lobby"
+	for _, player in Players:GetPlayers() do
+		player:LoadCharacter() -- fresh character with default stats
+	end
+	local t = Config.INTERMISSION
+	while t > 0 do
+		if #Players:GetPlayers() > 0 then
+			t -= 1
+		end
+		remotes.State:FireAllClients({ phase = "Lobby", text = "Run starts in " .. t })
+		task.wait(1)
+	end
+	endGame(runGame())
+end
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX0009"><Properties><string name="Name">PlayerData</string><ProtectedString name="Source"><![CDATA[-- Saves gold and permanent upgrades between runs.
+local DataStoreService = game:GetService("DataStoreService")
+local RS = game:GetService("ReplicatedStorage")
+
+local Config = require(RS.Shared.Config)
+
+local store
+pcall(function()
+	store = DataStoreService:GetDataStore("AnimeSwarm_v1")
+end)
+
+local PlayerData = {}
+local cache = {}
+
+local function key(player)
+	return "p_" .. player.UserId
+end
+
+function PlayerData.load(player)
+	local data = { gold = 0, meta = {} }
+	local saved
+	if store then
+		local ok, result = pcall(store.GetAsync, store, key(player))
+		if ok and type(result) == "table" then
+			saved = result
+		end
+	end
+	data.gold = saved and tonumber(saved.gold) or 0
+	for name in Config.Meta do
+		data.meta[name] = saved and saved.meta and tonumber(saved.meta[name]) or 0
+	end
+	cache[player] = data
+	return data
+end
+
+function PlayerData.get(player)
+	return cache[player]
+end
+
+function PlayerData.save(player)
+	local data = cache[player]
+	if store and data then
+		pcall(store.SetAsync, store, key(player), data)
+	end
+end
+
+function PlayerData.release(player)
+	PlayerData.save(player)
+	cache[player] = nil
+end
+
+function PlayerData.metaCost(name, level)
+	return math.floor(Config.Meta[name].cost * Config.META_GROWTH ^ level)
+end
+
+function PlayerData.buy(player, name)
+	local data, meta = cache[player], Config.Meta[name]
+	if not data or not meta then
+		return false
+	end
+	local level = data.meta[name]
+	local cost = PlayerData.metaCost(name, level)
+	if level >= meta.max or data.gold < cost then
+		return false
+	end
+	data.gold -= cost
+	data.meta[name] = level + 1
+	return true
+end
+
+game:BindToClose(function()
+	for player in cache do
+		PlayerData.save(player)
+	end
+end)
+
+return PlayerData
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX0010"><Properties><string name="Name">Progression</string><ProtectedString name="Source"><![CDATA[-- Per-run player state: XP, levels, level-up choices, weapons, passives, evolutions.
+local RS = game:GetService("ReplicatedStorage")
+
+local Config = require(RS.Shared.Config)
+
+local Progression = {}
+local states = {} -- [player] = state
+local remotes
+
+function Progression.init(r)
+	remotes = r
+end
+
+local function count(t)
+	local n = 0
+	for _ in t do
+		n += 1
+	end
+	return n
+end
+
+-- Sum of class bonus, passives and permanent upgrades for one stat.
+function Progression.bonus(s, stat)
+	local total = s.classBonus[stat] or 0
+	for name, level in s.passives do
+		local p = Config.Passives[name]
+		if p.stat == stat then
+			total += p.per * level
+		end
+	end
+	for name, level in s.meta do
+		local m = Config.Meta[name]
+		if m and m.stat == stat then
+			total += m.per * level
+		end
+	end
+	return total
+end
+
+function Progression.damageMult(s)
+	return 1 + Progression.bonus(s, "damage")
+end
+
+function Progression.cooldownMult(s)
+	return math.max(0.4, 1 - Progression.bonus(s, "cooldown"))
+end
+
+function Progression.areaMult(s)
+	return 1 + Progression.bonus(s, "area")
+end
+
+function Progression.magnet(s)
+	return Config.BASE_MAGNET * (1 + Progression.bonus(s, "magnet"))
+end
+
+function Progression.xpNeeded(level)
+	return 5 + level * 3
+end
+
+function Progression.get(player)
+	return states[player]
+end
+
+function Progression.all()
+	return states
+end
+
+function Progression.start(player, className, meta)
+	local class = Config.Classes[className] or Config.Classes.Swordsman
+	local s = {
+		level = 1, xp = 0, kills = 0, bonusGold = 0, dead = false,
+		weapons = { [class.weapon] = 1 }, passives = {}, timers = {},
+		classBonus = class.bonus, meta = meta, choices = nil, pending = 0,
+	}
+	s.rerolls = math.floor(Progression.bonus(s, "reroll"))
+	states[player] = s
+	return s
+end
+
+function Progression.stop(player)
+	states[player] = nil
+end
+
+function Progression.clear()
+	for player in states do
+		remotes.LevelUp:FireClient(player, nil)
+	end
+	table.clear(states)
+end
+
+function Progression.applyStats(player)
+	local s = states[player]
+	local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if not s or not hum or hum.Health <= 0 then
+		return
+	end
+	local ratio = hum.Health / hum.MaxHealth
+	hum.MaxHealth = Config.BASE_HEALTH + Progression.bonus(s, "health")
+	hum.Health = hum.MaxHealth * ratio
+	hum.WalkSpeed = Config.BASE_SPEED * (1 + Progression.bonus(s, "speed"))
+end
+
+function Progression.sync(player)
+	local s = states[player]
+	if not s then
+		return
+	end
+	local weapons, passives = {}, {}
+	for name, level in s.weapons do
+		local w = Config.Weapons[name]
+		table.insert(weapons, w.name .. (w.evolved and " (EVO)" or " Lv" .. level))
+	end
+	for name, level in s.passives do
+		table.insert(passives, Config.Passives[name].name .. " Lv" .. level)
+	end
+	remotes.Stats:FireClient(player, {
+		level = s.level, xp = s.xp, need = Progression.xpNeeded(s.level),
+		kills = s.kills, weapons = weapons, passives = passives,
+	})
+end
+
+local function hasEvolutionOf(s, baseName)
+	for name in s.weapons do
+		if Config.Weapons[name].from == baseName then
+			return true
+		end
+	end
+	return false
+end
+
+local function buildChoices(s)
+	local picks, pool = {}, {}
+	for name, level in s.weapons do
+		local w = Config.Weapons[name]
+		if w.evolvesInto and level >= Config.WEAPON_MAX and (s.passives[w.evolveWith] or 0) >= Config.PASSIVE_MAX then
+			table.insert(picks, { type = "evolve", key = name })
+		elseif not w.evolved and level < Config.WEAPON_MAX then
+			table.insert(pool, { type = "weapon", key = name })
+		end
+	end
+	if count(s.weapons) < Config.WEAPON_SLOTS then
+		for name, w in Config.Weapons do
+			if not w.evolved and not s.weapons[name] and not hasEvolutionOf(s, name) then
+				table.insert(pool, { type = "weapon", key = name })
+			end
+		end
+	end
+	for name, level in s.passives do
+		if level < Config.PASSIVE_MAX then
+			table.insert(pool, { type = "passive", key = name })
+		end
+	end
+	if count(s.passives) < Config.PASSIVE_SLOTS then
+		for name in Config.Passives do
+			if not s.passives[name] then
+				table.insert(pool, { type = "passive", key = name })
+			end
+		end
+	end
+
+	while #picks > Config.CHOICES do
+		table.remove(picks)
+	end
+	while #picks < Config.CHOICES and #pool > 0 do
+		table.insert(picks, table.remove(pool, math.random(#pool)))
+	end
+	if #picks == 0 then
+		picks = { { type = "heal" }, { type = "gold" } }
+	end
+	return picks
+end
+
+local function describe(s, c)
+	if c.type == "weapon" then
+		local w = Config.Weapons[c.key]
+		local level = (s.weapons[c.key] or 0) + 1
+		return {
+			title = w.name,
+			text = level == 1 and "NEW! " .. w.desc or "Level " .. level .. ": more damage, faster, more hits",
+			color = w.color,
+		}
+	elseif c.type == "passive" then
+		local p = Config.Passives[c.key]
+		local level = (s.passives[c.key] or 0) + 1
+		return {
+			title = p.name,
+			text = (level == 1 and "NEW! " or "Level " .. level .. ": ") .. p.desc,
+			color = Color3.fromRGB(220, 220, 220),
+		}
+	elseif c.type == "evolve" then
+		local evo = Config.Weapons[Config.Weapons[c.key].evolvesInto]
+		return { title = "EVOLVE: " .. evo.name, text = evo.desc, color = evo.color }
+	elseif c.type == "heal" then
+		return { title = "Ramen Bowl", text = "Heal 50 HP.", color = Color3.fromRGB(255, 200, 150) }
+	end
+	return { title = "Gold Pouch", text = "+25 gold at the end of the run.", color = Color3.fromRGB(255, 215, 0) }
+end
+
+function Progression.offer(player)
+	local s = states[player]
+	s.choices = buildChoices(s)
+	local cards = {}
+	for i, c in s.choices do
+		cards[i] = describe(s, c)
+	end
+	remotes.LevelUp:FireClient(player, cards, s.rerolls)
+end
+
+function Progression.addXP(player, amount)
+	local s = states[player]
+	if not s or s.dead then
+		return
+	end
+	s.xp += amount
+	while s.xp >= Progression.xpNeeded(s.level) do
+		s.xp -= Progression.xpNeeded(s.level)
+		s.level += 1
+		s.pending += 1
+	end
+	if s.pending > 0 and not s.choices then
+		Progression.offer(player)
+	end
+	Progression.sync(player)
+end
+
+function Progression.choose(player, index)
+	local s = states[player]
+	local c = s and not s.dead and s.choices and s.choices[index]
+	if not c then
+		return
+	end
+	if c.type == "weapon" then
+		s.weapons[c.key] = (s.weapons[c.key] or 0) + 1
+	elseif c.type == "passive" then
+		s.passives[c.key] = (s.passives[c.key] or 0) + 1
+	elseif c.type == "evolve" then
+		s.weapons[c.key] = nil
+		s.timers[c.key] = nil
+		s.weapons[Config.Weapons[c.key].evolvesInto] = 1
+	elseif c.type == "heal" then
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.Health = math.min(hum.MaxHealth, hum.Health + 50)
+		end
+	else
+		s.bonusGold += 25
+	end
+	s.choices = nil
+	s.pending -= 1
+	Progression.applyStats(player)
+	if s.pending > 0 then
+		Progression.offer(player)
+	else
+		remotes.LevelUp:FireClient(player, nil)
+	end
+	Progression.sync(player)
+end
+
+function Progression.reroll(player)
+	local s = states[player]
+	if s and s.choices and s.rerolls > 0 then
+		s.rerolls -= 1
+		Progression.offer(player)
+	end
+end
+
+return Progression
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX0011"><Properties><string name="Name">Weapons</string><ProtectedString name="Source"><![CDATA[-- Auto-firing anime weapons. Each weapon kind targets enemies on its own.
+local RS = game:GetService("ReplicatedStorage")
+local Debris = game:GetService("Debris")
+local TweenService = game:GetService("TweenService")
+
+local Config = require(RS.Shared.Config)
+local Enemies = require(script.Parent.Enemies)
+local Progression = require(script.Parent.Progression)
+
+local Weapons = {}
+local projectiles = {}
+local orbits = {} -- [player] = { [weaponName] = { parts } }
+
+local fxFolder = Instance.new("Folder")
+fxFolder.Name = "FX"
+fxFolder.Parent = workspace
+
+local function flat(v)
+	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function makeOrb(color, size)
+	local p = Instance.new("Part")
+	p.Shape = Enum.PartType.Ball
+	p.Size = Vector3.one * size
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+	p.Material, p.Color = Enum.Material.Neon, color
+	p.Parent = fxFolder
+	return p
+end
+
+-- short-lived fading effect
+local function fx(cf, size, color, shape, life)
+	local p = Instance.new("Part")
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+	p.Material, p.Color, p.Transparency = Enum.Material.Neon, color, 0.3
+	p.Shape = shape or Enum.PartType.Block
+	p.Size, p.CFrame = size, cf
+	p.Parent = fxFolder
+	life = life or 0.35
+	TweenService:Create(p, TweenInfo.new(life), { Transparency = 1 }):Play()
+	Debris:AddItem(p, life + 0.05)
+end
+
+local function beamFx(from, to, width, color, life)
+	local length = (to - from).Magnitude
+	if length > 0.1 then
+		fx(CFrame.lookAt((from + to) / 2, to), Vector3.new(width, 0.4, length), color, nil, life)
+	end
+end
+
+local function stats(s, name, level)
+	local w = Config.Weapons[name]
+	local up = level - 1
+	return {
+		w = w,
+		damage = w.damage * (1 + 0.25 * up) * Progression.damageMult(s),
+		cooldown = w.cooldown * (1 - 0.06 * up) * Progression.cooldownMult(s),
+		range = w.range * Progression.areaMult(s),
+		radius = (w.radius or 0) * Progression.areaMult(s),
+		count = (w.count or 1) + math.floor(up / 2),
+	}
+end
+
+local function directionTo(root, target)
+	local d = flat(target.root.Position - root.Position)
+	if d.Magnitude < 0.1 then
+		d = flat(root.CFrame.LookVector)
+	end
+	return d.Unit
+end
+
+local function rotate(dir, angle)
+	return CFrame.fromAxisAngle(Vector3.yAxis, angle):VectorToWorldSpace(dir)
+end
+
+local function orbitPositions(root, st, now)
+	local out = {}
+	for i = 1, st.count do
+		local a = now * 3 + i * 2 * math.pi / st.count
+		out[i] = root.Position + Vector3.new(math.cos(a) * st.range, 0, math.sin(a) * st.range)
+	end
+	return out
+end
+
+-- Each returns true if it fired, false if there was nothing to hit.
+local fire = {}
+
+function fire.cone(player, _s, root, st)
+	local target = Enemies.nearest(root.Position, st.range * 2.5)
+	if not target then
+		return false
+	end
+	local base = directionTo(root, target)
+	local cosHalf = math.cos(math.rad(st.w.angle / 2))
+	local nearby = Enemies.inRadius(root.Position, st.range)
+	for i = 0, st.count - 1 do
+		local dir = rotate(base, i * 2 * math.pi / st.count)
+		beamFx(root.Position, root.Position + dir * st.range, st.range, st.w.color)
+		for _, e in nearby do
+			local d = flat(e.root.Position - root.Position)
+			if d.Magnitude < 0.1 or d.Unit:Dot(dir) >= cosHalf then
+				Enemies.damage(e, st.damage, player)
+			end
+		end
+	end
+	return true
+end
+
+function fire.chain(player, _s, root, st)
+	local current = Enemies.nearest(root.Position, st.range)
+	if not current then
+		return false
+	end
+	local hit, from = {}, root.Position
+	for _ = 1, st.count do
+		hit[current] = true
+		local to = current.root.Position
+		beamFx(from, to, 0.5, st.w.color, 0.2)
+		Enemies.damage(current, st.damage, player)
+		from = to
+		current = Enemies.nearest(to, 15, hit)
+		if not current then
+			break
+		end
+	end
+	return true
+end
+
+function fire.projectile(player, _s, root, st)
+	local targets = Enemies.closest(root.Position, st.range, st.count)
+	if #targets == 0 then
+		return false
+	end
+	for i = 1, st.count do
+		local target = targets[(i - 1) % #targets + 1]
+		table.insert(projectiles, {
+			player = player, pos = root.Position, dir = directionTo(root, target),
+			left = st.range, damage = st.damage, radius = st.radius, color = st.w.color,
+			part = makeOrb(st.w.color, 2),
+		})
+	end
+	return true
+end
+
+function fire.clones(player, _s, root, st)
+	if not Enemies.nearest(root.Position, 40) then
+		return false
+	end
+	for i = 1, st.count do
+		task.delay((i - 1) * 0.12, function()
+			if not root.Parent then
+				return
+			end
+			local offset = Vector3.new(math.random(-12, 12), 0, math.random(-12, 12))
+			local target = Enemies.nearest(root.Position + offset, 30)
+			local pos = target and target.root.Position or root.Position + offset
+			pos = Vector3.new(pos.X, root.Position.Y, pos.Z)
+			fx(CFrame.new(pos), Vector3.new(2, 5, 1), Color3.fromRGB(25, 25, 35), nil, 0.5) -- the clone
+			fx(CFrame.new(pos), Vector3.one * st.range * 2, st.w.color, Enum.PartType.Ball)
+			for _, e in Enemies.inRadius(pos, st.range) do
+				Enemies.damage(e, st.damage, player)
+			end
+		end)
+	end
+	return true
+end
+
+function fire.orbit(player, _s, root, st)
+	for _, pos in orbitPositions(root, st, os.clock()) do
+		for _, e in Enemies.inRadius(pos, 2.5) do
+			Enemies.damage(e, st.damage, player)
+		end
+	end
+	return true
+end
+
+function fire.line(player, _s, root, st)
+	local target = Enemies.nearest(root.Position, st.range)
+	if not target then
+		return false
+	end
+	local first = directionTo(root, target)
+	local origin = root.Position
+	local nearby = Enemies.inRadius(origin, st.range)
+	for i = 1, st.count do
+		local dir = i == 1 and first or rotate(first, math.random() * 2 * math.pi)
+		beamFx(origin, origin + dir * st.range, st.w.width, st.w.color, 0.25)
+		for _, e in nearby do
+			local rel = flat(e.root.Position - origin)
+			local along = rel:Dot(dir)
+			if along > 0 and (rel - dir * along).Magnitude <= st.w.width + e.radius then
+				Enemies.damage(e, st.damage, player)
+			end
+		end
+	end
+	return true
+end
+
+local function stepProjectiles(dt)
+	for i = #projectiles, 1, -1 do
+		local p = projectiles[i]
+		local move = 60 * dt
+		p.pos += p.dir * move
+		p.left -= move
+		p.part.CFrame = CFrame.new(p.pos)
+		if p.left <= 0 or Enemies.nearest(p.pos, 1.5) then
+			fx(CFrame.new(p.pos), Vector3.one * p.radius * 2, p.color, Enum.PartType.Ball)
+			for _, e in Enemies.inRadius(p.pos, p.radius) do
+				Enemies.damage(e, p.damage, p.player)
+			end
+			p.part:Destroy()
+			table.remove(projectiles, i)
+		end
+	end
+end
+
+local function updateOrbit(playerOrbits, name, root, st, now)
+	local parts = playerOrbits[name] or {}
+	playerOrbits[name] = parts
+	while #parts < st.count do
+		table.insert(parts, makeOrb(st.w.color, 1.6))
+	end
+	while #parts > st.count do
+		table.remove(parts):Destroy()
+	end
+	for i, pos in orbitPositions(root, st, now) do
+		parts[i].CFrame = CFrame.new(pos)
+	end
+end
+
+function Weapons.cleanup(player)
+	for _, parts in orbits[player] or {} do
+		for _, p in parts do
+			p:Destroy()
+		end
+	end
+	orbits[player] = nil
+end
+
+function Weapons.clear()
+	for _, p in projectiles do
+		p.part:Destroy()
+	end
+	table.clear(projectiles)
+	for player in orbits do
+		Weapons.cleanup(player)
+	end
+end
+
+function Weapons.step(dt)
+	local now = os.clock()
+	stepProjectiles(dt)
+	for player, s in Progression.all() do
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if s.dead or not root then
+			Weapons.cleanup(player)
+			continue
+		end
+		local playerOrbits = orbits[player] or {}
+		orbits[player] = playerOrbits
+		-- remove orbit visuals for weapons that evolved away
+		for name, parts in playerOrbits do
+			if not s.weapons[name] then
+				for _, p in parts do
+					p:Destroy()
+				end
+				playerOrbits[name] = nil
+			end
+		end
+		for name, level in s.weapons do
+			local st = stats(s, name, level)
+			if st.w.kind == "orbit" then
+				updateOrbit(playerOrbits, name, root, st, now)
+			end
+			if now >= (s.timers[name] or 0) then
+				local fired = fire[st.w.kind](player, s, root, st)
+				s.timers[name] = now + (fired and st.cooldown or 0.2)
+			end
+		end
+	end
+end
+
+return Weapons
+]]></ProtectedString></Properties></Item></Item></Item><Item class="StarterPlayer" referent="RBX0019"><Properties><string name="Name">StarterPlayer</string></Properties><Item class="StarterPlayerScripts" referent="RBX0016"><Properties><string name="Name">StarterPlayerScripts</string></Properties><Item class="Folder" referent="RBX0015"><Properties><string name="Name">Client</string></Properties><Item class="LocalScript" referent="RBX0014"><Properties><string name="Name">SwarmClient</string><ProtectedString name="Source"><![CDATA[-- HUD, level-up cards, and the lobby (class select + permanent upgrades).
+local Players = game:GetService("Players")
+local RS = game:GetService("ReplicatedStorage")
+local UIS = game:GetService("UserInputService")
+
+local Config = require(RS:WaitForChild("Shared"):WaitForChild("Config"))
+local remotes = RS:WaitForChild("Remotes")
+local player = Players.LocalPlayer
+
+local DARK = Color3.fromRGB(18, 18, 28)
+local CARD = Color3.fromRGB(35, 35, 50)
+local GOLD = Color3.fromRGB(255, 215, 0)
+local SELECTED = Color3.fromRGB(60, 110, 200)
+
+local function new(class, props, parent)
+	local obj = Instance.new(class)
+	for k, v in props do
+		obj[k] = v
+	end
+	obj.Parent = parent
+	return obj
+end
+
+local function text(class, props, parent)
+	props.BackgroundTransparency = props.BackgroundTransparency or 1
+	props.TextColor3 = props.TextColor3 or Color3.new(1, 1, 1)
+	props.Font = props.Font or Enum.Font.GothamBold
+	if props.TextScaled == nil then
+		props.TextScaled = true
+	end
+	return new(class, props, parent)
+end
+
+local gui = new("ScreenGui", { Name = "SwarmUI", ResetOnSpawn = false }, player:WaitForChild("PlayerGui"))
+
+-- Run HUD -----------------------------------------------------------------
+local timer = text("TextLabel", { Size = UDim2.new(0, 300, 0, 40), Position = UDim2.new(0.5, -150, 0, 30) }, gui)
+
+local xpBack = new("Frame", {
+	Size = UDim2.new(1, -20, 0, 18), Position = UDim2.new(0, 10, 0, 6),
+	BackgroundColor3 = DARK, Visible = false,
+}, gui)
+local xpFill = new("Frame", {
+	Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.fromRGB(70, 160, 255), BorderSizePixel = 0,
+}, xpBack)
+local levelText = text("TextLabel", { Size = UDim2.fromScale(1, 1), Text = "", ZIndex = 2 }, xpBack)
+
+local buildText = text("TextLabel", {
+	Size = UDim2.new(0, 240, 0, 260), Position = UDim2.new(0, 10, 0, 80),
+	TextScaled = false, TextSize = 14, Text = "", Visible = false,
+	TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top,
+	TextStrokeTransparency = 0.5,
+}, gui)
+
+remotes.Stats.OnClientEvent:Connect(function(st)
+	xpFill.Size = UDim2.fromScale(math.clamp(st.xp / st.need, 0, 1), 1)
+	levelText.Text = ("Level %d   |   Kills %d"):format(st.level, st.kills)
+	buildText.Text = "WEAPONS\n" .. table.concat(st.weapons, "\n") .. "\n\nPASSIVES\n" .. table.concat(st.passives, "\n")
+end)
+
+-- Level-up cards ----------------------------------------------------------
+local levelPanel = new("Frame", {
+	Size = UDim2.new(0, 660, 0, 270), Position = UDim2.new(0.5, -330, 0.5, -135),
+	BackgroundColor3 = DARK, BackgroundTransparency = 0.1, Visible = false,
+}, gui)
+new("UICorner", {}, levelPanel)
+text("TextLabel", { Size = UDim2.new(1, 0, 0, 36), Position = UDim2.new(0, 0, 0, 6), Text = "LEVEL UP!  Pick one (1 / 2 / 3)", TextColor3 = GOLD }, levelPanel)
+
+local cards = {}
+for i = 1, Config.CHOICES do
+	local button = new("TextButton", {
+		Size = UDim2.new(0, 200, 0, 160), Position = UDim2.new(0, 15 + (i - 1) * 215, 0, 50),
+		Text = "", BackgroundColor3 = CARD,
+	}, levelPanel)
+	new("UICorner", {}, button)
+	local title = text("TextLabel", { Size = UDim2.new(1, -10, 0, 44), Position = UDim2.new(0, 5, 0, 6) }, button)
+	local body = text("TextLabel", {
+		Size = UDim2.new(1, -14, 1, -60), Position = UDim2.new(0, 7, 0, 54),
+		TextScaled = false, TextSize = 16, TextWrapped = true, Font = Enum.Font.Gotham,
+	}, button)
+	cards[i] = { button = button, title = title, body = body }
+end
+
+local rerollButton = text("TextButton", {
+	Size = UDim2.new(0, 160, 0, 36), Position = UDim2.new(0.5, -80, 1, -46),
+	BackgroundTransparency = 0, BackgroundColor3 = CARD, Text = "Reroll (R)",
+}, levelPanel)
+new("UICorner", {}, rerollButton)
+
+local function choose(i)
+	if levelPanel.Visible and cards[i].button.Visible then
+		levelPanel.Visible = false -- the server sends the next offer, if any
+		remotes.Choose:FireServer(i)
+	end
+end
+
+local function reroll()
+	if levelPanel.Visible and rerollButton.Visible then
+		remotes.Reroll:FireServer()
+	end
+end
+
+for i, card in cards do
+	card.button.Activated:Connect(function()
+		choose(i)
+	end)
+end
+rerollButton.Activated:Connect(reroll)
+
+remotes.LevelUp.OnClientEvent:Connect(function(list, rerolls)
+	if not list then
+		levelPanel.Visible = false
+		return
+	end
+	for i, card in cards do
+		local c = list[i]
+		card.button.Visible = c ~= nil
+		if c then
+			card.title.Text = c.title
+			card.title.TextColor3 = c.color
+			card.body.Text = c.text
+		end
+	end
+	rerollButton.Text = ("Reroll (R) x%d"):format(rerolls)
+	rerollButton.Visible = rerolls > 0
+	levelPanel.Visible = true
+end)
+
+local KEYS = { [Enum.KeyCode.One] = 1, [Enum.KeyCode.Two] = 2, [Enum.KeyCode.Three] = 3 }
+UIS.InputBegan:Connect(function(input, processed)
+	if processed then
+		return
+	end
+	if KEYS[input.KeyCode] then
+		choose(KEYS[input.KeyCode])
+	elseif input.KeyCode == Enum.KeyCode.R then
+		reroll()
+	end
+end)
+
+-- Lobby: classes and permanent upgrades -----------------------------------
+local lobby = new("Frame", {
+	Size = UDim2.new(0, 340, 0, 470), Position = UDim2.new(1, -350, 0.5, -235),
+	BackgroundColor3 = DARK, BackgroundTransparency = 0.1,
+}, gui)
+new("UICorner", {}, lobby)
+local goldText = text("TextLabel", { Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 8), TextColor3 = GOLD, Text = "Gold: 0" }, lobby)
+
+local function lobbyButton(y, onClick)
+	local b = text("TextButton", {
+		Size = UDim2.new(1, -20, 0, 34), Position = UDim2.new(0, 10, 0, y),
+		BackgroundTransparency = 0, BackgroundColor3 = CARD,
+		TextScaled = false, TextSize = 14, TextWrapped = true, Font = Enum.Font.Gotham,
+	}, lobby)
+	new("UICorner", {}, b)
+	b.Activated:Connect(onClick)
+	return b
+end
+
+text("TextLabel", { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.new(0, 10, 0, 44), Text = "CHOOSE CLASS" }, lobby)
+local classButtons = {}
+for i, name in Config.CLASS_ORDER do
+	local b = lobbyButton(70 + (i - 1) * 38, function()
+		remotes.SelectClass:FireServer(name)
+	end)
+	b.Text = name .. ": " .. Config.Classes[name].desc
+	classButtons[name] = b
+end
+
+local metaTop = 70 + #Config.CLASS_ORDER * 38 + 8
+text("TextLabel", { Size = UDim2.new(1, -20, 0, 22), Position = UDim2.new(0, 10, 0, metaTop), Text = "PERMANENT UPGRADES" }, lobby)
+local metaButtons = {}
+for i, name in Config.META_ORDER do
+	metaButtons[name] = lobbyButton(metaTop + 26 + (i - 1) * 38, function()
+		remotes.BuyMeta:FireServer(name)
+	end)
+end
+
+remotes.Meta.OnClientEvent:Connect(function(data)
+	goldText.Text = "Gold: " .. data.gold
+	for name, b in classButtons do
+		b.BackgroundColor3 = name == data.class and SELECTED or CARD
+	end
+	for name, b in metaButtons do
+		local m = Config.Meta[name]
+		local cost = data.costs[name]
+		b.Text = ("%s %d/%d (%s)  -  %s"):format(m.name, data.levels[name], m.max, m.desc, cost and cost .. " gold" or "MAX")
+	end
+end)
+remotes.Meta:FireServer()
+
+-- Phase + results ---------------------------------------------------------
+remotes.State.OnClientEvent:Connect(function(state)
+	timer.Text = state.text
+	local running = state.phase == "Run"
+	lobby.Visible = not running
+	xpBack.Visible = running
+	buildText.Visible = running
+end)
+
+local results = text("TextLabel", {
+	Size = UDim2.new(0, 440, 0, 130), Position = UDim2.new(0.5, -220, 0.3, 0),
+	BackgroundTransparency = 0.15, BackgroundColor3 = DARK,
+	TextScaled = false, TextSize = 22, TextWrapped = true, Visible = false,
+}, gui)
+remotes.Results.OnClientEvent:Connect(function(r)
+	results.Text = ("%s\nSurvived %d:%02d  |  Level %d  |  %d kills\n+%d gold"):format(
+		r.result:upper(), r.time // 60, r.time % 60, r.level, r.kills, r.gold
+	)
+	results.Visible = true
+	task.delay(Config.RESULTS_TIME, function()
+		results.Visible = false
+	end)
+end)
+]]></ProtectedString></Properties></Item></Item></Item><Item class="StarterCharacterScripts" referent="RBX0018"><Properties><string name="Name">StarterCharacterScripts</string></Properties><Item class="Script" referent="RBX0017"><Properties><string name="Name">Health</string><ProtectedString name="Source"><![CDATA[-- Empty on purpose: replaces Roblox's default health regen, so healing only comes
+-- from the Healer class and level-up rewards.
+]]></ProtectedString></Properties></Item></Item></Item></roblox>
