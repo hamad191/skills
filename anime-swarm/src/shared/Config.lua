@@ -25,40 +25,48 @@ Config.BASE_MAGNET = 10
 
 -- Weapons fire on their own. A weapon evolves when it is max level and its
 -- `evolveWith` passive is also max level.
--- kind: cone | chain | projectile | clones | orbit | line | aura
+-- kind: how it hits (cone | chain | projectile | clones | orbit | line | aura)
+-- fx / anim: the visual effect and character animation players see
 Config.Weapons = {
 	GumGumPistol = {
 		name = "Gum-Gum Pistol", desc = "Stretchy punches that pierce through enemies.",
+		fx = "punch", anim = "punch",
 		kind = "line", damage = 16, cooldown = 1.4, range = 35, width = 3, count = 1,
 		color = Color3.fromRGB(230, 60, 60), evolveWith = "Vitality", evolvesInto = "GumGumGatling",
 	},
 	ThreeSwordStyle = {
 		name = "Three Sword Style", desc = "Slashes the nearest enemies with three swords.",
+		fx = "slash", anim = "slash", arcs = 3,
 		kind = "cone", damage = 20, cooldown = 1.3, range = 14, angle = 110,
 		color = Color3.fromRGB(80, 220, 120), evolveWith = "Power", evolvesInto = "NineSwordStyle",
 	},
 	ThunderTempo = {
 		name = "Thunderbolt Tempo", desc = "Clima-Tact lightning jumps between enemies.",
+		fx = "lightning", anim = "cast",
 		kind = "chain", damage = 14, cooldown = 1.6, range = 30, count = 3,
 		color = Color3.fromRGB(255, 240, 90), evolveWith = "Magnet", evolvesInto = "ZeusTempo",
 	},
 	DiableJambe = {
 		name = "Diable Jambe", desc = "Burning kicks hit everything around you.",
+		fx = "kick", anim = "kick",
 		kind = "aura", damage = 12, cooldown = 0.8, range = 8,
 		color = Color3.fromRGB(255, 90, 40), evolveWith = "Swiftness", evolvesInto = "IfritJambe",
 	},
 	FireFist = {
 		name = "Fire Fist", desc = "Launches a fireball that explodes.",
+		fx = "fireball", anim = "throw",
 		kind = "projectile", damage = 30, cooldown = 2.2, range = 60, radius = 7,
 		color = Color3.fromRGB(255, 140, 30), evolveWith = "Area", evolvesInto = "FlameEmperor",
 	},
 	CienFleur = {
 		name = "Cien Fleur", desc = "Arms sprout from the ground and crush enemies.",
+		fx = "hands", anim = "cross",
 		kind = "clones", damage = 22, cooldown = 3, range = 7, count = 2,
 		color = Color3.fromRGB(200, 120, 255), evolveWith = "Haste", evolvesInto = "GigantescoMano",
 	},
 	KungFuPoint = {
 		name = "Kung Fu Point", desc = "Fists circle you and hit enemies.",
+		fx = "fists",
 		kind = "orbit", damage = 10, cooldown = 0.5, range = 7, count = 2,
 		color = Color3.fromRGB(255, 150, 190), evolveWith = "Vitality", evolvesInto = "MonsterPoint",
 	},
@@ -66,36 +74,43 @@ Config.Weapons = {
 	-- Evolutions (cannot be picked directly, always level 1)
 	GumGumGatling = {
 		name = "Gum-Gum Gatling", desc = "A storm of rubber punches in every direction.",
+		fx = "punch", anim = "punch",
 		kind = "line", damage = 50, cooldown = 0.8, range = 45, width = 4, count = 10,
 		color = Color3.fromRGB(255, 40, 40), evolved = true, from = "GumGumPistol",
 	},
 	NineSwordStyle = {
 		name = "Asura: Nine Sword Style", desc = "Nine blades slash in every direction.",
+		fx = "slash", anim = "slash", arcs = 3,
 		kind = "cone", damage = 90, cooldown = 1, range = 22, angle = 120, count = 4,
 		color = Color3.fromRGB(40, 200, 90), evolved = true, from = "ThreeSwordStyle",
 	},
 	ZeusTempo = {
 		name = "Zeus Thunderstorm", desc = "Lightning chains through the whole swarm.",
+		fx = "lightning", anim = "cast",
 		kind = "chain", damage = 70, cooldown = 0.9, range = 45, count = 10,
 		color = Color3.fromRGB(255, 255, 160), evolved = true, from = "ThunderTempo",
 	},
 	IfritJambe = {
 		name = "Ifrit Jambe", desc = "Blue-hot kicks scorch a huge area around you.",
+		fx = "kick", anim = "kick",
 		kind = "aura", damage = 45, cooldown = 0.5, range = 14,
 		color = Color3.fromRGB(80, 160, 255), evolved = true, from = "DiableJambe",
 	},
 	FlameEmperor = {
 		name = "Flame Emperor", desc = "Giant fireballs that wipe out crowds.",
+		fx = "fireball", anim = "throw",
 		kind = "projectile", damage = 160, cooldown = 1.8, range = 70, radius = 16, count = 3,
 		color = Color3.fromRGB(255, 80, 0), evolved = true, from = "FireFist",
 	},
 	GigantescoMano = {
 		name = "Gigantesco Mano", desc = "Giant arms smash the battlefield.",
+		fx = "hands", anim = "cross",
 		kind = "clones", damage = 80, cooldown = 2.2, range = 9, count = 8,
 		color = Color3.fromRGB(170, 80, 255), evolved = true, from = "CienFleur",
 	},
 	MonsterPoint = {
 		name = "Monster Point", desc = "A huge ring of fists shreds anything close.",
+		fx = "fists",
 		kind = "orbit", damage = 35, cooldown = 0.35, range = 10, count = 8,
 		color = Color3.fromRGB(255, 100, 160), evolved = true, from = "KungFuPoint",
 	},
@@ -123,12 +138,31 @@ Config.Classes = {
 }
 Config.CLASS_ORDER = { "Luffy", "Zoro", "Nami", "Sanji", "Ace", "Robin", "Chopper" }
 
+-- color = clothes, accent = cap and pants, skin = head and hands, eyes = glowing eye color
+local SKIN = Color3.fromRGB(255, 205, 160)
 Config.Enemies = {
-	Grunt = { hp = 20, speed = 11, damage = 6, xp = 1, scale = 1, color = Color3.fromRGB(110, 30, 50) },
-	Runner = { hp = 12, speed = 15, damage = 4, xp = 1, scale = 0.8, color = Color3.fromRGB(220, 170, 40) },
-	Brute = { hp = 110, speed = 8, damage = 14, xp = 6, scale = 1.7, color = Color3.fromRGB(60, 60, 90) },
-	MiniBoss = { hp = 1200, speed = 10, damage = 22, xp = 40, gold = 25, scale = 3, color = Color3.fromRGB(170, 40, 200), healthBar = true },
-	Boss = { hp = 15000, speed = 12, damage = 40, xp = 0, gold = 300, scale = 5, color = Color3.fromRGB(160, 0, 0), healthBar = true },
+	Grunt = {
+		name = "Marine", hp = 20, speed = 11, damage = 6, xp = 1, scale = 1,
+		color = Color3.fromRGB(240, 240, 245), accent = Color3.fromRGB(40, 80, 160), skin = SKIN,
+	},
+	Runner = {
+		name = "Fishman", hp = 12, speed = 15, damage = 4, xp = 1, scale = 0.85,
+		color = Color3.fromRGB(230, 120, 50), accent = Color3.fromRGB(30, 50, 90), skin = Color3.fromRGB(70, 150, 210),
+	},
+	Brute = {
+		name = "Pacifista", hp = 110, speed = 8, damage = 14, xp = 6, scale = 1.7,
+		color = Color3.fromRGB(55, 55, 65), accent = Color3.fromRGB(30, 30, 35), skin = Color3.fromRGB(200, 170, 140),
+		eyes = Color3.fromRGB(255, 220, 60),
+	},
+	MiniBoss = {
+		name = "Vice Admiral", hp = 1200, speed = 10, damage = 22, xp = 40, gold = 25, scale = 3, healthBar = true,
+		color = Color3.fromRGB(250, 250, 250), accent = Color3.fromRGB(35, 35, 60), skin = SKIN,
+	},
+	Boss = {
+		name = "Admiral", hp = 15000, speed = 12, damage = 40, xp = 0, gold = 300, scale = 5, healthBar = true,
+		color = Color3.fromRGB(250, 250, 250), accent = Color3.fromRGB(150, 20, 30), skin = SKIN,
+		eyes = Color3.fromRGB(255, 80, 40),
+	},
 }
 
 -- Permanent upgrades bought with gold between runs. Cost = cost * META_GROWTH ^ level.

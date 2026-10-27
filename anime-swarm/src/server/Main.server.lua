@@ -8,13 +8,14 @@ local PlayerData = require(script.Parent.PlayerData)
 local Enemies = require(script.Parent.Enemies)
 local Progression = require(script.Parent.Progression)
 local Weapons = require(script.Parent.Weapons)
+local Fx = require(script.Parent.Fx)
 
 Players.CharacterAutoLoads = false
 
 local remotes = {}
 local remoteFolder = Instance.new("Folder")
 remoteFolder.Name = "Remotes"
-for _, name in { "State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results" } do
+for _, name in { "State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results", "Fx" } do
 	local r = Instance.new("RemoteEvent")
 	r.Name = name
 	r.Parent = remoteFolder
@@ -22,6 +23,7 @@ for _, name in { "State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass",
 end
 remoteFolder.Parent = RS
 Progression.init(remotes)
+Fx.init(remotes.Fx)
 
 local phase = "Lobby"
 local selectedClass = {}
@@ -154,6 +156,7 @@ RunService.Heartbeat:Connect(function(dt)
 		Enemies.step(dt, liveTargets())
 		Weapons.step(dt)
 	end
+	Fx.flush()
 end)
 
 local function spawnAround(kind, targets, hpScale, dmgScale)

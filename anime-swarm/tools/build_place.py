@@ -189,6 +189,7 @@ def build():
     starter = item(
         "StarterPlayer",
         "StarterPlayer",
+        '<token name="GameSettingsAvatar">1</token>',  # R15 avatars: the attack animations bend R15 joints
         children=[
             item("StarterPlayerScripts", "StarterPlayerScripts", children=[folder("Client", "src/client")]),
             item(

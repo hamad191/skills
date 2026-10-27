@@ -6,6 +6,13 @@ local UIS = game:GetService("UserInputService")
 local Config = require(RS:WaitForChild("Shared"):WaitForChild("Config"))
 local remotes = RS:WaitForChild("Remotes")
 local player = Players.LocalPlayer
+local Effects = require(script.Parent:WaitForChild("Effects"))
+
+remotes:WaitForChild("Fx").OnClientEvent:Connect(function(list)
+	for _, ev in list do
+		Effects.play(ev)
+	end
+end)
 
 local DARK = Color3.fromRGB(18, 18, 28)
 local CARD = Color3.fromRGB(35, 35, 50)
@@ -194,6 +201,9 @@ remotes.Meta:FireServer()
 remotes.State.OnClientEvent:Connect(function(state)
 	timer.Text = state.text
 	local running = state.phase == "Run"
+	if not running then
+		Effects.clear()
+	end
 	lobby.Visible = not running
 	xpBack.Visible = running
 	buildText.Visible = running

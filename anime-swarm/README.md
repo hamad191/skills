@@ -14,6 +14,8 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
    - A **mini-boss** every 2 minutes, and the **final boss** at 10:00. Kill it to win.
 3. **Results:** earn gold from kills, time survived, bosses, and a victory bonus. Gold is saved.
 
+Enemies are Marines, Fishmen, Pacifistas, a Vice Admiral mini-boss and an Admiral final boss.
+
 Co-op works: everyone shares the swarm. If you die you are out until the next run.
 
 ## Characters (One Piece fan game)
@@ -65,5 +67,8 @@ The arena and the spawn island (beach, palm trees, dock, pirate ship) are alread
 | `src/server/Enemies.lua` | Enemy movement, damage, XP orbs |
 | `src/server/Progression.lua` | XP, level-up cards, evolutions |
 | `src/server/PlayerData.lua` | Saving gold and permanent upgrades |
+| `src/server/Fx.lua` | Sends effect events (what happened) to every client |
 | `src/client/SwarmClient.client.lua` | HUD, level-up cards, lobby menus |
+| `src/client/Effects.lua` | Draws every skill effect, hit sparks, damage numbers |
+| `src/client/Animate.lua` | Punch, slash, kick, throw and cast animations (R15) |
 | `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the map (arena + spawn island) and all scripts |
