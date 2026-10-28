@@ -380,7 +380,7 @@ def spawn_island():
         part("Plaza", (0.6, PLAZA[2] * 2, PLAZA[2] * 2), (0, 1.55, PLAZA[1]), (150, 150, 160), "cobble", "cylinder", UPRIGHT),
     ]
     BLOCKED.extend([(0, cz, 14), (PLAZA[0], PLAZA[1], PLAZA[2] + 4)])
-    BLOCKED.extend((x, z, 8) for x, z in npc_spots())  # the island NPCs (server/Npcs.lua) stand here
+    BLOCKED.extend((x, z, 13) for x, z in npc_spots())  # the island NPCs and their stalls (server/Npcs.lua)
 
     # signs and landmarks around the spawn
     S = Placer(16, GRASS_TOP, cz + 16, 0)

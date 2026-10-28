@@ -26,7 +26,7 @@ local remoteFolder = Instance.new("Folder")
 remoteFolder.Name = "Remotes"
 for _, name in {
 	"State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results", "Fx", "Portal",
-	"Announce", "Voyage", "Dash", "Leave", "Revive", "Train", "Gear", "UnlockClass",
+	"Announce", "Voyage", "Dash", "Leave", "Revive", "Train", "Gear", "UnlockClass", "Wave",
 } do
 	local r = Instance.new("RemoteEvent")
 	r.Name = name
@@ -37,7 +37,7 @@ remoteFolder.Parent = RS
 Progression.init(remotes)
 Fx.init(remotes.Fx)
 Portals.build()
-Npcs.build()
+task.spawn(Npcs.build) -- building R15 characters can take a moment
 
 local LOBBY_TEXT = "Step onto a voyage gate to choose an adventure!"
 local selectedClass = {}
@@ -195,6 +195,7 @@ Enemies.onKilled = function(enemy, killer)
 	end
 end
 Enemies.onPickup = Progression.addXP
+Enemies.onSlow = Progression.slow
 
 local function runTargets(run)
 	local targets = {}
@@ -339,8 +340,8 @@ end
 
 -- Running an adventure --------------------------------------------------------------------
 
-local function spawnAround(kind, run, targets, hpScale, dmgScale, look)
-	-- only around crew members who have landed in the arena
+-- Crew members who have landed in the arena (enemies only spawn around them).
+local function landedTargets(run, targets)
 	local landed = {}
 	for _, t in targets do
 		local offset = t.root.Position - run.map.center
@@ -348,6 +349,11 @@ local function spawnAround(kind, run, targets, hpScale, dmgScale, look)
 			table.insert(landed, t)
 		end
 	end
+	return landed
+end
+
+local function spawnAround(kind, run, targets, hpScale, dmgScale, look)
+	local landed = landedTargets(run, targets)
 	if #landed == 0 then
 		return nil
 	end
@@ -383,6 +389,93 @@ local function pickKind(minutes, mapIndex)
 	return "Grunt"
 end
 
+-- Waves ----------------------------------------------------------------------------------------
+
+-- This wave's event: one the map and wave number allow, picked by weight.
+local function pickEvent(wave, mapIndex)
+	local options, total = {}, 0
+	for _, ev in Config.WAVE_EVENTS do
+		if wave >= ev.fromWave and mapIndex >= ev.fromMap then
+			table.insert(options, ev)
+			total += ev.weight
+		end
+	end
+	local roll = math.random() * total
+	for _, ev in options do
+		roll -= ev.weight
+		if roll <= 0 then
+			return ev
+		end
+	end
+	return options[1]
+end
+
+-- A wave event's squad arrives around one crew member: a pack charging from one side, a ring
+-- closing in from all around, or a firing line.
+local function spawnSquad(ev, run, wave, crew, hpScale, dmgScale, minutes)
+	local landed = landedTargets(run, runTargets(run))
+	if #landed == 0 then
+		return
+	end
+	local center = landed[math.random(#landed)].root.Position
+	local count = math.floor(ev.count * (1 + (wave - 1) * 0.08) * crew + 0.5)
+	count = math.min(count, Config.MAX_ENEMIES + 30 - Enemies.count(run.key))
+	local a = math.random() * math.pi * 2
+	local edge = Config.ARENA_HALF_SIZE - 10
+	for i = 1, count do
+		local x, z
+		if ev.shape == "ring" then
+			local angle = a + i / count * math.pi * 2
+			x, z = center.X + math.cos(angle) * 42, center.Z + math.sin(angle) * 42
+		elseif ev.shape == "line" then
+			local side = (i - (count + 1) / 2) * 7
+			local dx, dz = math.cos(a), math.sin(a)
+			x, z = center.X + dx * 50 - dz * side, center.Z + dz * 50 + dx * side
+		else
+			local d = 58 + math.random() * 10
+			x = center.X + math.cos(a) * d + math.random(-8, 8)
+			z = center.Z + math.sin(a) * d + math.random(-8, 8)
+		end
+		x = math.clamp(x, run.map.center.X - edge, run.map.center.X + edge)
+		z = math.clamp(z, run.map.center.Z - edge, run.map.center.Z + edge)
+		Enemies.spawn(ev.kind or pickKind(minutes, run.map.index), x, z, hpScale, dmgScale, run.key)
+	end
+end
+
+local function sendWave(run, info)
+	for player in run.players do
+		remotes.Wave:FireClient(player, info)
+	end
+end
+
+-- Starts wave `wave` of `total`: shows the banner, then the event squad (and every few waves a
+-- Vice Admiral) lands a moment later.
+local function startWave(run, wave, total, crew, hpScale, dmgScale, minutes)
+	local event = wave > 1 and pickEvent(wave, run.map.index) or nil
+	local mini = wave % Config.MINIBOSS_WAVE == 0
+	local info = { n = wave, total = total, title = "THE MARINES ARE COMING", sub = "Survive and grow stronger", color = Color3.fromRGB(120, 200, 255) }
+	if event then
+		info.title, info.sub, info.color = event.title, event.sub, event.color
+	end
+	if mini then
+		info.title = "VICE ADMIRAL" .. (event and "  +  " .. event.title or "")
+		info.sub = "A Vice Admiral leads this wave!"
+		info.color = Color3.fromRGB(190, 90, 255)
+	end
+	sendWave(run, info)
+	task.delay(1.5, function()
+		if run.ending or runs[run.key] ~= run then
+			return
+		end
+		if event then
+			spawnSquad(event, run, wave, crew, hpScale, dmgScale, minutes)
+		end
+		if mini then
+			spawnAround("MiniBoss", run, runTargets(run), hpScale, dmgScale)
+		end
+	end)
+end
+
 -- Once a second: Regeneration heals its owner, and healers (Chopper) heal everyone nearby.
 local function healers(targets)
 	for _, t in targets do
@@ -410,7 +503,8 @@ end
 
 local function playRun(run)
 	local map, diff = run.map, run.diff
-	local nextMini = Config.MINIBOSS_EVERY
+	local waves = math.max(1, math.floor(diff.runLength / Config.WAVE_LENGTH))
+	local wave = 0
 	local lastTick = 0
 	local boss, bossAt, enraged
 	task.wait(1) -- let the crew land
@@ -429,11 +523,10 @@ local function playRun(run)
 		for _ = 1, math.min(4, desired - Enemies.count(run.key)) do
 			spawnAround(pickKind(minutes, map.index), run, targets, hpScale, dmgScale)
 		end
-		if elapsed >= nextMini and elapsed < diff.runLength then
-			nextMini += Config.MINIBOSS_EVERY
-			if spawnAround("MiniBoss", run, targets, hpScale, dmgScale) then
-				announce(run, "A Vice Admiral appeared!", Color3.fromRGB(190, 90, 255))
-			end
+		local due = math.min(waves, math.floor(elapsed / Config.WAVE_LENGTH) + 1)
+		if due > wave and elapsed < diff.runLength then
+			wave = due
+			startWave(run, wave, waves, crew, hpScale, dmgScale, minutes)
 		end
 		if elapsed >= diff.runLength then
 			if not boss then
@@ -441,7 +534,11 @@ local function playRun(run)
 				boss = spawnAround("Boss", run, targets, crew * map.hp * diff.hp, map.damage * diff.damage, look)
 				if boss then
 					bossAt = elapsed
-					announce(run, map.boss .. " has arrived!", Color3.fromRGB(255, 60, 60))
+					sendWave(run, {
+						n = "FINAL", total = waves, title = map.boss:upper(), boss = true,
+						sub = string.format("Defeat them within %d:%02d!", Config.BOSS_TIME_LIMIT // 60, Config.BOSS_TIME_LIMIT % 60),
+						color = Color3.fromRGB(255, 60, 60),
+					})
 				end
 			elseif boss.dead then
 				return "Victory"
@@ -469,6 +566,7 @@ local function playRun(run)
 				remotes.State:FireClient(player, {
 					phase = "Run", text = text, adventure = map.name .. "  -  " .. diff.name, color = diff.color,
 					down = s ~= nil and s.dead, boss = boss ~= nil, crew = crewIds,
+					wave = wave, waves = waves, waveLeft = not boss and math.max(0, wave * Config.WAVE_LENGTH - elapsed) or nil,
 				})
 				Progression.sync(player)
 			end

@@ -578,6 +578,70 @@ function handlers.death(ev)
 	burst(ev.pos, ev.c, 6, { size = 1, speed = 15, life = 0.3 })
 end
 
+-- A red strip on the ground: a laser, snipe or lunge will sweep along it when it fills up.
+function handlers.line(ev)
+	local ground = groundAt(ev.o) + Vector3.new(0, 0.12, 0)
+	local cf = CFrame.lookAt(ground, ground + ev.d)
+	local strip = part({
+		Color = ev.c, Transparency = 0.6, Size = Vector3.new(ev.w, 0.1, ev.len),
+		CFrame = cf * CFrame.new(0, 0, -ev.len / 2),
+	})
+	local edge = part({ Color = Color3.fromRGB(255, 50, 50), Transparency = 0.3, Size = Vector3.new(ev.w, 0.12, 0.3), CFrame = cf * CFrame.new(0, 0, -ev.len) })
+	local fill = part({ Color = Color3.fromRGB(255, 60, 40), Transparency = 0.35, Size = Vector3.new(ev.w, 0.14, 0.1), CFrame = cf })
+	tween(fill, ev.t, { Size = Vector3.new(ev.w, 0.14, ev.len), CFrame = cf * CFrame.new(0, 0, -ev.len / 2) }, Enum.EasingStyle.Linear)
+	Debris:AddItem(strip, ev.t)
+	Debris:AddItem(edge, ev.t)
+	Debris:AddItem(fill, ev.t)
+end
+
+-- The beam itself: a bright column of light that fades fast.
+function handlers.beam(ev)
+	local from = ev.o
+	local to = from + ev.d * ev.len
+	local cf = CFrame.lookAt(from, to) * CFrame.new(0, 0, -ev.len / 2)
+	local beam = part({ Color = ev.c, Size = Vector3.new(ev.w, ev.w, ev.len), CFrame = cf })
+	local core = part({ Color = WHITE, Size = Vector3.new(ev.w * 0.4, ev.w * 0.4, ev.len), CFrame = cf })
+	fadeOut(beam, 0.35, { Size = Vector3.new(ev.w * 2, ev.w * 2, ev.len) })
+	fadeOut(core, 0.25)
+	flashLight(from, ev.c, 16, 0.3)
+	burst(to, ev.c, 10, { size = 1.2, speed = 12, life = 0.3 })
+end
+
+-- A medic's healing pulse.
+function handlers.heal(ev)
+	local green = Color3.fromRGB(110, 255, 150)
+	shockwave(groundAt(ev.pos) + Vector3.new(0, 0.2, 0), ev.r, green, 0.5)
+	burst(ev.pos + Vector3.new(0, 2, 0), green, 14, { size = 1, speed = 6, life = 0.6, gravity = Vector3.new(0, 10, 0) })
+end
+
+-- Soru: a puff of smoke where a CP9 agent vanishes or appears.
+function handlers.puff(ev)
+	burst(ev.pos, Color3.fromRGB(230, 230, 235), 14, { texture = TEX_SMOKE, size = 3, speed = 8, life = 0.4 })
+	burst(ev.pos, Color3.fromRGB(150, 200, 255), 6, { size = 1, speed = 18, life = 0.2 })
+end
+
+-- A shout floating over an officer's head ("REINFORCEMENTS!").
+function handlers.shout(ev)
+	local holder = part({ Transparency = 1, Size = Vector3.one * 0.2, Position = ev.pos + Vector3.new(0, 3, 0) })
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.fromOffset(240, 46)
+	gui.AlwaysOnTop = true
+	gui.MaxDistance = 200
+	gui.Parent = holder
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1, 1)
+	text.BackgroundTransparency = 1
+	text.Text = ev.text
+	text.TextScaled = true
+	text.Font = Enum.Font.LuckiestGuy
+	text.TextColor3 = Color3.fromRGB(255, 220, 90)
+	text.TextStrokeTransparency = 0
+	text.Parent = gui
+	tween(holder, 1.4, { Position = holder.Position + Vector3.new(0, 4, 0) })
+	tween(text, 1.4, { TextTransparency = 1, TextStrokeTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	Debris:AddItem(holder, 1.5)
+end
+
 -- A treasure chest bursts open: gold sparkles fountain up.
 function handlers.chest(ev)
 	local gold = Color3.fromRGB(255, 205, 60)
@@ -622,8 +686,13 @@ end
 local enemyShots = {}
 
 function handlers.eshot(ev)
-	local bullet = part({ Shape = Enum.PartType.Ball, Color = Color3.fromRGB(255, 230, 120), Size = Vector3.one * 0.7, Position = ev.o })
-	addTrail(bullet, Color3.fromRGB(255, 190, 80), 0.4, 0.15)
+	local color = ev.c or Color3.fromRGB(255, 230, 120)
+	local size = ev.s or 0.7
+	local bullet = part({ Shape = Enum.PartType.Ball, Color = color, Size = Vector3.one * size, Position = ev.o })
+	if ev.s then
+		bullet.Material = Enum.Material.ForceField -- nets and air blades: a soft glowing ball
+	end
+	addTrail(bullet, color, size * 0.6, 0.15)
 	enemyShots[ev.id] = { part = bullet, pos = ev.o, dir = ev.d, left = ev.len, speed = ev.speed }
 	Debris:AddItem(bullet, ev.len / ev.speed + 0.5)
 end

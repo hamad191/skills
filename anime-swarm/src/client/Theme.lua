@@ -1,23 +1,29 @@
--- Shared look for every menu: a modern dark glass style. Colors, fonts and small UI builders.
+-- Shared look for every menu: "Grand Line" pirate style. Deep-sea navy panels with gold rope
+-- trim and corner rivets, glossy chunky buttons, parchment for wanted posters, and cartoon
+-- fonts (Luckiest Guy titles, Fredoka One labels). Colors, fonts and small UI builders.
 local TweenService = game:GetService("TweenService")
 
 local Theme = {}
 
-Theme.BG = Color3.fromRGB(11, 13, 22)
-Theme.PANEL = Color3.fromRGB(20, 24, 40)
-Theme.CARD = Color3.fromRGB(31, 36, 58)
-Theme.CARD_LIGHT = Color3.fromRGB(44, 51, 80)
+Theme.BG = Color3.fromRGB(7, 17, 30)
+Theme.PANEL = Color3.fromRGB(15, 33, 54)
+Theme.CARD = Color3.fromRGB(23, 47, 74)
+Theme.CARD_LIGHT = Color3.fromRGB(36, 66, 100)
 Theme.LINE = Color3.fromRGB(255, 255, 255)
-Theme.ACCENT = Color3.fromRGB(99, 132, 255)
-Theme.GOLD = Color3.fromRGB(255, 196, 64)
-Theme.TEXT = Color3.fromRGB(236, 240, 255)
-Theme.MUTED = Color3.fromRGB(138, 148, 184)
-Theme.GOOD = Color3.fromRGB(70, 214, 140)
-Theme.BAD = Color3.fromRGB(255, 84, 104)
+Theme.ACCENT = Color3.fromRGB(226, 72, 64) -- straw-hat red
+Theme.GOLD = Color3.fromRGB(255, 200, 70)
+Theme.TRIM = Color3.fromRGB(214, 168, 88) -- rope gold
+Theme.TEXT = Color3.fromRGB(252, 246, 230)
+Theme.MUTED = Color3.fromRGB(165, 184, 206)
+Theme.GOOD = Color3.fromRGB(64, 200, 120)
+Theme.BAD = Color3.fromRGB(255, 84, 96)
 Theme.DARK_TEXT = Color3.fromRGB(14, 16, 26)
-Theme.LOCKED = Color3.fromRGB(52, 56, 76)
-Theme.TITLE_FONT = Enum.Font.GothamBlack
-Theme.BOLD = Enum.Font.GothamBold
+Theme.LOCKED = Color3.fromRGB(60, 70, 88)
+Theme.PARCHMENT = Color3.fromRGB(240, 222, 180)
+Theme.INK = Color3.fromRGB(70, 42, 20)
+Theme.SEA = Color3.fromRGB(40, 140, 210)
+Theme.TITLE_FONT = Enum.Font.LuckiestGuy
+Theme.BOLD = Enum.Font.FredokaOne
 Theme.FONT = Enum.Font.GothamMedium
 
 function Theme.new(class, props, parent)
@@ -58,14 +64,36 @@ function Theme.padding(parent, px)
 	}, parent)
 end
 
--- Frosted dark panel with a hairline border.
+-- Little gold rivets in the corners of a panel, like a ship's chest.
+function Theme.rivets(frame, inset, zIndex)
+	inset = inset or 7
+	for _, pos in {
+		UDim2.fromOffset(inset, inset), UDim2.new(1, -inset - 6, 0, inset),
+		UDim2.new(0, inset, 1, -inset - 6), UDim2.new(1, -inset - 6, 1, -inset - 6),
+	} do
+		local rivet = Theme.new("Frame", {
+			Name = "Rivet", Size = UDim2.fromOffset(6, 6), Position = pos, BackgroundColor3 = Theme.TRIM,
+			ZIndex = zIndex or 2, BorderSizePixel = 0,
+		}, frame)
+		Theme.corner(rivet, 3)
+	end
+end
+
+-- Deep-sea panel with a gold rope border, an inner hairline and corner rivets.
 function Theme.panel(props, parent)
 	props.BackgroundColor3 = props.BackgroundColor3 or Theme.PANEL
-	props.BackgroundTransparency = props.BackgroundTransparency or 0.06
+	props.BackgroundTransparency = props.BackgroundTransparency or 0.04
 	local frame = Theme.new("Frame", props, parent)
-	Theme.corner(frame, 18)
-	Theme.stroke(frame, Theme.LINE, 1, 0.86)
-	Theme.gradient(frame, Color3.new(1, 1, 1), Color3.fromRGB(180, 186, 210))
+	Theme.corner(frame, 16)
+	Theme.stroke(frame, Theme.TRIM, 2, 0.15)
+	Theme.gradient(frame, Color3.fromRGB(255, 255, 255), Color3.fromRGB(150, 165, 190))
+	local inner = Theme.new("Frame", {
+		Name = "Inlay", Size = UDim2.new(1, -10, 1, -10), Position = UDim2.fromOffset(5, 5),
+		BackgroundTransparency = 1, ZIndex = props.ZIndex or 1,
+	}, frame)
+	Theme.corner(inner, 12)
+	Theme.stroke(inner, Theme.TRIM, 1, 0.7)
+	Theme.rivets(frame, 4, (props.ZIndex or 1) + 1)
 	return frame
 end
 
@@ -74,8 +102,40 @@ function Theme.card(props, parent)
 	props.BackgroundColor3 = props.BackgroundColor3 or Theme.CARD
 	local frame = Theme.new("Frame", props, parent)
 	Theme.corner(frame, 12)
-	Theme.stroke(frame, Theme.LINE, 1, 0.9)
+	Theme.stroke(frame, Theme.TRIM, 1, 0.75)
+	Theme.gradient(frame, Color3.fromRGB(255, 255, 255), Color3.fromRGB(190, 200, 215))
 	return frame
+end
+
+-- A parchment card (wanted posters, the results scroll).
+function Theme.parchment(props, parent, class)
+	props.BackgroundColor3 = Theme.PARCHMENT
+	local frame = Theme.new(class or "Frame", props, parent)
+	Theme.corner(frame, 6)
+	Theme.stroke(frame, Theme.INK, 2, 0.35)
+	Theme.new("UIGradient", {
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 250, 235)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(215, 190, 150)),
+		}),
+		Rotation = 90,
+	}, frame)
+	return frame
+end
+
+-- A gold divider that fades out at both ends.
+function Theme.divider(props, parent)
+	props.BackgroundColor3 = Theme.TRIM
+	props.BorderSizePixel = 0
+	local line = Theme.new("Frame", props, parent)
+	Theme.new("UIGradient", {
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.2, 0.2),
+			NumberSequenceKeypoint.new(0.8, 0.2), NumberSequenceKeypoint.new(1, 1),
+		}),
+	}, line)
+	return line
 end
 
 -- Text label. Pass MaxSize to cap scaled text.
@@ -95,9 +155,11 @@ function Theme.text(props, parent)
 	return label
 end
 
+-- Cartoon title text with a dark outline.
 function Theme.title(props, parent)
 	props.Font = props.Font or Theme.TITLE_FONT
-	props.TextStrokeTransparency = props.TextStrokeTransparency or 1
+	props.TextStrokeTransparency = props.TextStrokeTransparency or 0.35
+	props.TextStrokeColor3 = props.TextStrokeColor3 or Color3.fromRGB(5, 10, 20)
 	return Theme.text(props, parent)
 end
 
@@ -120,7 +182,7 @@ function Theme.icon(props, parent, icon, color, radius)
 	local tile = Theme.new("Frame", props, parent)
 	Theme.corner(tile, radius or 10)
 	Theme.gradient(tile, Color3.new(1, 1, 1), Color3.fromRGB(120, 120, 140), 135)
-	Theme.stroke(tile, Theme.LINE, 1, 0.75)
+	Theme.stroke(tile, Theme.TRIM, 1.5, 0.45)
 	local label = Theme.text({
 		Size = UDim2.fromScale(0.72, 0.72), Position = UDim2.fromScale(0.14, 0.14), Text = icon or "",
 		ZIndex = (props.ZIndex or 1) + 1, Font = Theme.TITLE_FONT,
@@ -139,9 +201,21 @@ function Theme.button(props, parent, onClick)
 		props.TextScaled = true
 	end
 	local button = Theme.new("TextButton", props, parent)
+	if button.TextStrokeTransparency == 1 then
+		button.TextStrokeTransparency = 0.55
+	end
 	Theme.corner(button, 12)
-	Theme.stroke(button, Theme.LINE, 1, 0.82)
-	Theme.gradient(button, Color3.new(1, 1, 1), Color3.fromRGB(200, 205, 225))
+	Theme.stroke(button, Color3.fromRGB(10, 20, 35), 2, 0.35)
+	-- glossy: a bright top half and a darker bottom half
+	Theme.new("UIGradient", {
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+			ColorSequenceKeypoint.new(0.48, Color3.fromRGB(235, 235, 235)),
+			ColorSequenceKeypoint.new(0.52, Color3.fromRGB(205, 205, 205)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(165, 165, 165)),
+		}),
+		Rotation = 90,
+	}, button)
 	Theme.new("UITextSizeConstraint", { MaxTextSize = 22 }, button)
 	Theme.padding(button, 6)
 	local glow = Theme.new("Frame", {
@@ -172,10 +246,11 @@ end
 
 -- Slim rounded progress bar. Returns the frame, its fill and a centered label.
 function Theme.bar(props, parent, top, bottom)
-	props.BackgroundColor3 = props.BackgroundColor3 or Color3.fromRGB(255, 255, 255)
-	props.BackgroundTransparency = props.BackgroundTransparency or 0.9
+	props.BackgroundColor3 = props.BackgroundColor3 or Color3.fromRGB(4, 10, 20)
+	props.BackgroundTransparency = props.BackgroundTransparency or 0.35
 	local frame = Theme.new("Frame", props, parent)
 	Theme.corner(frame, 8)
+	Theme.stroke(frame, Theme.TRIM, 1, 0.6)
 	local fill = Theme.new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = (props.ZIndex or 1) }, frame)
 	Theme.corner(fill, 8)
 	Theme.gradient(fill, top, bottom, 0)

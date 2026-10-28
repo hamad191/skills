@@ -1,5 +1,7 @@
--- Enemy spawning, movement, attacks (melee, rifle shots, telegraphed blasts), damage, and XP orbs.
--- Enemies are anchored parts moved by the server: cheap enough for big swarms.
+-- Enemy spawning, bodies, movement, attacks and skills (rifle shots, telegraphed blasts, lasers,
+-- snipes, heals, bombs, nets, Soru blinks, air blades, reinforcements), damage, XP orbs and chests.
+-- Each enemy is an anchored torso moved by the server, with jointed limbs (Motor6Ds) that every
+-- client animates on its own (client/Rigs.lua): cheap enough for big swarms.
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 
@@ -10,6 +12,7 @@ local Enemies = {}
 Enemies.onKilled = function(_enemy, _killer) end
 Enemies.onPickup = function(_player, _xp) end
 Enemies.onChest = function(_runKey, _kind, _opener) end -- a crew member opened a treasure chest
+Enemies.onSlow = function(_player, _factor, _seconds) end -- a seastone net hit a player
 
 local list, orbs, bullets, chests = {}, {}, {}, {}
 local nextBulletId = 0
@@ -17,6 +20,9 @@ local lastTargets = {} -- targets from the latest step, used when delayed blasts
 local NO_TARGETS = {}
 local BULLET_SPEED = 45
 local BLAST_COLOR = Color3.fromRGB(255, 80, 40)
+local LASER_COLOR = Color3.fromRGB(255, 230, 90)
+local SNIPE_COLOR = Color3.fromRGB(255, 60, 60)
+local PLAYER_RADIUS = 1.5
 
 -- Hurts a player target, after their Iron Body defense. Dashing and picking level-up cards
 -- make players briefly untouchable.
@@ -60,6 +66,7 @@ end
 local function makePart(props, parent)
 	local p = Instance.new("Part")
 	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+	p.TopSurface, p.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 	for k, v in props do
 		p[k] = v
 	end
@@ -80,7 +87,7 @@ local function makeBar(part, scale, name)
 	label.BackgroundTransparency = 1
 	label.Text = name
 	label.TextScaled = true
-	label.Font = Enum.Font.GothamBlack
+	label.Font = Enum.Font.LuckiestGuy
 	label.TextColor3 = Color3.new(1, 1, 1)
 	label.TextStrokeTransparency = 0
 	label.Parent = gui
@@ -89,11 +96,15 @@ local function makeBar(part, scale, name)
 	back.Position = UDim2.fromOffset(0, 22)
 	back.BackgroundColor3 = Color3.fromRGB(30, 0, 0)
 	back.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 6)
+	corner.Parent = back
 	local fill = Instance.new("Frame")
 	fill.Size = UDim2.fromScale(1, 1)
 	fill.BackgroundColor3 = Color3.fromRGB(230, 40, 40)
 	fill.BorderSizePixel = 0
 	fill.Parent = back
+	corner:Clone().Parent = fill
 	return fill
 end
 
@@ -161,46 +172,237 @@ local function flash(e)
 	end)
 end
 
--- Body parts: name, size, offset from the torso, color key, shape (all scaled by def.scale)
-local BODY = {
-	{ "LeftLeg", Vector3.new(0.9, 1.6, 1), Vector3.new(-0.5, -1.8, 0), "accent" },
-	{ "RightLeg", Vector3.new(0.9, 1.6, 1), Vector3.new(0.5, -1.8, 0), "accent" },
-	{ "LeftArm", Vector3.new(0.8, 1.8, 0.8), Vector3.new(-1.45, -0.1, 0), "color" },
-	{ "RightArm", Vector3.new(0.8, 1.8, 0.8), Vector3.new(1.45, -0.1, 0), "color" },
-	{ "LeftHand", Vector3.new(0.7, 0.7, 0.7), Vector3.new(-1.45, -1.2, 0), "skin", Enum.PartType.Ball },
-	{ "RightHand", Vector3.new(0.7, 0.7, 0.7), Vector3.new(1.45, -1.2, 0), "skin", Enum.PartType.Ball },
-	{ "Head", Vector3.new(1.7, 1.7, 1.7), Vector3.new(0, 1.85, 0), "skin", Enum.PartType.Ball },
-	{ "Cap", Vector3.new(1.8, 0.45, 1.8), Vector3.new(0, 2.65, 0), "accent" },
-	{ "Brim", Vector3.new(1.2, 0.15, 0.6), Vector3.new(0, 2.45, -1), "accent" },
-	{ "LeftEye", Vector3.new(0.32, 0.32, 0.32), Vector3.new(-0.35, 2, -0.75), "eyes", Enum.PartType.Ball },
-	{ "RightEye", Vector3.new(0.32, 0.32, 0.32), Vector3.new(0.35, 2, -0.75), "eyes", Enum.PartType.Ball },
-}
-local LEG_DEPTH = 2.6 -- torso center to the soles of the feet
+-- Bodies ----------------------------------------------------------------------------------
+-- Sizes and offsets are at scale 1 and grow with the enemy's scale. The torso is 2 x 2 x 1.
 
--- What enemies carry: same format as BODY, plus an optional rotation. Colors here are fixed.
+local LEG_DEPTH = 2.6 -- torso center to the soles of the feet
+local BALL, CYL, WEDGE = Enum.PartType.Ball, Enum.PartType.Cylinder, Enum.PartType.Wedge
+local UP = CFrame.Angles(0, 0, math.pi / 2) -- a cylinder standing upright
 local STEEL = Color3.fromRGB(210, 215, 225)
 local GUNMETAL = Color3.fromRGB(45, 45, 50)
+local WOOD = Color3.fromRGB(110, 70, 40)
+local DARK = Color3.fromRGB(25, 25, 30)
+local GOLD = Color3.fromRGB(235, 190, 60)
+local BOOTS = Color3.fromRGB(30, 30, 35)
+local BELT = Color3.fromRGB(60, 40, 25)
+local WHITE = Color3.fromRGB(245, 245, 248)
+
+-- Jointed limbs: name, size, joint on the torso, joint on the limb, color key.
+-- client/Rigs.lua swings the joints named LeftHip, RightHip, LeftShoulder, RightShoulder, Neck.
+local LIMBS = {
+	{ "LeftLeg", Vector3.new(0.9, 1.6, 0.95), Vector3.new(-0.5, -1, 0), Vector3.new(0, 0.8, 0), "accent", "LeftHip" },
+	{ "RightLeg", Vector3.new(0.9, 1.6, 0.95), Vector3.new(0.5, -1, 0), Vector3.new(0, 0.8, 0), "accent", "RightHip" },
+	{ "LeftArm", Vector3.new(0.75, 1.7, 0.75), Vector3.new(-1.4, 0.75, 0), Vector3.new(0, 0.75, 0), "color", "LeftShoulder" },
+	{ "RightArm", Vector3.new(0.75, 1.7, 0.75), Vector3.new(1.4, 0.75, 0), Vector3.new(0, 0.75, 0), "color", "RightShoulder" },
+	{ "Head", Vector3.new(1.7, 1.7, 1.7), Vector3.new(0, 1, 0), Vector3.new(0, -0.85, 0), "skin", "Neck", BALL },
+}
+
+-- A piece is { attach to, size, offset (CFrame or Vector3), color (Color3 or a color key), shape?, material? }.
+local function piece(on, size, offset, color, shape, material)
+	return { on, size, offset, color, shape, material }
+end
+
+local BASE = {
+	piece("LeftArm", Vector3.new(0.65, 0.65, 0.65), Vector3.new(0, -0.95, 0), "skin", BALL),
+	piece("RightArm", Vector3.new(0.65, 0.65, 0.65), Vector3.new(0, -0.95, 0), "skin", BALL),
+	piece("LeftLeg", Vector3.new(0.95, 0.4, 1.15), Vector3.new(0, -0.62, -0.08), BOOTS),
+	piece("RightLeg", Vector3.new(0.95, 0.4, 1.15), Vector3.new(0, -0.62, -0.08), BOOTS),
+	piece("Torso", Vector3.new(2.04, 0.28, 1.04), Vector3.new(0, -0.82, 0), BELT),
+	piece("Torso", Vector3.new(0.42, 0.3, 0.06), Vector3.new(0, -0.82, -0.54), GOLD, nil, Enum.Material.Metal),
+	-- face: eyes, angry brows, mouth
+	piece("Head", Vector3.new(0.32, 0.32, 0.32), Vector3.new(-0.33, 0.12, -0.72), "eyes", BALL),
+	piece("Head", Vector3.new(0.32, 0.32, 0.32), Vector3.new(0.33, 0.12, -0.72), "eyes", BALL),
+	piece("Head", Vector3.new(0.46, 0.1, 0.1), CFrame.new(-0.33, 0.38, -0.7) * CFrame.Angles(0, 0, -0.35), DARK),
+	piece("Head", Vector3.new(0.46, 0.1, 0.1), CFrame.new(0.33, 0.38, -0.7) * CFrame.Angles(0, 0, 0.35), DARK),
+	piece("Head", Vector3.new(0.46, 0.08, 0.06), Vector3.new(0, -0.32, -0.76), Color3.fromRGB(90, 40, 40)),
+}
+
+-- Marine sailor collar and neckerchief
+local SAILOR = {
+	piece("Torso", Vector3.new(1.7, 0.7, 0.08), Vector3.new(0, 0.6, 0.54), "accent"),
+	piece("Torso", Vector3.new(0.5, 0.5, 0.08), CFrame.new(0, 0.65, -0.54) * CFrame.Angles(0, 0, math.pi / 4), "accent"),
+}
+
+local function marineCap(crown, band)
+	return {
+		piece("Head", Vector3.new(0.42, 1.75, 1.75), CFrame.new(0, 0.72, 0) * UP, crown, CYL),
+		piece("Head", Vector3.new(0.14, 1.78, 1.78), CFrame.new(0, 0.56, 0) * UP, band, CYL),
+		piece("Head", Vector3.new(1.1, 0.12, 0.6), Vector3.new(0, 0.55, -0.85), crown),
+		piece("Head", Vector3.new(1.3, 0.6, 0.08), Vector3.new(0, 0.25, 0.8), crown),
+	}
+end
+
+local HATS = {
+	cap = marineCap(WHITE, "accent"),
+	medic = (function()
+		local pieces = marineCap(WHITE, Color3.fromRGB(200, 40, 50))
+		table.insert(pieces, piece("Head", Vector3.new(0.42, 0.13, 0.05), Vector3.new(0, 0.75, -0.89), Color3.fromRGB(220, 30, 40)))
+		table.insert(pieces, piece("Head", Vector3.new(0.13, 0.42, 0.05), Vector3.new(0, 0.75, -0.89), Color3.fromRGB(220, 30, 40)))
+		return pieces
+	end)(),
+	officer = {
+		piece("Head", Vector3.new(0.5, 1.9, 1.9), CFrame.new(0, 0.8, 0) * UP, WHITE, CYL),
+		piece("Head", Vector3.new(0.2, 1.92, 1.92), CFrame.new(0, 0.62, 0) * UP, DARK, CYL),
+		piece("Head", Vector3.new(1.2, 0.1, 0.55), Vector3.new(0, 0.58, -0.9), DARK),
+		piece("Head", Vector3.new(0.36, 0.3, 0.06), Vector3.new(0, 0.84, -0.96), GOLD, nil, Enum.Material.Neon),
+	},
+	beret = {
+		piece("Head", Vector3.new(1.9, 0.5, 1.9), CFrame.new(0.15, 0.75, 0) * CFrame.Angles(0, 0, 0.18), "accent", BALL),
+		piece("Head", Vector3.new(0.2, 0.2, 0.06), Vector3.new(-0.3, 0.72, -0.9), GOLD),
+	},
+	bear = {
+		piece("Head", Vector3.new(0.5, 1.85, 1.85), CFrame.new(0, 0.75, 0) * UP, "accent", CYL),
+		piece("Head", Vector3.new(0.6, 0.6, 0.35), Vector3.new(-0.65, 1.1, 0), "accent", BALL),
+		piece("Head", Vector3.new(0.6, 0.6, 0.35), Vector3.new(0.65, 1.1, 0), "accent", BALL),
+		piece("Head", Vector3.new(0.3, 0.3, 0.1), Vector3.new(-0.65, 1.1, -0.15), Color3.fromRGB(240, 190, 170), BALL),
+		piece("Head", Vector3.new(0.3, 0.3, 0.1), Vector3.new(0.65, 1.1, -0.15), Color3.fromRGB(240, 190, 170), BALL),
+	},
+	tophat = {
+		piece("Head", Vector3.new(0.1, 2.2, 2.2), CFrame.new(0, 0.72, 0) * UP, DARK, CYL),
+		piece("Head", Vector3.new(1.1, 1.45, 1.45), CFrame.new(0, 1.25, 0) * UP, DARK, CYL),
+		piece("Head", Vector3.new(0.2, 1.48, 1.48), CFrame.new(0, 0.86, 0) * UP, Color3.fromRGB(70, 70, 75), CYL),
+		-- white shirt and tie under the black suit
+		piece("Torso", Vector3.new(0.6, 1.1, 0.06), Vector3.new(0, 0.4, -0.52), WHITE),
+		piece("Torso", Vector3.new(0.18, 0.9, 0.08), Vector3.new(0, 0.35, -0.55), Color3.fromRGB(120, 20, 30)),
+	},
+	fin = {
+		piece("Head", Vector3.new(0.3, 1.1, 1.3), Vector3.new(0, 1.05, 0.2), "skin", WEDGE),
+		piece("Head", Vector3.new(0.12, 0.5, 0.06), CFrame.new(-0.6, -0.1, -0.5) * CFrame.Angles(0, 0.4, 0), DARK),
+		piece("Head", Vector3.new(0.12, 0.5, 0.06), CFrame.new(0.6, -0.1, -0.5) * CFrame.Angles(0, -0.4, 0), DARK),
+	},
+	clown = {
+		piece("Head", Vector3.new(1.95, 1.3, 1.95), Vector3.new(0, 0.4, 0.3), Color3.fromRGB(60, 110, 220), BALL),
+		piece("Head", Vector3.new(0.5, 0.5, 0.5), Vector3.new(0, -0.05, -0.86), Color3.fromRGB(255, 40, 40), BALL, Enum.Material.Neon),
+		-- striped shirt
+		piece("Torso", Vector3.new(2.04, 0.3, 1.04), Vector3.new(0, 0.45, 0), WHITE),
+		piece("Torso", Vector3.new(2.04, 0.3, 1.04), Vector3.new(0, -0.15, 0), WHITE),
+	},
+}
+local SAILOR_HATS = { cap = true, medic = true, beret = true }
+
 local GEAR = {
 	sword = {
-		{ "Blade", Vector3.new(0.12, 0.3, 3), Vector3.new(1.45, -1.25, -1.6), STEEL },
-		{ "Guard", Vector3.new(0.6, 0.15, 0.15), Vector3.new(1.45, -1.25, -0.1), Color3.fromRGB(200, 170, 60) },
+		piece("RightArm", Vector3.new(0.25, 0.25, 0.7), Vector3.new(0, -0.95, -0.3), DARK),
+		piece("RightArm", Vector3.new(0.6, 0.12, 0.12), Vector3.new(0, -0.95, -0.66), GOLD, nil, Enum.Material.Metal),
+		piece("RightArm", Vector3.new(0.1, 0.28, 3), Vector3.new(0, -0.95, -2.2), STEEL, nil, Enum.Material.Metal),
 	},
+	-- guns point down the arm: shooters hold their arms out, aiming them forward
 	rifle = {
-		{ "Rifle", Vector3.new(0.35, 0.45, 3.4), Vector3.new(0.9, -0.5, -1.4), GUNMETAL },
-		{ "Stock", Vector3.new(0.4, 0.7, 0.9), Vector3.new(0.9, -0.6, 0.2), Color3.fromRGB(110, 70, 40) },
+		piece("RightArm", Vector3.new(0.32, 3.2, 0.42), Vector3.new(0, -1.9, -0.2), GUNMETAL, nil, Enum.Material.Metal),
+		piece("RightArm", Vector3.new(0.38, 0.9, 0.65), Vector3.new(0, -0.45, 0.15), WOOD, nil, Enum.Material.Wood),
+	},
+	longrifle = {
+		piece("RightArm", Vector3.new(0.3, 4.4, 0.4), Vector3.new(0, -2.5, -0.2), Color3.fromRGB(55, 65, 50), nil, Enum.Material.Metal),
+		piece("RightArm", Vector3.new(0.38, 0.9, 0.65), Vector3.new(0, -0.45, 0.15), WOOD, nil, Enum.Material.Wood),
+		piece("RightArm", Vector3.new(0.9, 0.3, 0.3), CFrame.new(0, -1.6, -0.55) * UP, DARK, CYL),
+	},
+	net = {
+		piece("RightArm", Vector3.new(1.3, 1.3, 1.3), Vector3.new(0, -1.4, -0.2), Color3.fromRGB(170, 160, 135), BALL, Enum.Material.Fabric),
+		piece("Torso", Vector3.new(2.3, 0.3, 0.3), CFrame.new(0, 0.1, 0.55) * CFrame.Angles(0, 0, 0.7), Color3.fromRGB(150, 130, 100), CYL, Enum.Material.Fabric),
+	},
+	bomb = {
+		piece("RightArm", Vector3.new(1.2, 1.2, 1.2), Vector3.new(0, -1.45, -0.25), DARK, BALL),
+		piece("RightArm", Vector3.new(0.12, 0.5, 0.12), Vector3.new(0, -0.75, -0.25), Color3.fromRGB(200, 180, 140)),
+		piece("RightArm", Vector3.new(0.3, 0.3, 0.3), Vector3.new(0, -0.45, -0.25), Color3.fromRGB(255, 160, 40), BALL, Enum.Material.Neon),
 	},
 	cannon = {
-		{ "Cannon", Vector3.new(3.2, 1.1, 1.1), Vector3.new(1.2, 1.2, -0.4), GUNMETAL, Enum.PartType.Cylinder, CFrame.Angles(0, math.pi / 2, 0) },
+		piece("Torso", Vector3.new(3.2, 1.1, 1.1), CFrame.new(1.2, 1.2, -0.4) * CFrame.Angles(0, math.pi / 2, 0), GUNMETAL, CYL, Enum.Material.Metal),
+		piece("Torso", Vector3.new(0.4, 1.3, 1.3), CFrame.new(1.2, 1.2, 1.1) * CFrame.Angles(0, math.pi / 2, 0), DARK, CYL),
 	},
 	coat = {
-		{ "Coat", Vector3.new(2.4, 2.8, 0.2), Vector3.new(0, -0.5, 0.62), Color3.fromRGB(250, 250, 250) },
-		{ "EpauletL", Vector3.new(0.9, 0.25, 1.1), Vector3.new(-1.3, 0.95, 0), Color3.fromRGB(230, 190, 60) },
-		{ "EpauletR", Vector3.new(0.9, 0.25, 1.1), Vector3.new(1.3, 0.95, 0), Color3.fromRGB(230, 190, 60) },
+		piece("Torso", Vector3.new(2.4, 2.9, 0.2), Vector3.new(0, -0.55, 0.62), WHITE, nil, Enum.Material.Fabric),
+		piece("Torso", Vector3.new(0.9, 0.25, 1.1), Vector3.new(-1.3, 0.95, 0), GOLD),
+		piece("Torso", Vector3.new(0.9, 0.25, 1.1), Vector3.new(1.3, 0.95, 0), GOLD),
 	},
 }
 
--- runKey: which adventure this enemy belongs to; it only chases that crew.
--- look (optional): { name, color, accent } to dress up a named boss.
+-- How each enemy holds itself (read by client/Rigs.lua): shooters aim, bombers carry.
+local function styleOf(def)
+	if def.gear == "rifle" or def.gear == "longrifle" or def.gear == "net" then
+		return "aim"
+	end
+	return def.gear == "bomb" and "carry" or "march"
+end
+
+local function buildBody(def, colors, name, x, y, z)
+	local s = def.scale
+	local model = Instance.new("Model")
+	model.Name = name
+	local torso = makePart({ Name = "Torso", Size = Vector3.new(2, 2, 1) * s, Color = colors.color }, model)
+	torso.CFrame = CFrame.new(x, y + LEG_DEPTH * s, z)
+	local parts = { Torso = torso }
+
+	local function newPart(partName, size, color, shape, material)
+		local p = makePart({
+			Name = partName, Size = size * s, Color = color, Shape = shape or Enum.PartType.Block,
+			Material = material or Enum.Material.SmoothPlastic, CastShadow = false,
+		}, nil)
+		p.Anchored, p.Massless = false, true
+		return p
+	end
+	for _, limb in LIMBS do
+		local p = newPart(limb[1], limb[2], colors[limb[5]], limb[7])
+		local joint = Instance.new("Motor6D")
+		joint.Name = limb[6]
+		joint.Part0, joint.Part1 = torso, p
+		joint.C0, joint.C1 = CFrame.new(limb[3] * s), CFrame.new(limb[4] * s)
+		joint.Parent = torso
+		p.CFrame = torso.CFrame * joint.C0 * joint.C1:Inverse()
+		p.Parent = model
+		parts[limb[1]] = p
+	end
+	local function attach(list)
+		for _, pc in list do
+			local on = parts[pc[1]]
+			local color = typeof(pc[4]) == "Color3" and pc[4] or colors[pc[4]] or DARK
+			local p = newPart(pc[1] .. "Detail", pc[2], color, pc[5], pc[6])
+			local offset = typeof(pc[3]) == "CFrame" and pc[3] or CFrame.new(pc[3])
+			p.CFrame = on.CFrame * (offset - offset.Position + offset.Position * s)
+			if pc[4] == "eyes" and def.eyes then
+				p.Material = Enum.Material.Neon
+			end
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0, weld.Part1 = on, p
+			weld.Parent = p
+			p.Parent = model
+		end
+	end
+	attach(BASE)
+	if SAILOR_HATS[def.hat] then
+		attach(SAILOR)
+	end
+	attach(HATS[def.hat] or {})
+	attach(GEAR[def.gear] or {})
+	if def.gear == "coat" then
+		-- "Justice" on the back of every officer's coat
+		local back
+		for _, p in model:GetChildren() do
+			if p.Name == "TorsoDetail" and p.Size.Z < 0.25 * s and p.Size.Y > 2.5 * s then
+				back = p
+			end
+		end
+		if back then
+			local gui = Instance.new("SurfaceGui")
+			gui.Face = Enum.NormalId.Back
+			gui.CanvasSize = Vector2.new(120, 140)
+			gui.Parent = back
+			local text = Instance.new("TextLabel")
+			text.Size = UDim2.fromScale(1, 0.6)
+			text.Position = UDim2.fromScale(0, 0.1)
+			text.BackgroundTransparency = 1
+			text.Text = "正義"
+			text.TextScaled = true
+			text.TextColor3 = DARK
+			text.Font = Enum.Font.GothamBlack
+			text.Parent = gui
+		end
+	end
+	model.PrimaryPart = torso
+	model:SetAttribute("Style", styleOf(def))
+	model:SetAttribute("Scale", s)
+	return model, parts
+end
+
 function Enemies.spawn(kind, x, z, hpScale, dmgScale, runKey, look)
 	local def = Config.Enemies[kind]
 	local y = groundY(x, z)
@@ -208,59 +410,69 @@ function Enemies.spawn(kind, x, z, hpScale, dmgScale, runKey, look)
 		return nil
 	end
 	look = look or {}
-	local colors = { color = look.color or def.color, accent = look.accent or def.accent, skin = def.skin, eyes = def.eyes }
+	local colors = { color = look.color or def.color, accent = look.accent or def.accent, skin = def.skin, eyes = def.eyes or DARK }
 	local name = look.name or def.name
-	local s = def.scale
-	local model = Instance.new("Model")
-	model.Name = name
-	local torso = makePart({ Name = "Torso", Size = Vector3.new(2, 2, 1) * s, Color = colors.color }, model)
-	torso.CFrame = CFrame.new(x, y + LEG_DEPTH * s, z)
-	local parts = { Torso = torso }
-	local function attach(pieceName, size, offset, color, shape, rotation)
-		local p = makePart({ Name = pieceName, Size = size * s, Color = color, Shape = shape or Enum.PartType.Block }, nil)
-		p.Anchored, p.Massless = false, true
-		p.CFrame = torso.CFrame * CFrame.new(offset * s) * (rotation or CFrame.identity)
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0, weld.Part1 = torso, p
-		weld.Parent = p
-		p.Parent = model
-		parts[pieceName] = p
-		return p
+	local model, parts = buildBody(def, colors, name, x, y, z)
+	if def.healthBar then
+		model:SetAttribute("Boss", name)
+		model:SetAttribute("BossTier", kind == "Boss" and 2 or 1)
+		model:SetAttribute("Hp", 1)
 	end
-	for _, b in BODY do
-		local p = attach(b[1], b[2], b[3], colors[b[4]] or Color3.fromRGB(20, 20, 20), b[5])
-		if b[4] == "eyes" and def.eyes then
-			p.Material = Enum.Material.Neon
-		end
-	end
-	for _, g in GEAR[def.gear] or {} do
-		attach(g[1], g[2], g[3], g[4], g[5], g[6])
-	end
-	model.PrimaryPart = torso
 	model.Parent = folder
 
 	local hp = def.hp * hpScale
 	local now = os.clock()
 	local e = {
-		model = model, root = torso, head = parts.Head, def = def, kind = kind, run = runKey,
+		model = model, root = parts.Torso, head = parts.Head, def = def, kind = kind, run = runKey,
 		color = colors.color, skin = colors.skin, name = name,
-		hp = hp, maxHp = hp, damage = def.damage * dmgScale,
-		radius = 1.2 * s, lastHit = 0, phase = math.random() * 10,
+		hp = hp, maxHp = hp, damage = def.damage * dmgScale, hpScale = hpScale, dmgScale = dmgScale,
+		radius = 1.2 * def.scale, lastHit = 0, phase = math.random() * 10, busyUntil = 0,
 		nextAttack = now + math.random() * (def.fireRate or 1) + 1,
 		nextSlam = now + (def.slamEvery or 0), nextRing = now + (def.ringEvery or 0),
+		cool = {},
 	}
+	-- skills start partly charged so a squad doesn't fire all at once
+	for skill, cooldown in def.skills or {} do
+		e.cool[skill] = now + cooldown * (0.4 + math.random() * 0.6)
+	end
 	if def.healthBar then
-		e.bar = makeBar(torso, s, name)
+		e.bar = makeBar(parts.Torso, def.scale, name)
 	end
 	table.insert(list, e)
 	return e
 end
 
+-- Removes an enemy without a reward (a Bomb Clown that blew itself up).
+local function vanish(e)
+	e.dead = true
+	e.model:Destroy()
+end
+
+-- Attacks -----------------------------------------------------------------------------------
+
+-- Tells clients to play an attack pose: "swing" (melee), "cast" (both arms up), "shoot".
+local function pose(e, kind)
+	e.model:SetAttribute("Pose", kind)
+	e.model:SetAttribute("PoseAt", os.clock())
+end
+
+local function faceTo(e, dir)
+	local pos = e.root.Position
+	e.root.CFrame = CFrame.lookAt(pos, pos + dir)
+end
+
+local function groundPos(e)
+	return e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale - 0.2, 0)
+end
+
 -- A telegraphed blast: players see a red circle, then everyone still inside gets hit.
-local function blast(e, pos, radius, damage, delay)
+local function blast(e, pos, radius, damage, delay, onLand)
 	Fx.emit("warn", { pos = pos, r = radius, t = delay })
 	local runKey = e.run
 	task.delay(delay, function()
+		if onLand and not onLand() then
+			return
+		end
 		for _, t in lastTargets[runKey] or NO_TARGETS do
 			if t.hum.Health > 0 and flat(t.root.Position - pos).Magnitude <= radius then
 				hurt(t, damage)
@@ -270,34 +482,211 @@ local function blast(e, pos, radius, damage, delay)
 	end)
 end
 
--- A rifle bullet flying flat toward the target.
-local function shoot(e, target)
+-- A telegraphed straight line (Pacifista lasers, sniper shots, sword lunges): a red strip shows
+-- on the ground, then everyone still on it gets hit. The enemy holds still while aiming.
+local function lineAttack(e, dir, length, width, damage, delay, beam)
+	local from = groundPos(e)
+	e.busyUntil = os.clock() + delay + 0.2
+	faceTo(e, dir)
+	pose(e, beam.pose)
+	Fx.emit("line", { o = from, d = dir, len = length, w = width, t = delay, c = beam.color })
+	local runKey = e.run
+	task.delay(delay, function()
+		if e.dead then
+			return
+		end
+		for _, t in lastTargets[runKey] or NO_TARGETS do
+			local rel = flat(t.root.Position - from)
+			local along = rel:Dot(dir)
+			if t.hum.Health > 0 and along >= 0 and along <= length and (rel - dir * along).Magnitude <= width / 2 + PLAYER_RADIUS then
+				hurt(t, damage)
+			end
+		end
+		local eye = e.head.Position
+		Fx.emit("beam", { o = eye, d = dir, len = length, w = beam.width, c = beam.color })
+		if beam.lunge then
+			-- the swordsman dashes along his line
+			local pos = e.root.Position + dir * length * 0.85
+			local y = groundY(pos.X, pos.Z)
+			if y then
+				e.root.CFrame = CFrame.lookAt(Vector3.new(pos.X, y + LEG_DEPTH * e.def.scale, pos.Z), Vector3.new(pos.X, y + LEG_DEPTH * e.def.scale, pos.Z) + dir)
+			end
+		end
+	end)
+end
+
+-- A projectile flying flat toward the target (rifle bullets, air blades, seastone nets).
+local function shoot(e, target, opts)
+	opts = opts or {}
 	nextBulletId += 1
 	local from = e.root.Position
 	local dir = flat(target.root.Position - from)
 	dir = dir.Magnitude > 0.1 and dir.Unit or Vector3.new(0, 0, -1)
-	local range = e.def.range * 1.6
-	table.insert(bullets, { id = nextBulletId, pos = from, dir = dir, left = range, damage = e.damage, run = e.run })
-	Fx.emit("eshot", { id = nextBulletId, o = from, d = dir, speed = BULLET_SPEED, len = range })
+	local range = (e.def.range or 30) * 1.6
+	local speed = opts.speed or BULLET_SPEED
+	table.insert(bullets, {
+		id = nextBulletId, pos = from, dir = dir, left = range, damage = opts.damage or e.damage, run = e.run,
+		speed = speed, radius = opts.radius or 2.2, slow = opts.slow, slowTime = opts.slowTime,
+	})
+	Fx.emit("eshot", { id = nextBulletId, o = from, d = dir, speed = speed, len = range, c = opts.color, s = opts.size })
+	pose(e, "shoot")
 end
 
--- Ranged and boss attacks. Melee hits happen in Enemies.step.
+local SKILLS = {}
+
+-- Swordsman: a quick lunge along a short red line.
+function SKILLS.dash(e, target, dist)
+	if dist > 22 or dist < 4 then
+		return false
+	end
+	local dir = flat(target.root.Position - e.root.Position).Unit
+	lineAttack(e, dir, 20, 3, e.damage * 1.5, 0.55, { color = Color3.fromRGB(220, 230, 255), width = 0.6, pose = "swing", lunge = true })
+	return true
+end
+
+-- Pacifista (and the final boss): a wide laser from the mouth after a long aim.
+function SKILLS.laser(e, target, dist)
+	if dist > e.def.range then
+		return false
+	end
+	local dir = flat(target.root.Position - e.root.Position).Unit
+	lineAttack(e, dir, e.def.range + 8, 4 * math.max(1, e.def.scale / 2), e.damage * 1.6, 1.1, { color = LASER_COLOR, width = 1.4, pose = "cast" })
+	return true
+end
+
+-- Sniper: a long, thin, very painful shot.
+function SKILLS.snipe(e, target, dist)
+	if dist > e.def.range + 10 then
+		return false
+	end
+	local dir = flat(target.root.Position - e.root.Position).Unit
+	lineAttack(e, dir, e.def.range + 20, 2.2, e.damage, 1.3, { color = SNIPE_COLOR, width = 0.35, pose = "shoot" })
+	return true
+end
+
+-- Medic: heals every nearby Marine that is hurt.
+function SKILLS.heal(e)
+	local healed = false
+	for _, other in list do
+		if not other.dead and other.run == e.run and other.hp < other.maxHp
+			and flat(other.root.Position - e.root.Position).Magnitude <= e.def.healRadius then
+			other.hp = math.min(other.maxHp, other.hp + other.maxHp * e.def.heal)
+			if other.bar then
+				other.bar.Size = UDim2.fromScale(other.hp / other.maxHp, 1)
+				other.model:SetAttribute("Hp", other.hp / other.maxHp)
+			end
+			healed = true
+		end
+	end
+	if healed then
+		pose(e, "cast")
+		Fx.emit("heal", { pos = groundPos(e), r = e.def.healRadius })
+	end
+	return true -- checks again after the cooldown either way
+end
+
+-- Bomb Clown: runs up, lights the fuse, and blows up (taking itself out).
+function SKILLS.bomb(e, _target, dist)
+	if dist > 5 or e.fusing then
+		return false
+	end
+	e.fusing = true
+	e.busyUntil = os.clock() + 10
+	pose(e, "cast")
+	blast(e, groundPos(e), e.def.blast, e.damage, 1, function()
+		if e.dead then
+			return false -- defused: killed before it went off
+		end
+		vanish(e)
+		return true
+	end)
+	return true
+end
+
+-- Seastone Netter: a slow net that halves your speed for a moment.
+function SKILLS.net(e, target, dist)
+	if dist > e.def.range then
+		return false
+	end
+	shoot(e, target, {
+		speed = 32, radius = 2.8, damage = e.damage, slow = e.def.slow, slowTime = e.def.slowTime,
+		color = Color3.fromRGB(200, 190, 160), size = 2,
+	})
+	return true
+end
+
+-- CP9 Agent: Soru - vanishes and reappears right beside you.
+function SKILLS.blink(e, target, dist)
+	if dist < 10 or dist > 80 then
+		return false
+	end
+	local a = math.random() * math.pi * 2
+	local spot = target.root.Position + Vector3.new(math.cos(a) * 5, 0, math.sin(a) * 5)
+	local y = groundY(spot.X, spot.Z)
+	if not y then
+		return false
+	end
+	Fx.emit("puff", { pos = e.root.Position })
+	local pos = Vector3.new(spot.X, y + LEG_DEPTH * e.def.scale, spot.Z)
+	e.root.CFrame = CFrame.lookAt(pos, Vector3.new(target.root.Position.X, pos.Y, target.root.Position.Z))
+	Fx.emit("puff", { pos = pos })
+	e.lastHit = os.clock() - 0.4 -- a moment to react before the first hit
+	return true
+end
+
+-- CP9 Agent: Rankyaku - a kicked blade of air.
+function SKILLS.rankyaku(e, target, dist)
+	if dist > e.def.range or dist < 8 then
+		return false
+	end
+	shoot(e, target, { speed = 60, radius = 2.6, damage = e.damage * 0.8, color = Color3.fromRGB(190, 240, 255), size = 1.6 })
+	return true
+end
+
+-- Captains and Vice Admirals: call in a few recruits.
+function SKILLS.call(e)
+	if Enemies.count(e.run) >= Config.MAX_ENEMIES then
+		return false
+	end
+	pose(e, "cast")
+	Fx.emit("shout", { pos = e.head.Position, text = "REINFORCEMENTS!" })
+	local pos = e.root.Position
+	for k = 1, 3 do
+		local a = k * math.pi * 2 / 3 + math.random()
+		Enemies.spawn("Grunt", pos.X + math.cos(a) * 7, pos.Z + math.sin(a) * 7, e.hpScale, e.dmgScale, e.run)
+	end
+	return true
+end
+
+-- Ranged attacks, boss attacks and skills. Melee hits happen in Enemies.step.
 local function specialAttacks(e, target, dist, targets, now)
 	local def = e.def
+	if now < e.busyUntil then
+		return
+	end
+	for skill, cooldown in def.skills or {} do
+		if now >= e.cool[skill] and SKILLS[skill](e, target, dist) then
+			e.cool[skill] = now + cooldown
+			return -- one skill at a time
+		end
+	end
 	if def.ai == "ranged" and dist <= def.range and now >= e.nextAttack then
 		e.nextAttack = now + def.fireRate
 		shoot(e, target)
 	elseif def.ai == "artillery" and dist <= def.range and now >= e.nextAttack then
 		e.nextAttack = now + def.fireRate
+		pose(e, "cast")
 		blast(e, target.root.Position, def.blast, e.damage, 1.4)
 	elseif def.ai == "boss" then
 		if now >= e.nextSlam then
 			e.nextSlam = now + def.slamEvery
 			local victim = targets[math.random(#targets)]
+			pose(e, "swing")
 			blast(e, victim.root.Position, def.blast, e.damage * 1.5, 1.2)
 		end
 		if def.ringEvery and now >= e.nextRing then
 			e.nextRing = now + def.ringEvery
+			pose(e, "cast")
 			for k = 1, 6 do
 				local a = k * math.pi / 3
 				blast(e, e.root.Position + Vector3.new(math.cos(a) * 14, 0, math.sin(a) * 14), 7, e.damage, 1.5)
@@ -312,7 +701,9 @@ function Enemies.damage(e, amount, player)
 	end
 	e.hp -= amount
 	if e.bar then
-		e.bar.Size = UDim2.fromScale(math.max(e.hp, 0) / e.maxHp, 1)
+		local ratio = math.max(e.hp, 0) / e.maxHp
+		e.bar.Size = UDim2.fromScale(ratio, 1)
+		e.model:SetAttribute("Hp", ratio)
 	end
 	if e.hp > 0 then
 		flash(e)
@@ -349,19 +740,22 @@ function Enemies.step(dt, targetsByRun)
 			end
 		end
 		if best then
+			local busy = now < e.busyUntil
 			local pos = e.root.Position
 			local to = flat(best.root.Position - pos)
 			local reach = e.radius + 2
-			-- shooters stop at a distance; everyone else walks right up
-			local stopAt = (e.def.ai == "ranged" or e.def.ai == "artillery") and e.def.range * 0.8 or reach
-			if bestDist > stopAt then
+			-- shooters and support stop at a distance; everyone else walks right up
+			local stopAt = e.def.keepAway and e.def.range * 0.8 or reach
+			if not busy and bestDist > stopAt then
 				local newPos = pos + to.Unit * math.min(e.def.speed * dt, bestDist - stopAt)
-				-- waddle side to side while walking
-				local sway = math.sin(now * 9 + e.phase) * 0.12
+				local sway = math.sin(now * 9 + e.phase) * 0.04
 				e.root.CFrame = CFrame.lookAt(newPos, newPos + to) * CFrame.Angles(0, 0, sway)
+			elseif not busy and to.Magnitude > 0.1 then
+				faceTo(e, to) -- keep facing the target while standing
 			end
-			if bestDist <= reach and now - e.lastHit >= 1 then
+			if not busy and bestDist <= reach and now - e.lastHit >= 1 then
 				e.lastHit = now
+				pose(e, "swing")
 				hurt(best, e.damage)
 			end
 			specialAttacks(e, best, bestDist, targetsByRun[e.run], now)
@@ -385,18 +779,21 @@ function Enemies.step(dt, targetsByRun)
 
 	for i = #bullets, 1, -1 do
 		local b = bullets[i]
-		local move = BULLET_SPEED * dt
+		local move = b.speed * dt
 		b.pos += b.dir * move
 		b.left -= move
 		local hit
 		for _, t in targetsByRun[b.run] or NO_TARGETS do
-			if flat(t.root.Position - b.pos).Magnitude <= 2.2 then
+			if flat(t.root.Position - b.pos).Magnitude <= b.radius then
 				hit = t
 				break
 			end
 		end
 		if hit then
 			hurt(hit, b.damage)
+			if b.slow and hit.player then
+				Enemies.onSlow(hit.player, b.slow, b.slowTime)
+			end
 		end
 		if hit or b.left <= 0 then
 			Fx.emit("eshotEnd", { id = b.id })

@@ -1,7 +1,11 @@
 -- All game balance lives here.
 local Config = {}
 
-Config.MINIBOSS_EVERY = 120
+-- Waves: every run is split into waves of WAVE_LENGTH seconds. Most waves start with an event
+-- (a squad arriving all at once); every MINIBOSS_WAVE-th wave a Vice Admiral leads the attack.
+-- When the last wave ends, the map's boss arrives.
+Config.WAVE_LENGTH = 30
+Config.MINIBOSS_WAVE = 4
 Config.RESULTS_TIME = 8
 Config.MAX_ENEMIES = 150
 Config.SPAWN_MIN, Config.SPAWN_MAX = 55, 85 -- spawn distance from players
@@ -788,55 +792,84 @@ for className, class in Config.Classes do
 	end
 end
 
--- color = clothes, accent = cap and pants, skin = head and hands, eyes = glowing eye color
--- gear: what they carry (sword | rifle | cannon | coat). ai: how they fight:
+-- color = clothes, accent = trousers and collar, skin = head and hands, eyes = glowing eye color
+-- hat: cap | officer | beret | medic | bear | tophat | fin | clown. gear: what they carry
+-- (sword | rifle | longrifle | cannon | coat | bomb | net). ai: how they move and fight:
 --   melee (walk up and hit), ranged (keep distance and shoot), artillery (shell an area),
---   boss (melee plus telegraphed slams; the final boss also calls down a ring of strikes)
+--   support (stay back), boss (melee plus telegraphed slams; the final boss also calls down a
+--   ring of strikes). keepAway = stop at 80% of range.
+-- skills = { name = cooldown } (see server/Enemies.lua):
+--   dash (lunging slash), laser (Pacifista beam), snipe (long aimed shot), heal (heals nearby
+--   Marines), bomb (runs up and explodes), net (slows you), blink (Soru next to you),
+--   rankyaku (flying air blade), call (summons recruits)
 local SKIN = Color3.fromRGB(255, 205, 160)
 local WHITE = Color3.fromRGB(240, 240, 245)
 local NAVY = Color3.fromRGB(35, 60, 130)
 Config.Enemies = {
-	Grunt = { name = "Marine Recruit", hp = 20, speed = 11, damage = 6, xp = 1, scale = 1, color = WHITE, accent = NAVY, skin = SKIN },
+	Grunt = { name = "Marine Recruit", hp = 20, speed = 11, damage = 6, xp = 1, scale = 1, color = WHITE, accent = NAVY, skin = SKIN, hat = "cap" },
 	Swordsman = {
 		name = "Marine Swordsman", hp = 34, speed = 13, damage = 9, xp = 2, scale = 1.05,
-		color = WHITE, accent = Color3.fromRGB(25, 45, 110), skin = SKIN, gear = "sword",
+		color = WHITE, accent = Color3.fromRGB(25, 45, 110), skin = SKIN, gear = "sword", hat = "cap",
+		skills = { dash = 6 },
 	},
 	Rifleman = {
 		name = "Marine Rifleman", hp = 18, speed = 10, damage = 7, xp = 2, scale = 1,
-		color = WHITE, accent = Color3.fromRGB(50, 90, 60), skin = SKIN, gear = "rifle",
-		ai = "ranged", range = 32, fireRate = 2.6,
+		color = WHITE, accent = Color3.fromRGB(50, 90, 60), skin = SKIN, gear = "rifle", hat = "cap",
+		ai = "ranged", keepAway = true, range = 32, fireRate = 2.6,
 	},
 	Runner = {
 		name = "Fishman", hp = 12, speed = 15, damage = 4, xp = 1, scale = 0.85,
-		color = Color3.fromRGB(230, 120, 50), accent = Color3.fromRGB(30, 50, 90), skin = Color3.fromRGB(70, 150, 210),
+		color = Color3.fromRGB(230, 120, 50), accent = Color3.fromRGB(30, 50, 90), skin = Color3.fromRGB(70, 150, 210), hat = "fin",
+	},
+	Bomber = {
+		name = "Bomb Clown", hp = 14, speed = 16, damage = 24, xp = 2, scale = 0.95,
+		color = Color3.fromRGB(235, 70, 70), accent = Color3.fromRGB(60, 90, 200), skin = Color3.fromRGB(250, 240, 235),
+		gear = "bomb", hat = "clown", skills = { bomb = 0 }, blast = 7,
+	},
+	Medic = {
+		name = "Marine Medic", hp = 30, speed = 10, damage = 4, xp = 3, scale = 1,
+		color = WHITE, accent = Color3.fromRGB(200, 40, 50), skin = SKIN, hat = "medic",
+		ai = "support", keepAway = true, range = 26, skills = { heal = 5 }, healRadius = 22, heal = 0.25,
+	},
+	Netter = {
+		name = "Seastone Netter", hp = 26, speed = 10, damage = 4, xp = 3, scale = 1.05,
+		color = WHITE, accent = Color3.fromRGB(70, 60, 50), skin = SKIN, gear = "net", hat = "cap",
+		ai = "support", keepAway = true, range = 30, skills = { net = 4.5 }, slow = 0.5, slowTime = 2,
 	},
 	Cannoneer = {
 		name = "Marine Cannoneer", hp = 60, speed = 7, damage = 16, xp = 4, scale = 1.25,
-		color = Color3.fromRGB(200, 205, 215), accent = Color3.fromRGB(60, 60, 70), skin = SKIN, gear = "cannon",
-		ai = "artillery", range = 45, fireRate = 5, blast = 6,
+		color = Color3.fromRGB(200, 205, 215), accent = Color3.fromRGB(60, 60, 70), skin = SKIN, gear = "cannon", hat = "cap",
+		ai = "artillery", keepAway = true, range = 45, fireRate = 5, blast = 6,
+	},
+	Sniper = {
+		name = "Marine Sniper", hp = 16, speed = 9, damage = 20, xp = 3, scale = 1,
+		color = Color3.fromRGB(80, 105, 65), accent = Color3.fromRGB(45, 60, 40), skin = SKIN, gear = "longrifle", hat = "beret",
+		ai = "support", keepAway = true, range = 62, skills = { snipe = 5 },
 	},
 	Brute = {
 		name = "Pacifista", hp = 110, speed = 8, damage = 14, xp = 6, scale = 1.7,
 		color = Color3.fromRGB(55, 55, 65), accent = Color3.fromRGB(30, 30, 35), skin = Color3.fromRGB(200, 170, 140),
-		eyes = Color3.fromRGB(255, 220, 60),
+		eyes = Color3.fromRGB(255, 220, 60), hat = "bear", skills = { laser = 7 }, range = 46,
 	},
 	Captain = {
 		name = "Marine Captain", hp = 220, speed = 11, damage = 16, xp = 10, scale = 1.4,
-		color = Color3.fromRGB(250, 250, 250), accent = Color3.fromRGB(20, 35, 90), skin = SKIN, gear = "coat",
+		color = Color3.fromRGB(250, 250, 250), accent = Color3.fromRGB(20, 35, 90), skin = SKIN, gear = "coat", hat = "officer",
+		skills = { call = 14 },
 	},
 	Agent = {
 		name = "CP9 Agent", hp = 140, speed = 17, damage = 14, xp = 8, scale = 1.1,
-		color = Color3.fromRGB(25, 25, 30), accent = Color3.fromRGB(15, 15, 20), skin = SKIN,
+		color = Color3.fromRGB(25, 25, 30), accent = Color3.fromRGB(15, 15, 20), skin = SKIN, hat = "tophat",
+		range = 34, skills = { blink = 6, rankyaku = 4 },
 	},
 	MiniBoss = {
 		name = "Vice Admiral", hp = 1200, speed = 10, damage = 22, xp = 40, gold = 25, scale = 3, healthBar = true,
-		color = Color3.fromRGB(250, 250, 250), accent = Color3.fromRGB(35, 35, 60), skin = SKIN, gear = "coat",
-		ai = "boss", slamEvery = 6, blast = 8,
+		color = Color3.fromRGB(250, 250, 250), accent = Color3.fromRGB(35, 35, 60), skin = SKIN, gear = "coat", hat = "officer",
+		ai = "boss", slamEvery = 6, blast = 8, range = 40, skills = { call = 16 },
 	},
 	Boss = {
 		name = "Admiral", hp = 15000, speed = 12, damage = 40, xp = 0, gold = 300, scale = 5, healthBar = true,
-		color = Color3.fromRGB(250, 250, 250), accent = Color3.fromRGB(150, 20, 30), skin = SKIN, gear = "coat",
-		eyes = Color3.fromRGB(255, 80, 40), ai = "boss", slamEvery = 5, ringEvery = 12, blast = 9,
+		color = Color3.fromRGB(250, 250, 250), accent = Color3.fromRGB(150, 20, 30), skin = SKIN, gear = "coat", hat = "officer",
+		eyes = Color3.fromRGB(255, 80, 40), ai = "boss", slamEvery = 5, ringEvery = 12, blast = 9, range = 60, skills = { laser = 9 },
 	},
 }
 
@@ -844,12 +877,32 @@ Config.Enemies = {
 Config.SPAWN_TABLE = {
 	{ "Grunt", 1, 0, 10 },
 	{ "Swordsman", 1, 1, 4 },
+	{ "Rifleman", 1, 1.5, 2.5 },
 	{ "Runner", 2, 1, 3 },
-	{ "Rifleman", 2, 1.5, 3 },
+	{ "Bomber", 2, 1.5, 2 },
+	{ "Medic", 3, 2, 1.2 },
 	{ "Brute", 4, 3, 1.5 },
+	{ "Netter", 5, 2, 1.5 },
 	{ "Cannoneer", 6, 2, 1.5 },
+	{ "Sniper", 7, 2.5, 1.2 },
 	{ "Captain", 8, 3, 1 },
 	{ "Agent", 12, 2, 1.5 },
+}
+
+-- Wave events: a squad that arrives all at once at the start of a wave.
+-- kind = who comes (nil = the map's usual mix), count grows with the wave number and crew size,
+-- shape = pack (one big group from one side), ring (all around you) or line (a firing line).
+-- fromWave / fromMap: the first wave number and map where the event can happen.
+Config.WAVE_EVENTS = {
+	{ title = "HORDE!", sub = "A mob of recruits charges in", kind = "Grunt", count = 14, shape = "pack", fromWave = 1, fromMap = 1, weight = 3, color = rgb(255, 200, 70) },
+	{ title = "SURROUNDED!", sub = "They're closing in - break out!", count = 16, shape = "ring", fromWave = 2, fromMap = 1, weight = 3, color = rgb(255, 120, 60) },
+	{ title = "FIRING SQUAD", sub = "Riflemen take aim - keep moving!", kind = "Rifleman", count = 7, shape = "line", fromWave = 2, fromMap = 1, weight = 2, color = rgb(120, 200, 255) },
+	{ title = "BOMB CLOWNS", sub = "Don't let them reach you!", kind = "Bomber", count = 7, shape = "pack", fromWave = 3, fromMap = 1, weight = 2, color = rgb(255, 80, 80) },
+	{ title = "SWORD SQUAD", sub = "Swordsmen lunge at you", kind = "Swordsman", count = 8, shape = "ring", fromWave = 4, fromMap = 1, weight = 1.5, color = rgb(200, 220, 255) },
+	{ title = "SNIPER NEST", sub = "Step out of the red lines!", kind = "Sniper", count = 4, shape = "line", fromWave = 4, fromMap = 2, weight = 1.5, color = rgb(120, 230, 120) },
+	{ title = "PACIFISTA SQUAD", sub = "Dodge their lasers!", kind = "Brute", count = 3, shape = "pack", fromWave = 5, fromMap = 3, weight = 1.5, color = rgb(255, 220, 60) },
+	{ title = "SEASTONE NETS", sub = "Nets slow you down", kind = "Netter", count = 5, shape = "line", fromWave = 5, fromMap = 4, weight = 1.2, color = rgb(160, 140, 110) },
+	{ title = "CP9 RUSH", sub = "Assassins blink right next to you", kind = "Agent", count = 3, shape = "ring", fromWave = 6, fromMap = 6, weight = 1.2, color = rgb(190, 120, 255) },
 }
 
 -- Permanent upgrades bought with gold between runs. Cost = cost * (growth or META_GROWTH) ^ level.
@@ -874,12 +927,18 @@ Config.BOSS_ENRAGE_AT = 180 -- ...and hits much harder after this long
 
 -- Island NPCs (built by server/Npcs.lua). Their prompt opens a menu (panel / tab).
 -- Keep positions clear of the island props in tools/build_place.py.
+-- look: the outfit built in server/Npcs.lua. style: their idle animation (client/Rigs.lua).
 Config.NPCS = {
-	{ name = "Silvers Rayleigh", role = "Skill Trainer", icon = "⚔️", panel = "train", tab = "skills", position = Vector3.new(-28, 0, 1414), color = Color3.fromRGB(235, 235, 240), accent = Color3.fromRGB(70, 70, 80) },
-	{ name = "Dr. Kureha", role = "Passive Trainer", icon = "💊", panel = "train", tab = "passives", position = Vector3.new(-30, 0, 1386), color = Color3.fromRGB(150, 80, 160), accent = Color3.fromRGB(235, 235, 245) },
-	{ name = "Tom the Shipwright", role = "Gear Smith", icon = "🔨", panel = "gear", position = Vector3.new(30, 0, 1384), color = Color3.fromRGB(60, 110, 160), accent = Color3.fromRGB(240, 200, 60) },
-	{ name = "Shakky", role = "Upgrades", icon = "🍸", panel = "shop", position = Vector3.new(36, 0, 1406), color = Color3.fromRGB(40, 40, 50), accent = Color3.fromRGB(200, 60, 90) },
-	{ name = "Buggy the Clown", role = "Robux Store", icon = "💎", panel = "store", position = Vector3.new(0, 0, 1370), color = Color3.fromRGB(220, 60, 60), accent = Color3.fromRGB(60, 130, 230) },
+	{ name = "Silvers Rayleigh", role = "Skill Trainer", icon = "⚔️", panel = "train", tab = "skills", look = "Rayleigh", style = "swordsman",
+		line = "Haki is everything. Show me your skills!", position = Vector3.new(-28, 0, 1414), color = Color3.fromRGB(235, 235, 240), accent = Color3.fromRGB(70, 70, 80) },
+	{ name = "Dr. Kureha", role = "Passive Trainer", icon = "💊", panel = "train", tab = "passives", look = "Kureha", style = "sip",
+		line = "Hee-hee! Want the secret of youth?", position = Vector3.new(-30, 0, 1386), color = Color3.fromRGB(150, 80, 160), accent = Color3.fromRGB(235, 235, 245) },
+	{ name = "Tom the Shipwright", role = "Gear Smith", icon = "🔨", panel = "gear", look = "Tom", style = "hammer",
+		line = "A man's work is to make things with pride! Ta-ha-ha!", position = Vector3.new(30, 0, 1384), color = Color3.fromRGB(60, 110, 160), accent = Color3.fromRGB(240, 200, 60) },
+	{ name = "Shakky", role = "Upgrades", icon = "🍸", panel = "shop", look = "Shakky", style = "smoke",
+		line = "Welcome to my rip-off bar, cutie.", position = Vector3.new(36, 0, 1406), color = Color3.fromRGB(40, 40, 50), accent = Color3.fromRGB(200, 60, 90) },
+	{ name = "Buggy the Clown", role = "Robux Store", icon = "💎", panel = "store", look = "Buggy", style = "laugh",
+		line = "Gya-ha-ha! Treasure for flashy pirates!", position = Vector3.new(0, 0, 1370), color = Color3.fromRGB(220, 60, 60), accent = Color3.fromRGB(60, 130, 230) },
 }
 
 -- Island training, paid with gold and kept forever. Rayleigh trains skills, Dr. Kureha passives.

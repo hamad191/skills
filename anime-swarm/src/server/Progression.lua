@@ -131,7 +131,23 @@ function Progression.applyStats(player)
 	local ratio = hum.Health / hum.MaxHealth
 	hum.MaxHealth = Config.BASE_HEALTH + Progression.bonus(s, "health")
 	hum.Health = hum.MaxHealth * ratio
-	hum.WalkSpeed = Config.BASE_SPEED * (1 + Progression.bonus(s, "speed"))
+	local slowed = (s.slowUntil or 0) > os.clock() and s.slowFactor or 1
+	hum.WalkSpeed = Config.BASE_SPEED * (1 + Progression.bonus(s, "speed")) * slowed
+end
+
+-- Seastone nets: slows the player to `factor` of their speed for a few seconds.
+function Progression.slow(player, factor, seconds)
+	local s = states[player]
+	if not s then
+		return
+	end
+	s.slowFactor, s.slowUntil = factor, os.clock() + seconds
+	Progression.applyStats(player)
+	task.delay(seconds + 0.05, function()
+		if states[player] == s and os.clock() >= s.slowUntil then
+			Progression.applyStats(player)
+		end
+	end)
 end
 
 function Progression.sync(player)

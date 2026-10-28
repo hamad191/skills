@@ -1,7 +1,9 @@
--- In-run HUD: status bar (level, XP, map, timer, kills), skill action bar, health,
--- level-up cards, boss announcements and the results screen.
+-- In-run HUD: status bar (level, XP, map, timer, kills), wave tracker and wave banners, boss
+-- health bar, combo counter, arrows to off-screen chests and bosses, a red flash when you get
+-- hurt, skill action bar, health, level-up cards, announcements and the results screen.
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Config = require(RS:WaitForChild("Shared"):WaitForChild("Config"))
 local Theme = require(script.Parent.Theme)
@@ -34,7 +36,8 @@ local function buildStatus(root)
 	local bar = Theme.panel({ Size = UDim2.fromOffset(460, 72), Position = UDim2.new(0.5, -230, 0, 10) }, root)
 	local badge = Theme.new("Frame", { Size = UDim2.fromOffset(52, 52), Position = UDim2.fromOffset(10, 8), BackgroundColor3 = Theme.ACCENT, ZIndex = 2 }, bar)
 	Theme.corner(badge, 26)
-	Theme.gradient(badge, Color3.fromRGB(170, 190, 255), Color3.fromRGB(90, 70, 220), 135)
+	Theme.gradient(badge, Color3.fromRGB(255, 150, 130), Color3.fromRGB(170, 30, 40), 135)
+	Theme.stroke(badge, Theme.GOLD, 2.5, 0)
 	Theme.text({ Size = UDim2.new(1, 0, 0.3, 0), Position = UDim2.fromScale(0, 0.12), Text = "LV", Font = Theme.BOLD, ZIndex = 3 }, badge)
 	ui.level = Theme.title({ Size = UDim2.new(1, -8, 0.5, 0), Position = UDim2.new(0, 4, 0.4, 0), Text = "1", ZIndex = 3 }, badge)
 
@@ -42,10 +45,149 @@ local function buildStatus(root)
 	ui.timer = Theme.title({ Size = UDim2.fromOffset(250, 30), Position = UDim2.fromOffset(74, 26), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2 }, bar)
 	ui.kills = Theme.chip({ Size = UDim2.fromOffset(104, 32), Position = UDim2.new(1, -116, 0, 14), Text = "💀 0", ZIndex = 2 }, bar, Theme.BAD)
 
-	local xp, fill = Theme.bar({ Size = UDim2.new(1, -84, 0, 6), Position = UDim2.new(0, 74, 1, -12), ZIndex = 2 }, bar,
-		Color3.fromRGB(110, 230, 255), Color3.fromRGB(99, 132, 255))
+	local xp, fill = Theme.bar({ Size = UDim2.new(1, -84, 0, 7), Position = UDim2.new(0, 74, 1, -14), ZIndex = 2 }, bar,
+		Color3.fromRGB(120, 235, 255), Color3.fromRGB(40, 140, 230))
 	xp:FindFirstChildOfClass("TextLabel").Visible = false
 	ui.xpFill = fill
+end
+
+-- Wave tracker: "WAVE 3 / 10" with a bar that fills as the wave goes on ---------------------
+
+local function buildWaveTracker(root)
+	local tracker = Theme.panel({ Size = UDim2.fromOffset(300, 40), Position = UDim2.new(0.5, -150, 0, 88), Visible = false }, root)
+	ui.waveTracker = tracker
+	ui.waveIcon = Theme.text({ Size = UDim2.fromOffset(28, 28), Position = UDim2.fromOffset(10, 4), Text = "🌊", ZIndex = 3 }, tracker)
+	ui.waveText = Theme.title({ Size = UDim2.new(1, -140, 0, 24), Position = UDim2.fromOffset(44, 5), Text = "WAVE 1", TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, MaxSize = 20 }, tracker)
+	ui.waveNext = Theme.text({ Size = UDim2.fromOffset(90, 18), Position = UDim2.new(1, -100, 0, 8), Font = Theme.BOLD, TextColor3 = Theme.MUTED, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 3, MaxSize = 14 }, tracker)
+	local bar, fill = Theme.bar({ Size = UDim2.new(1, -24, 0, 5), Position = UDim2.new(0, 12, 1, -9), ZIndex = 3 }, tracker,
+		Color3.fromRGB(110, 210, 255), Color3.fromRGB(30, 120, 220))
+	bar:FindFirstChildOfClass("TextLabel").Visible = false
+	ui.waveFill = fill
+end
+
+-- Wave banner: a big ribbon that slams in at the start of every wave --------------------------
+
+local function buildWaveBanner(gui)
+	local group = Theme.new("CanvasGroup", {
+		Name = "WaveBanner", Size = UDim2.fromOffset(680, 150), Position = UDim2.new(0.5, -340, 0.36, 0),
+		BackgroundTransparency = 1, Visible = false, ZIndex = 18,
+	}, gui)
+	ui.waveBanner = group
+	ui.waveBannerScale = Theme.new("UIScale", {}, group)
+	ui.waveTails = {}
+	for _, side in { -1, 1 } do
+		local tail = Theme.new("Frame", {
+			Size = UDim2.fromOffset(40, 40), Position = side < 0 and UDim2.fromOffset(4, 55) or UDim2.new(1, -44, 0, 55),
+			Rotation = 45, BackgroundColor3 = Theme.ACCENT, ZIndex = 17,
+		}, group)
+		Theme.gradient(tail, Color3.fromRGB(200, 200, 200), Color3.fromRGB(110, 110, 110))
+		table.insert(ui.waveTails, tail)
+	end
+	local ribbon = Theme.new("Frame", {
+		Size = UDim2.new(1, -40, 0, 70), Position = UDim2.fromOffset(20, 40), BackgroundColor3 = Theme.ACCENT, ZIndex = 18,
+	}, group)
+	ui.waveRibbon = ribbon
+	Theme.corner(ribbon, 10)
+	Theme.stroke(ribbon, Theme.GOLD, 3, 0)
+	Theme.gradient(ribbon, Color3.fromRGB(255, 255, 255), Color3.fromRGB(130, 130, 130))
+	ui.waveNumber = Theme.title({
+		Size = UDim2.new(1, 0, 0, 56), Text = "WAVE 1", TextColor3 = Theme.GOLD, TextStrokeTransparency = 0, ZIndex = 20,
+	}, group)
+	ui.waveTitle = Theme.title({ Size = UDim2.new(1, -80, 0, 36), Position = UDim2.fromOffset(40, 58), Text = "", ZIndex = 20, TextStrokeTransparency = 0 }, group)
+	ui.waveSub = Theme.text({
+		Size = UDim2.new(1, -80, 0, 22), Position = UDim2.fromOffset(40, 118), Text = "", Font = Theme.BOLD, ZIndex = 20,
+		TextStrokeTransparency = 0.3, MaxSize = 18,
+	}, group)
+end
+
+-- Boss health bar (top of the screen while a Vice Admiral or the boss is near) ----------------
+
+local function buildBossBar(root)
+	local panel = Theme.panel({ Size = UDim2.fromOffset(620, 62), Position = UDim2.new(0.5, -310, 0, 136), Visible = false }, root)
+	ui.bossBar = panel
+	Theme.icon({ Size = UDim2.fromOffset(44, 44), Position = UDim2.fromOffset(10, 9), ZIndex = 3 }, panel, "☠️", Color3.fromRGB(150, 20, 30), 22)
+	ui.bossName = Theme.title({ Size = UDim2.new(1, -150, 0, 22), Position = UDim2.fromOffset(64, 6), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 3, MaxSize = 20 }, panel)
+	ui.bossPercent = Theme.title({ Size = UDim2.fromOffset(70, 22), Position = UDim2.new(1, -80, 0, 6), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 3, MaxSize = 18, TextColor3 = Theme.GOLD }, panel)
+	local bar, fill = Theme.bar({ Size = UDim2.new(1, -76, 0, 16), Position = UDim2.fromOffset(64, 34), ZIndex = 3 }, panel,
+		Color3.fromRGB(255, 90, 80), Color3.fromRGB(170, 20, 40))
+	bar:FindFirstChildOfClass("TextLabel").Visible = false
+	-- a pale "lag" bar shows the chunk just lost
+	ui.bossLag = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(255, 230, 200), BackgroundTransparency = 0.3, BorderSizePixel = 0, ZIndex = 3 }, bar)
+	Theme.corner(ui.bossLag, 8)
+	fill.ZIndex = 4
+	ui.bossFill = fill
+	ui.bossShown, ui.bossLagRatio = 1, 1
+end
+
+-- Combo counter -----------------------------------------------------------------------------
+
+local COMBO_TIME = 4
+local COMBO_TIERS = {
+	{ 200, "LEGENDARY!", Color3.fromRGB(255, 80, 200) },
+	{ 100, "UNSTOPPABLE!", Color3.fromRGB(255, 70, 70) },
+	{ 50, "RAMPAGE!", Color3.fromRGB(255, 150, 40) },
+	{ 20, "ON FIRE!", Color3.fromRGB(255, 220, 70) },
+	{ 0, "COMBO", Theme.TEXT },
+}
+
+local function buildCombo(root)
+	local frame = Theme.new("Frame", { Size = UDim2.fromOffset(190, 110), Position = UDim2.new(1, -210, 0.36, 0), BackgroundTransparency = 1, Visible = false }, root)
+	ui.combo = frame
+	ui.comboScale = Theme.new("UIScale", {}, frame)
+	ui.comboCount = Theme.title({ Size = UDim2.new(1, 0, 0, 58), Text = "x0", TextXAlignment = Enum.TextXAlignment.Right, TextStrokeTransparency = 0, ZIndex = 3 }, frame)
+	ui.comboLabel = Theme.title({ Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, 58), Text = "COMBO", TextXAlignment = Enum.TextXAlignment.Right, TextStrokeTransparency = 0, ZIndex = 3, MaxSize = 22 }, frame)
+	local bar, fill = Theme.bar({ Size = UDim2.new(0.7, 0, 0, 6), Position = UDim2.new(0.3, 0, 0, 90), ZIndex = 3 }, frame,
+		Color3.fromRGB(255, 230, 120), Color3.fromRGB(255, 120, 40))
+	bar:FindFirstChildOfClass("TextLabel").Visible = false
+	ui.comboFill = fill
+	ui.comboValue, ui.comboUntil, ui.lastKills = 0, 0, 0
+end
+
+-- Screen-space layer: arrows to off-screen chests and bosses, and the hurt flash --------------
+-- Lives in its own unscaled ScreenGui so it lines up with the camera's pixels.
+
+local MARKERS = 6
+
+local function buildScreenLayer()
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "SwarmMarkers"
+	gui.IgnoreGuiInset = true
+	gui.ResetOnSpawn = false
+	gui.DisplayOrder = -1
+	gui.Enabled = false
+	gui.Parent = player:WaitForChild("PlayerGui")
+	ui.screenLayer = gui
+
+	-- red edges that flash when you're hurt and pulse when you're low
+	ui.vignette = {}
+	for _, edge in {
+		{ UDim2.new(1, 0, 0, 140), UDim2.fromScale(0, 0), 90 },
+		{ UDim2.new(1, 0, 0, 140), UDim2.new(0, 0, 1, -140), 270 },
+		{ UDim2.new(0, 160, 1, 0), UDim2.fromScale(0, 0), 0 },
+		{ UDim2.new(0, 160, 1, 0), UDim2.new(1, -160, 0, 0), 180 },
+	} do
+		local f = Theme.new("Frame", { Size = edge[1], Position = edge[2], BackgroundColor3 = Color3.fromRGB(220, 20, 30), BackgroundTransparency = 1, BorderSizePixel = 0 }, gui)
+		Theme.new("UIGradient", { Transparency = NumberSequence.new(0, 1), Rotation = edge[3] }, f)
+		table.insert(ui.vignette, f)
+	end
+
+	ui.markers = {}
+	for i = 1, MARKERS do
+		local m = Theme.new("Frame", { Size = UDim2.fromOffset(48, 48), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Theme.PANEL, BackgroundTransparency = 0.15, Visible = false, ZIndex = 2 }, gui)
+		Theme.corner(m, 24)
+		local stroke = Theme.stroke(m, Theme.GOLD, 2, 0)
+		local icon = Theme.text({ Size = UDim2.fromScale(0.62, 0.62), Position = UDim2.fromScale(0.19, 0.12), Text = "", ZIndex = 3 }, m)
+		local dist = Theme.text({ Size = UDim2.new(1, 0, 0, 14), Position = UDim2.new(0, 0, 1, -4), Text = "", Font = Theme.BOLD, ZIndex = 3, MaxSize = 12, TextStrokeTransparency = 0.3 }, m)
+		local arrow = Theme.text({ Size = UDim2.fromOffset(22, 22), AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Text = "▲", TextColor3 = Theme.GOLD, Font = Theme.BOLD, ZIndex = 3, TextStrokeTransparency = 0.4 }, m)
+		ui.markers[i] = { frame = m, icon = icon, dist = dist, arrow = arrow, stroke = stroke }
+	end
+end
+
+local function flashHurt(amount)
+	for _, f in ui.vignette do
+		f.BackgroundTransparency = math.clamp(0.75 - amount * 2, 0.2, 0.7)
+		Theme.tween(f, 0.5, { BackgroundTransparency = 1 })
+	end
 end
 
 -- Skill action bar and health ------------------------------------------------------------
@@ -116,10 +258,16 @@ local function buildHealth(root)
 
 	local function bind(character)
 		local hum = character:WaitForChild("Humanoid")
+		local last = hum.Health
 		local function update()
 			local ratio = math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1)
 			Theme.tween(ui.hpFill, 0.15, { Size = UDim2.fromScale(ratio, 1) })
 			ui.hpText.Text = string.format("%d / %d", math.ceil(hum.Health), math.floor(hum.MaxHealth))
+			if hum.Health < last - 0.5 and ui.root.Visible then
+				flashHurt((last - hum.Health) / math.max(hum.MaxHealth, 1))
+			end
+			last = hum.Health
+			ui.lowHealth = ratio < 0.3 and hum.Health > 0
 		end
 		hum.HealthChanged:Connect(update)
 		hum:GetPropertyChangedSignal("MaxHealth"):Connect(update)
@@ -258,6 +406,17 @@ local function buildLevelUp(gui)
 		local title = Theme.title({ Size = UDim2.new(1, -28, 0, 44), Position = UDim2.fromOffset(14, 158), TextWrapped = true, ZIndex = 23, MaxSize = 22 }, button)
 		local desc = Theme.text({ Size = UDim2.new(1, -32, 0, 72), Position = UDim2.fromOffset(16, 206), TextWrapped = true, TextColor3 = Theme.MUTED, ZIndex = 23, MaxSize = 16 }, button)
 		local pips = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 6), Position = UDim2.new(0, 20, 1, -26), BackgroundTransparency = 1, ZIndex = 23 }, button)
+		-- a shine sweeps across each card as it appears
+		local shine = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.55, ZIndex = 25 }, button)
+		Theme.corner(shine, 18)
+		local shineGradient = Theme.new("UIGradient", {
+			Rotation = 25, Offset = Vector2.new(-1, 0),
+			Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.45, 1), NumberSequenceKeypoint.new(0.5, 0.2),
+				NumberSequenceKeypoint.new(0.55, 1), NumberSequenceKeypoint.new(1, 1),
+			}),
+		}, shine)
+		Theme.rivets(button, 8, 24)
 		Theme.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 4) }, pips)
 
 		button.MouseEnter:Connect(function()
@@ -271,7 +430,7 @@ local function buildLevelUp(gui)
 		button.Activated:Connect(function()
 			Hud.choose(i)
 		end)
-		cards[i] = { button = button, stroke = stroke, accent = accent, tag = tag, icon = icon, iconText = iconText, title = title, desc = desc, pips = pips, x = x }
+		cards[i] = { button = button, stroke = stroke, accent = accent, tag = tag, icon = icon, iconText = iconText, title = title, desc = desc, pips = pips, x = x, shine = shineGradient }
 	end
 
 	ui.reroll = Theme.button({
@@ -285,7 +444,7 @@ end
 -- Announcements and results -------------------------------------------------------------
 
 local function buildBanners(gui)
-	local banner = Theme.panel({ Size = UDim2.fromOffset(600, 64), Position = UDim2.new(0.5, -300, 0.2, 0), Visible = false, ZIndex = 15 }, gui)
+	local banner = Theme.panel({ Size = UDim2.fromOffset(600, 64), Position = UDim2.new(0.5, -300, 0, 206), Visible = false, ZIndex = 15 }, gui)
 	ui.announce = banner
 	ui.announceBar = Theme.new("Frame", { Size = UDim2.new(0, 6, 1, -20), Position = UDim2.fromOffset(12, 10), BorderSizePixel = 0, ZIndex = 16 }, banner)
 	Theme.corner(ui.announceBar, 3)
@@ -344,18 +503,28 @@ function Hud.init(gui, cb)
 	local root = Theme.new("Frame", { Name = "RunHud", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false }, gui)
 	ui.root = root
 	buildStatus(root)
+	buildWaveTracker(root)
+	buildBossBar(root)
+	buildCombo(root)
 	buildActionBar(root)
+	buildScreenLayer()
 	buildHealth(root)
 	buildCrewControls(root)
 	buildLevelUp(gui)
 	buildBanners(gui)
+	buildWaveBanner(gui)
+	RunService.RenderStepped:Connect(Hud.update)
 	Hud.setStats({ level = 1, xp = 0, need = 1, kills = 0, weapons = {}, passives = {}, slots = Config.WEAPON_SLOTS_START })
 end
 
 function Hud.setVisible(visible)
 	ui.root.Visible = visible
+	ui.screenLayer.Enabled = visible
 	if not visible then
 		Hud.showLevelUp(nil)
+		ui.waveBanner.Visible = false
+		ui.comboValue, ui.comboUntil = 0, 0
+		ui.combo.Visible = false
 	end
 end
 
@@ -365,7 +534,222 @@ function Hud.setState(state)
 	ui.timer.Text = state.text or ""
 	ui.timer.TextColor3 = state.boss and Theme.BAD or Theme.TEXT
 	ui.down.Visible = state.down == true
+
+	ui.waveTracker.Visible = (state.wave or 0) > 0
+	if state.boss then
+		ui.waveIcon.Text = "☠️"
+		ui.waveText.Text = "FINAL WAVE"
+		ui.waveText.TextColor3 = Theme.BAD
+		ui.waveNext.Text = "BOSS"
+		ui.waveFill.Size = UDim2.fromScale(1, 1)
+	elseif state.wave then
+		ui.waveIcon.Text = "🌊"
+		ui.waveText.Text = string.format("WAVE %d / %d", state.wave, state.waves or state.wave)
+		ui.waveText.TextColor3 = Theme.TEXT
+		local left = state.waveLeft or 0
+		local label = state.wave < (state.waves or 0) and "next" or "boss"
+		ui.waveNext.Text = string.format("%s %d:%02d", label, left // 60, math.floor(left % 60))
+		-- the State comes once a second: glide the bar to where it will be by the next one
+		local length = Config.WAVE_LENGTH
+		ui.waveFill.Size = UDim2.fromScale(math.clamp(1 - left / length, 0, 1), 1)
+		Theme.tween(ui.waveFill, 1, { Size = UDim2.fromScale(math.clamp(1 - (left - 1) / length, 0, 1), 1) }, Enum.EasingStyle.Linear)
+	end
 end
+
+-- The big banner at the start of each wave (and when the boss arrives).
+function Hud.showWave(info)
+	local color = info.color or Theme.ACCENT
+	ui.waveNumber.Text = info.boss and "FINAL WAVE" or "WAVE " .. tostring(info.n)
+	ui.waveTitle.Text = info.title or ""
+	ui.waveSub.Text = info.sub or ""
+	ui.waveSub.TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.6)
+	local dark = color:Lerp(Color3.new(0, 0, 0), 0.35)
+	ui.waveRibbon.BackgroundColor3 = dark
+	for _, tail in ui.waveTails do
+		tail.BackgroundColor3 = dark
+	end
+	ui.waveBanner.Visible = true
+	ui.waveBanner.GroupTransparency = 1
+	ui.waveBanner.Position = UDim2.new(0.5, -340, 0.36, 0)
+	ui.waveBannerScale.Scale = 1.6
+	Theme.tween(ui.waveBanner, 0.25, { GroupTransparency = 0 })
+	Theme.tween(ui.waveBannerScale, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+	local token = {}
+	ui.waveToken = token
+	task.delay(2.6, function()
+		if ui.waveToken ~= token then
+			return
+		end
+		Theme.tween(ui.waveBanner, 0.4, { GroupTransparency = 1, Position = UDim2.new(0.5, -340, 0.36, -40) })
+		task.delay(0.45, function()
+			if ui.waveToken == token then
+				ui.waveBanner.Visible = false
+			end
+		end)
+	end)
+end
+
+-- Bosses near me: the highest tier first (the map's boss over a Vice Admiral), then the closest.
+local function findBoss(me)
+	local folder = workspace:FindFirstChild("Enemies")
+	local best, bestTier, bestDist
+	for _, model in folder and folder:GetChildren() or {} do
+		local torso = model:GetAttribute("Boss") and model:FindFirstChild("Torso")
+		if torso then
+			local d = (torso.Position - me).Magnitude
+			local tier = model:GetAttribute("BossTier") or 1
+			if d < 700 and (not best or tier > bestTier or tier == bestTier and d < bestDist) then
+				best, bestTier, bestDist = model, tier, d
+			end
+		end
+	end
+	return best
+end
+
+-- Things worth an arrow at the screen edge: treasure chests and bosses, closest first.
+local function markerTargets(me)
+	local found = {}
+	local folder = workspace:FindFirstChild("Enemies")
+	for _, model in folder and folder:GetChildren() or {} do
+		local icon
+		if model.Name == "TreasureChest" then
+			icon = "🎁"
+		elseif model:GetAttribute("Boss") then
+			icon = "☠️"
+		end
+		local pos = icon and model:GetPivot().Position
+		if pos and (pos - me).Magnitude < 400 then
+			table.insert(found, { pos = pos, icon = icon, d = (pos - me).Magnitude })
+		end
+	end
+	table.sort(found, function(a, b)
+		return a.d < b.d
+	end)
+	return found
+end
+
+local function updateMarkers(me)
+	local camera = workspace.CurrentCamera
+	local view = camera.ViewportSize
+	local center = view / 2
+	local margin = 54
+	local targets = markerTargets(me)
+	for i, m in ui.markers do
+		local t = targets[i]
+		local shown = false
+		if t then
+			local vp = camera:WorldToViewportPoint(t.pos)
+			local onScreen = vp.Z > 0 and vp.X > margin and vp.X < view.X - margin and vp.Y > margin and vp.Y < view.Y - margin
+			if not onScreen then
+				-- push the marker to the screen edge in the target's direction
+				local d = Vector2.new(vp.X, vp.Y) - center
+				if vp.Z < 0 then
+					d = -d
+				end
+				if d.Magnitude < 1 then
+					d = Vector2.new(0, -1)
+				end
+				local hx, hy = center.X - margin, center.Y - margin
+				local scale = math.min(hx / math.max(math.abs(d.X), 0.001), hy / math.max(math.abs(d.Y), 0.001))
+				local pos = center + d * scale
+				local angle = math.atan2(d.Y, d.X)
+				m.frame.Position = UDim2.fromOffset(pos.X, pos.Y)
+				m.arrow.Position = UDim2.new(0.5, math.cos(angle) * 34, 0.5, math.sin(angle) * 34)
+				m.arrow.Rotation = math.deg(angle) + 90
+				m.icon.Text = t.icon
+				m.dist.Text = string.format("%dm", math.floor(t.d))
+				m.stroke.Color = t.icon == "🎁" and Theme.GOLD or Theme.BAD
+				m.arrow.TextColor3 = m.stroke.Color
+				shown = true
+			end
+		end
+		m.frame.Visible = shown
+	end
+end
+
+local bossCheckAt = 0
+
+-- Every frame while the HUD is up: boss bar, combo timer, markers, low-health pulse.
+function Hud.update(dt)
+	if not ui.root.Visible then
+		return
+	end
+	local now = os.clock()
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local me = root and root.Position or workspace.CurrentCamera.Focus.Position
+
+	-- boss bar: smooth fill plus a pale bar that catches up slowly
+	if now >= bossCheckAt then
+		bossCheckAt = now + 0.25
+		local boss = findBoss(me)
+		if boss ~= ui.boss then
+			ui.boss = boss
+			local hp = boss and boss:GetAttribute("Hp") or 1
+			ui.bossShown, ui.bossLagRatio = hp, hp
+		end
+	end
+	local boss = ui.boss
+	ui.bossBar.Visible = boss ~= nil and boss.Parent ~= nil
+	if ui.bossBar.Visible then
+		local ratio = math.clamp(boss:GetAttribute("Hp") or 1, 0, 1)
+		ui.bossName.Text = string.upper(boss:GetAttribute("Boss") or "")
+		ui.bossShown += (ratio - ui.bossShown) * math.min(1, dt * 12)
+		ui.bossLagRatio += (ratio - ui.bossLagRatio) * math.min(1, dt * 2)
+		ui.bossFill.Size = UDim2.fromScale(ui.bossShown, 1)
+		ui.bossLag.Size = UDim2.fromScale(math.max(ui.bossLagRatio, ui.bossShown), 1)
+		ui.bossPercent.Text = string.format("%d%%", math.ceil(ratio * 100))
+	end
+
+	-- combo: fades out when the kills stop
+	if ui.comboValue > 0 then
+		local left = ui.comboUntil - now
+		if left <= 0 then
+			ui.comboValue = 0
+			ui.combo.Visible = false
+		else
+			ui.comboFill.Size = UDim2.fromScale(left / COMBO_TIME, 1)
+		end
+	end
+
+	updateMarkers(me)
+
+	-- low health: the edges pulse red
+	if ui.lowHealth then
+		local pulse = 0.55 + math.sin(now * 6) * 0.2
+		for _, f in ui.vignette do
+			if f.BackgroundTransparency > pulse then
+				f.BackgroundTransparency = pulse
+			end
+		end
+	end
+end
+
+-- Kill streaks: big numbers on the right, with a shout at 20, 50, 100 and 200.
+local function addCombo(kills)
+	local before = ui.comboValue
+	ui.comboValue += kills
+	ui.comboUntil = os.clock() + COMBO_TIME
+	if ui.comboValue < 3 then
+		return -- only show real streaks
+	end
+	for _, tier in COMBO_TIERS do
+		if ui.comboValue >= tier[1] then
+			ui.comboLabel.Text = tier[2]
+			ui.comboLabel.TextColor3 = tier[3]
+			ui.comboCount.TextColor3 = tier[3]:Lerp(Color3.new(1, 1, 1), 0.3)
+			if before < tier[1] and tier[1] > 0 then
+				Hud.announce(tier[2] .. "  " .. tier[1] .. " KILL COMBO", tier[3])
+			end
+			break
+		end
+	end
+	ui.comboCount.Text = "x" .. ui.comboValue
+	ui.combo.Visible = true
+	ui.comboScale.Scale = 1.35
+	Theme.tween(ui.comboScale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+end
+
 
 -- Revives the player owns (from the store), shown on the knocked-out panel.
 local function refreshRevive()
@@ -405,6 +789,10 @@ function Hud.setStats(st)
 	Theme.tween(ui.xpFill, 0.2, { Size = UDim2.fromScale(math.clamp(st.xp / st.need, 0, 1), 1) })
 	ui.level.Text = tostring(st.level)
 	ui.kills.Text = "💀 " .. Theme.comma(st.kills)
+	if st.kills > ui.lastKills and ui.root.Visible then
+		addCombo(st.kills - ui.lastKills)
+	end
+	ui.lastKills = st.kills
 	local unlocked = st.slots or Config.WEAPON_SLOTS_START
 	for i, slot in ui.weaponSlots do
 		fillSlot(slot, st.weapons[i], Config.WEAPON_MAX, i > unlocked)
@@ -440,6 +828,10 @@ function Hud.showLevelUp(list, rerolls)
 			-- cards rise into place one after another
 			card.button.Position = UDim2.fromOffset(card.x, 70)
 			Theme.tween(card.button, 0.35 + i * 0.06, { Position = UDim2.fromOffset(card.x, 0) }, Enum.EasingStyle.Back)
+			card.shine.Offset = Vector2.new(-1, 0)
+			task.delay(0.25 + i * 0.12, function()
+				Theme.tween(card.shine, 0.6, { Offset = Vector2.new(1, 0) }, Enum.EasingStyle.Sine)
+			end)
 		end
 	end
 	ui.reroll.Text = string.format("🎲  REROLL (R)  x%d", rerolls or 0)
@@ -470,9 +862,9 @@ function Hud.announce(text, color)
 	ui.announceText.TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.35)
 	ui.announceBar.BackgroundColor3 = color
 	ui.announce:FindFirstChildOfClass("UIStroke").Color = color
-	ui.announce.Position = UDim2.new(0.5, -300, 0.2, -30)
+	ui.announce.Position = UDim2.new(0.5, -300, 0, 176)
 	ui.announce.Visible = true
-	Theme.tween(ui.announce, 0.35, { Position = UDim2.new(0.5, -300, 0.2, 0) }, Enum.EasingStyle.Back)
+	Theme.tween(ui.announce, 0.35, { Position = UDim2.new(0.5, -300, 0, 206) }, Enum.EasingStyle.Back)
 	task.delay(2.8, function()
 		ui.announce.Visible = false
 	end)

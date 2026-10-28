@@ -29,7 +29,10 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
      that swells each time the skill fires.
    - **Fusion:** once two skills are max level (or evolved), a FUSION card can merge them into one skill
      that fires both together with double damage, faster attacks and an extra hit, and frees a slot.
-   - A **Vice Admiral** every 2 minutes, and the map's **named Marine boss** when the timer runs out.
+   - **Waves:** every run is split into 30-second waves (**WAVE 3 / 10** at the top). Each wave opens with a
+     big banner and usually a **wave event**: a squad that lands all at once (see Waves below).
+     Every 4th wave a **Vice Admiral** leads the attack, and after the last wave the map's
+     **named Marine boss** arrives (FINAL WAVE).
    - **Treasure chests:** every Vice Admiral drops one, and Marine Captains, CP9 Agents and Pacifistas
      sometimes do. Walk into it and **everyone in the crew** gets a gear roll.
    - The final boss must fall within 4 minutes (it enrages after 3), or the Marines win.
@@ -84,6 +87,23 @@ Gear comes from Tom's shop, end-of-run drops and treasure chests.
 | Weapon | Rusty Cutlass (Common), Marine Saber (Rare), Kabuto (Epic), Wado Ichimonji (Epic), Shusui (Legendary), Enma (Mythic, boss drop) |
 | Outfit | Sailor Shirt (Common), Marine Coat (Rare), Super Speedo (Epic), Jinbe's Kimono (Epic), Seastone Armor (Legendary), Emperor's Cloak (Mythic, boss drop) |
 | Charm | Lucky Coin (Common), Log Pose (Rare), Den Den Mushi (Epic), Eternal Pose (Epic), Treasure Map (Legendary), Devil Fruit (Mythic, boss drop) |
+
+## Island NPCs
+
+Each NPC is a real R15 character in their own outfit (Rayleigh's glasses, scar and white hair,
+Kureha's sunglasses and sake, Tom the fishman's apron and hammer, Shakky's smoking cigarette, Buggy's
+red nose, hat and cape) standing at their own stall: training dummies, a clinic with a bubbling
+cauldron, a shipyard forge, a bar, and a circus awning with treasure. They breathe, look at you,
+wave when you walk up, play their own idle (Tom's hammer sparks on the anvil, Buggy laughs) and
+greet you in a speech bubble when you talk to them.
+
+## The look
+
+A "Grand Line" pirate style: deep-sea panels with gold rope trim and rivets, glossy buttons, cartoon
+fonts, and WANTED posters for every pirate in CREW (with their bounty: the unlock price). In
+adventures: a wave tracker, wave banners, a boss health bar, a combo counter (ON FIRE! RAMPAGE!
+UNSTOPPABLE!), arrows at the screen edge pointing to treasure chests and bosses, and red edges
+when you're hurt or low on health.
 
 ## Robux store (setup needed)
 
@@ -142,18 +162,44 @@ haunted mansion, giant bubble, prison tower, volcano, pagoda...).
 
 ## Enemies
 
+Every enemy has a jointed body (arms and legs swing as they walk), a face, its own hat (Marine
+caps, officer caps, a medic's red cross, a sniper's beret, Pacifista bear ears, a CP9 top hat,
+a fishman fin, clown hair) and its own gear. Officers wear the "正義" (Justice) coat. Red strips and
+circles on the ground are warnings: step out before they fill up.
+
 | Enemy | How it fights | Shows up from |
 | ----- | ------------- | ------------- |
 | Marine Recruit | Walks up and hits | Map 1 |
-| Marine Swordsman | Faster, carries a sword | Map 1 |
+| Marine Swordsman | Lunges along a short red line | Map 1 |
+| Marine Rifleman | Ranged: keeps its distance and shoots | Map 1 |
 | Fishman | Fast and fragile | Map 2 |
-| Marine Rifleman | Keeps its distance and shoots bullets | Map 2 |
-| Pacifista | Slow, very tough | Map 4 |
+| Bomb Clown | Runs at you, lights its fuse and explodes (kill it first!) | Map 2 |
+| Marine Medic | Stays back and heals hurt Marines nearby | Map 3 |
+| Pacifista | Very tough; fires a wide **laser** after aiming (red strip) | Map 4 |
+| Seastone Netter | Ranged: throws nets that **slow** you | Map 5 |
 | Marine Cannoneer | Shells your position (red circle: move!) | Map 6 |
-| Marine Captain | Elite in a white coat | Map 8 |
-| CP9 Agent | Very fast elite | Map 12 |
-| Vice Admiral | Mini-boss with telegraphed slams | Every 2 minutes |
-| Named boss | Slams plus a ring of strikes | End of every run |
+| Marine Sniper | Long range: a thin red line, then a painful shot | Map 7 |
+| Marine Captain | Elite in a coat; calls in **reinforcements** | Map 8 |
+| CP9 Agent | **Soru** blinks next to you; kicks **Rankyaku** air blades | Map 12 |
+| Vice Admiral | Mini-boss: telegraphed slams and reinforcements | Every 4th wave |
+| Named boss | Slams, a ring of strikes and a huge laser | Final wave |
+
+## Waves
+
+Waves are 30 seconds (`Config.WAVE_LENGTH`), so a run has 10 to 20 of them. From wave 2, most
+waves open with an event (`Config.WAVE_EVENTS`); the squad grows with the wave number and crew size:
+
+| Event | What happens | From |
+| ----- | ------------ | ---- |
+| HORDE! | A pack of recruits charges from one side | Wave 1 |
+| SURROUNDED! | A ring of Marines closes in from all around | Wave 2 |
+| FIRING SQUAD | A line of riflemen | Wave 2 |
+| BOMB CLOWNS | A pack of Bomb Clowns | Wave 3 |
+| SWORD SQUAD | Swordsmen all around you | Wave 4 |
+| SNIPER NEST | A line of snipers | Wave 4, map 2+ |
+| PACIFISTA SQUAD | Three Pacifistas and their lasers | Wave 5, map 3+ |
+| SEASTONE NETS | A line of netters | Wave 5, map 4+ |
+| CP9 RUSH | CP9 agents surround you | Wave 6, map 6+ |
 
 ## Characters (One Piece fan game)
 
@@ -245,17 +291,18 @@ The spawn island and all 20 arenas are already built (the voyage gates appear wh
 | `src/server/Main.server.lua` | Gate boarding and captains, running each adventure, spawning, bosses, rewards, unlocks |
 | `src/server/Portals.lua` | Builds the voyage gates and tracks who is standing on their pads |
 | `src/server/Gear.lua` | Each character's hats, swords and other worn gear |
-| `src/server/Npcs.lua` | The island NPCs and their prompts |
+| `src/server/Npcs.lua` | The island NPCs (R15 characters in outfits), their stalls and prompts |
 | `src/server/Monetization.lua` | Game passes, developer products, revives and boosts |
 | `src/server/Weapons.lua` | How each skill fires and hits |
-| `src/server/Enemies.lua` | Enemy bodies and gear, movement, rifle shots, telegraphed blasts, XP orbs |
+| `src/server/Enemies.lua` | Jointed enemy bodies, hats and gear, movement, skills (lasers, snipes, heals, bombs, nets, blinks, reinforcements), XP orbs, chests |
 | `src/server/Progression.lua` | XP, level-up cards, evolutions |
 | `src/server/PlayerData.lua` | Safe saving: gold, upgrades, training, gear, progress, purchases |
 | `src/server/Fx.lua` | Sends effect events (what happened) to every client |
 | `src/client/SwarmClient.client.lua` | Connects the UI to the server; dash, NPC prompts, purchases, spectating |
 | `src/client/Theme.lua` | Colors, fonts, UI building blocks and screen-size scaling |
-| `src/client/Hud.lua` | In-run HUD, level-up cards, announcements, results screen |
+| `src/client/Hud.lua` | In-run HUD, waves, boss bar, combo, edge arrows, level-up cards, results |
 | `src/client/Lobby.lua` | Crew, training, gear, shop, store and map select menus, gate banner |
 | `src/client/Effects.lua` | Skill effects, hit sparks, damage numbers, portal swirls |
 | `src/client/Animate.lua` | Punch, slash, kick, throw and cast animations (R15) |
+| `src/client/Rigs.lua` | Enemy walk cycles and attack poses, NPC idles, waves and speech bubbles |
 | `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the spawn island, 20 themed arenas, lighting and all scripts |

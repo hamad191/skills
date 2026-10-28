@@ -16,6 +16,7 @@ local Theme = require(script.Parent:WaitForChild("Theme"))
 local Effects = require(script.Parent:WaitForChild("Effects"))
 local Hud = require(script.Parent:WaitForChild("Hud"))
 local Lobby = require(script.Parent:WaitForChild("Lobby"))
+local Rigs = require(script.Parent:WaitForChild("Rigs")) -- animates enemies and island NPCs
 
 -- our own health bar replaces the default one
 pcall(function()
@@ -191,10 +192,11 @@ Lobby.init(root, {
 	buyProduct = buyProduct,
 })
 
--- island NPCs open their menus
+-- island NPCs greet you and open their menus
 ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	local panel = prompt:GetAttribute("Panel")
 	if panel then
+		Rigs.speak(prompt.Parent, prompt:GetAttribute("Line"))
 		Lobby.open(panel, prompt:GetAttribute("Tab"))
 	end
 end)
@@ -207,6 +209,7 @@ end)
 remotes.Stats.OnClientEvent:Connect(Hud.setStats)
 remotes.LevelUp.OnClientEvent:Connect(Hud.showLevelUp)
 remotes.Announce.OnClientEvent:Connect(Hud.announce)
+remotes.Wave.OnClientEvent:Connect(Hud.showWave)
 remotes.Results.OnClientEvent:Connect(Hud.showResults)
 remotes.Portal.OnClientEvent:Connect(Lobby.portal)
 remotes.Meta.OnClientEvent:Connect(function(data)

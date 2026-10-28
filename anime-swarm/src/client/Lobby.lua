@@ -47,6 +47,7 @@ local function panel(name, width, height, title, subtitle)
 	panels[name:lower()] = { frame = frame, scale = Theme.new("UIScale", {}, frame), height = height, width = width }
 	Theme.title({ Size = UDim2.new(1, -120, 0, 34), Position = UDim2.fromOffset(28, 22), Text = title, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 11 }, frame)
 	local sub = Theme.text({ Size = UDim2.new(1, -120, 0, 18), Position = UDim2.fromOffset(28, 58), Text = subtitle or "", TextColor3 = Theme.MUTED, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 11, MaxSize = 15 }, frame)
+	Theme.divider({ Size = UDim2.new(1, -40, 0, 2), Position = UDim2.fromOffset(20, 82), ZIndex = 11 }, frame)
 	Theme.button({
 		Size = UDim2.fromOffset(40, 40), Position = UDim2.new(1, -60, 0, 20), Text = "X",
 		BackgroundColor3 = Theme.CARD_LIGHT, ZIndex = 12,
@@ -85,7 +86,7 @@ local function buildCrew()
 	local frame = panel("Crew", 860, 640, "CHOOSE YOUR PIRATE", #Config.CLASS_ORDER .. " pirates  -  each with 6 skills and their own gear")
 	local grid = scroller(frame, { Size = UDim2.new(1, -40, 0, 452), Position = UDim2.fromOffset(20, 88) })
 	Theme.new("UIGridLayout", {
-		CellSize = UDim2.fromOffset(190, 244), CellPadding = UDim2.fromOffset(12, 12),
+		CellSize = UDim2.fromOffset(190, 254), CellPadding = UDim2.fromOffset(14, 14),
 		HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder,
 	}, grid)
 
@@ -100,31 +101,49 @@ local function buildCrew()
 
 	for i, name in Config.CLASS_ORDER do
 		local class = Config.Classes[name]
-		local card = Theme.new("TextButton", { Text = "", AutoButtonColor = false, BackgroundColor3 = Theme.CARD, LayoutOrder = i, ZIndex = 12 }, grid)
-		Theme.corner(card, 16)
-		local stroke = Theme.stroke(card, class.color, 1.5, 0.55)
-		Theme.gradient(card, Color3.new(1, 1, 1), Color3.fromRGB(165, 170, 200))
+		-- a WANTED poster for every pirate (the Marine gets a recruitment poster)
+		local card = Theme.parchment({ Text = "", AutoButtonColor = false, LayoutOrder = i, ZIndex = 12 }, grid, "TextButton")
+		local stroke = card:FindFirstChildOfClass("UIStroke")
 		local scale = Theme.new("UIScale", {}, card)
 		hover(card, scale)
-
-		Theme.icon({ Size = UDim2.fromOffset(84, 84), Position = UDim2.new(0.5, -42, 0, 16), ZIndex = 13 }, card, class.icon, class.color, 42)
-		Theme.title({ Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 108), Text = name:upper(), ZIndex = 13, MaxSize = 22 }, card)
-		Theme.text({ Size = UDim2.new(1, -20, 0, 16), Position = UDim2.fromOffset(10, 134), Text = class.title, TextColor3 = Theme.MUTED, ZIndex = 13, MaxSize = 14 }, card)
-		Theme.chip({ Size = UDim2.new(1, -36, 0, 24), Position = UDim2.fromOffset(18, 158), Text = class.perk, ZIndex = 13, MaxSize = 12 }, card, Theme.GOOD)
+		local marine = name == Config.DEFAULT_CLASS
+		Theme.title({
+			Size = UDim2.new(1, -20, 0, 28), Position = UDim2.fromOffset(10, 6), Text = marine and "RECRUIT" or "WANTED",
+			TextColor3 = Theme.INK, TextStrokeTransparency = 1, ZIndex = 13,
+		}, card)
+		local portrait = Theme.new("Frame", { Size = UDim2.fromOffset(112, 86), Position = UDim2.new(0.5, -56, 0, 36), BackgroundColor3 = class.color, ZIndex = 13 }, card)
+		Theme.stroke(portrait, Theme.INK, 3, 0)
+		Theme.gradient(portrait, Color3.fromRGB(255, 255, 255), Color3.fromRGB(140, 140, 140), 135)
+		Theme.text({ Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.1, 0.1), Text = class.icon, ZIndex = 14 }, portrait)
+		Theme.title({
+			Size = UDim2.new(1, -16, 0, 24), Position = UDim2.fromOffset(8, 126), Text = name:upper(),
+			TextColor3 = Theme.INK, TextStrokeTransparency = 1, ZIndex = 13, MaxSize = 22,
+		}, card)
+		Theme.text({ Size = UDim2.new(1, -20, 0, 14), Position = UDim2.fromOffset(10, 150), Text = class.title, TextColor3 = Color3.fromRGB(120, 85, 50), Font = Theme.BOLD, ZIndex = 13, MaxSize = 13 }, card)
+		local perk = Theme.text({
+			Size = UDim2.new(1, -30, 0, 20), Position = UDim2.fromOffset(15, 168), Text = class.perk, TextColor3 = Color3.fromRGB(40, 110, 60),
+			Font = Theme.BOLD, BackgroundTransparency = 0.75, BackgroundColor3 = Color3.fromRGB(80, 170, 100), ZIndex = 13, MaxSize = 12,
+		}, card)
+		Theme.corner(perk, 6)
 
 		-- the character's 6 skill icons
-		local row = Theme.new("Frame", { Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 198), BackgroundTransparency = 1, ZIndex = 13 }, card)
+		local row = Theme.new("Frame", { Size = UDim2.new(1, -20, 0, 25), Position = UDim2.fromOffset(10, 194), BackgroundTransparency = 1, ZIndex = 13 }, card)
 		Theme.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, HorizontalAlignment = Enum.HorizontalAlignment.Center, Padding = UDim.new(0, 4) }, row)
 		for _, key in class.skills do
 			local w = Config.Weapons[key]
-			Theme.icon({ Size = UDim2.fromOffset(25, 25), ZIndex = 14 }, row, w.icon, w.color, 7)
+			Theme.icon({ Size = UDim2.fromOffset(24, 24), ZIndex = 14 }, row, w.icon, w.color, 7)
 		end
+		-- bounty line: the unlock price, or that they're in your crew
+		local bounty = Theme.title({
+			Size = UDim2.new(1, -16, 0, 22), Position = UDim2.new(0, 8, 1, -28), Text = "", TextColor3 = Theme.INK,
+			TextStrokeTransparency = 1, ZIndex = 13, MaxSize = 17,
+		}, card)
 
-		local selected = Theme.chip({ Size = UDim2.fromOffset(92, 22), Position = UDim2.fromOffset(10, 10), Text = "✓ SELECTED", Visible = false, ZIndex = 15, MaxSize = 11 }, card, Theme.GOLD)
-		local lock = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.BG, BackgroundTransparency = 0.35, ZIndex = 16, Visible = false }, card)
-		Theme.corner(lock, 16)
-		Theme.text({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 40), Text = "🔒", ZIndex = 17 }, lock)
-		local price = Theme.chip({ Size = UDim2.new(1, -30, 0, 30), Position = UDim2.new(0, 15, 0, 96), Text = "", ZIndex = 17, MaxSize = 14, BackgroundTransparency = 0.15 }, lock, Theme.GOLD)
+		local selected = Theme.chip({ Size = UDim2.fromOffset(96, 22), Position = UDim2.new(1, -104, 0, 40), Text = "✓ SAILING", Visible = false, ZIndex = 15, MaxSize = 11, BackgroundTransparency = 0.05, TextColor3 = Theme.DARK_TEXT }, card, Theme.GOLD)
+		local lock = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.fromRGB(40, 25, 10), BackgroundTransparency = 0.45, ZIndex = 16, Visible = false }, card)
+		Theme.corner(lock, 6)
+		Theme.text({ Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 56), Text = "🔒", ZIndex = 17 }, lock)
+		local price = Theme.chip({ Size = UDim2.new(1, -30, 0, 30), Position = UDim2.new(0, 15, 0, 112), Text = "", ZIndex = 17, MaxSize = 14, BackgroundTransparency = 0.1 }, lock, Theme.PANEL)
 		card.MouseEnter:Connect(function()
 			Lobby.showSkills(name)
 		end)
@@ -138,7 +157,7 @@ local function buildCrew()
 				callbacks.unlockClass(name)
 			end
 		end)
-		classCards[name] = { stroke = stroke, selected = selected, color = class.color, lock = lock, price = price, cost = class.cost }
+		classCards[name] = { stroke = stroke, selected = selected, color = class.color, lock = lock, price = price, cost = class.cost, bounty = bounty }
 	end
 end
 
@@ -490,11 +509,12 @@ local function navButton(parent, icon, label, color, order, onClick)
 end
 
 local function buildHud()
-	local gold = Theme.panel({ Size = UDim2.fromOffset(200, 50), Position = UDim2.new(1, -216, 0, 14) }, ui.root)
-	Theme.icon({ Size = UDim2.fromOffset(34, 34), Position = UDim2.fromOffset(8, 8), ZIndex = 2 }, gold, "💰", Theme.GOLD, 10)
-	ui.gold = Theme.title({ Size = UDim2.new(1, -60, 1, -18), Position = UDim2.fromOffset(50, 9), Text = "0", TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2 }, gold)
+	local gold = Theme.panel({ Size = UDim2.fromOffset(230, 56), Position = UDim2.new(1, -246, 0, 14) }, ui.root)
+	Theme.icon({ Size = UDim2.fromOffset(40, 40), Position = UDim2.fromOffset(9, 8), ZIndex = 2 }, gold, "💰", Theme.GOLD, 20)
+	ui.gold = Theme.title({ Size = UDim2.new(1, -70, 1, -20), Position = UDim2.fromOffset(58, 10), Text = "0", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 2 }, gold)
 
-	local nav = Theme.panel({ Size = UDim2.fromOffset(100, 460), Position = UDim2.new(0, 16, 0.5, -250) }, ui.root)
+	local navPanel = Theme.panel({ Size = UDim2.fromOffset(100, 460), Position = UDim2.new(0, 16, 0.5, -250) }, ui.root)
+	local nav = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 2 }, navPanel)
 	Theme.new("UIListLayout", { Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }, nav)
 	for i, item in {
 		{ "👒", "CREW", Color3.fromRGB(220, 70, 90), "crew" },
@@ -507,10 +527,10 @@ local function buildHud()
 			Lobby.toggle(item[4])
 		end)
 	end
-	local playing = Theme.panel({ Size = UDim2.fromOffset(200, 44), Position = UDim2.new(0, 16, 0.5, 220) }, ui.root)
-	local tile, icon = Theme.icon({ Size = UDim2.fromOffset(32, 32), Position = UDim2.fromOffset(6, 6), ZIndex = 2 }, playing, "", Theme.ACCENT, 16)
+	local playing = Theme.panel({ Size = UDim2.fromOffset(220, 48), Position = UDim2.new(0, 16, 0.5, 220) }, ui.root)
+	local tile, icon = Theme.icon({ Size = UDim2.fromOffset(34, 34), Position = UDim2.fromOffset(8, 7), ZIndex = 2 }, playing, "", Theme.ACCENT, 17)
 	ui.playingTile, ui.playingIcon = tile, icon
-	ui.crewName = Theme.text({ Size = UDim2.new(1, -54, 1, -14), Position = UDim2.fromOffset(46, 7), Font = Theme.BOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2, MaxSize = 16 }, playing)
+	ui.crewName = Theme.text({ Size = UDim2.new(1, -60, 1, -16), Position = UDim2.fromOffset(50, 8), Font = Theme.BOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2, MaxSize = 16 }, playing)
 
 	ui.saveWarning = Theme.chip({
 		Size = UDim2.fromOffset(560, 32), Position = UDim2.new(0.5, -280, 0, 76), Visible = false, MaxSize = 14,
@@ -703,12 +723,13 @@ function Lobby.setMeta(data)
 		local chosen = name == data.class
 		local unlocked = (data.classes or {})[name] == true
 		card.lock.Visible = not unlocked
-		card.price.Text = "💰 " .. Theme.comma(card.cost) .. (data.gold >= card.cost and "  -  UNLOCK" or "")
+		card.price.Text = "💰 " .. Theme.comma(card.cost) .. (data.gold >= card.cost and "  -  RECRUIT" or "")
 		card.price.TextColor3 = data.gold >= card.cost and Theme.GOOD or Theme.GOLD
+		card.bounty.Text = unlocked and "IN YOUR CREW" or "BOUNTY  💰 " .. Theme.comma(card.cost)
 		card.selected.Visible = chosen
-		card.stroke.Color = chosen and Theme.GOLD or card.color
-		card.stroke.Thickness = chosen and 3 or 1.5
-		card.stroke.Transparency = chosen and 0 or 0.55
+		card.stroke.Color = chosen and Theme.GOLD or Theme.INK
+		card.stroke.Thickness = chosen and 4 or 2
+		card.stroke.Transparency = chosen and 0 or 0.35
 	end
 	for name, row in shopRows do
 		local level = data.levels[name] or 0
