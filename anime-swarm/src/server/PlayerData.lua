@@ -1,4 +1,4 @@
--- Saves gold and permanent upgrades between runs.
+-- Saves gold, permanent upgrades and map progress between sessions.
 local DataStoreService = game:GetService("DataStoreService")
 local RS = game:GetService("ReplicatedStorage")
 
@@ -17,7 +17,7 @@ local function key(player)
 end
 
 function PlayerData.load(player)
-	local data = { gold = 0, meta = {} }
+	local data = { gold = 0, meta = {}, progress = {} }
 	local saved
 	if store then
 		local ok, result = pcall(store.GetAsync, store, key(player))
@@ -28,6 +28,13 @@ function PlayerData.load(player)
 	data.gold = saved and tonumber(saved.gold) or 0
 	for name in Config.Meta do
 		data.meta[name] = saved and saved.meta and tonumber(saved.meta[name]) or 0
+	end
+	-- progress: [mapKey] = highest difficulty cleared
+	for _, map in Config.Maps do
+		local cleared = saved and saved.progress and tonumber(saved.progress[map.key])
+		if cleared and cleared > 0 then
+			data.progress[map.key] = math.clamp(math.floor(cleared), 0, #Config.Difficulties)
+		end
 	end
 	cache[player] = data
 	return data
@@ -47,6 +54,22 @@ end
 function PlayerData.release(player)
 	PlayerData.save(player)
 	cache[player] = nil
+end
+
+function PlayerData.unlocked(player, mapKey, difficulty)
+	local data, map = cache[player], Config.MapByKey[mapKey]
+	return data ~= nil and map ~= nil and Config.Difficulties[difficulty] ~= nil
+		and Config.unlocked(data.progress, map, difficulty)
+end
+
+-- Records a cleared difficulty. Returns true if it was a new best for that map.
+function PlayerData.recordClear(player, mapKey, difficulty)
+	local data = cache[player]
+	if data and difficulty > (data.progress[mapKey] or 0) then
+		data.progress[mapKey] = difficulty
+		return true
+	end
+	return false
 end
 
 function PlayerData.metaCost(name, level)

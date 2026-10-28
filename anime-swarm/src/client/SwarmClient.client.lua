@@ -36,6 +36,9 @@ Lobby.init(gui, {
 	buy = function(name)
 		remotes.BuyMeta:FireServer(name)
 	end,
+	voyage = function(mapKey, difficulty)
+		remotes.Voyage:FireServer(mapKey, difficulty)
+	end,
 })
 
 remotes.Fx.OnClientEvent:Connect(function(list)

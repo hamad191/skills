@@ -4,31 +4,69 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
 
 ## How it plays
 
-1. **Spawn island:** explore the island, pick a pirate in **CREW** and buy permanent upgrades in **SHOP**.
-2. **Portals:** walk onto the glowing pad in front of a portal. After a 10 second countdown,
-   everyone standing on that pad sets sail together.
-
-   | Portal | Difficulty | Arena | Run length | Gold |
-   | ------ | ---------- | ----- | ---------- | ---- |
-   | East Blue | Easy | Grassland with palms | 5 min | x1 |
-   | Grand Line | Normal | Desert with cacti and ruins | 8 min | x1.75 |
-   | New World | Hard | Volcanic rock with lava cracks | 10 min | x3 |
-
-   Different crews can be on different adventures at the same time.
-3. **Adventure:** your skills fire on their own. Move to dodge the swarm.
+1. **Spawn island:** pick a pirate in **CREW**, buy permanent upgrades in **SHOP**, browse adventures in **MAPS**.
+2. **Voyage gates:** walk onto the glowing pad of one of the 3 gates. The first player on the pad is the
+   **captain** and picks a map and difficulty; after a 10 second countdown everyone on the pad sets sail.
+3. **20 maps x 5 difficulties:** Easy, Normal, Hard, Very Hard, Extreme.
+   - Clear a difficulty to unlock the next one on that map. Each step up gives **+10% gold**
+     (and tougher, longer runs: 5 to 10 minutes).
+   - Clear a map on Easy to unlock the next map. Later maps are tougher and pay more gold.
+   - One crew per map at a time; different crews can be on different maps at once.
+4. **Adventure:** your skills fire on their own. Move to dodge the swarm.
    - Enemies drop **XP orbs** (blue, or purple for big ones). Walk near them to collect.
    - **Level up** and choose 1 of 3 cards: a new skill, a skill upgrade, or a passive.
-     Press **1 / 2 / 3** or click. Press **R** to reroll (if you bought rerolls).
+     Press **1 / 2 / 3** or click. Press **R** to reroll.
    - **3 skill slots** to start (buy up to **8**) and **4 passive** slots. Skills level up to **10**, passives to 5.
    - **Fusion:** once two skills are max level (or evolved), a FUSION card can merge them into one skill
      that fires both together with double damage, faster attacks and an extra hit, and frees a slot.
-   - **Evolution:** max a skill and its partner passive, and the next level-up offers its evolved form.
-   - A **Vice Admiral** every 2 minutes, and the **Admiral** when the timer runs out. Defeat it to win.
-4. **Results:** earn gold from kills, time survived, bosses and a victory bonus, then sail back to the island.
+   - A **Vice Admiral** every 2 minutes, and the map's **named Marine boss** when the timer runs out.
+5. **Results:** gold from kills, time, bosses and victory, plus any new unlocks; then back to the island.
 
 If you are knocked out, your crew fights on; you return to the island when the adventure ends.
 
+## Maps
+
+| # | Map | Theme | Boss |
+| - | --- | ----- | ---- |
+| 1 | Foosha Village | Grassland | Captain Nezumi |
+| 2 | Shells Town | Marine base | Captain Morgan |
+| 3 | Orange Town | Town | Lieutenant Fullbody |
+| 4 | Syrup Village | Beach | Jango |
+| 5 | Baratie | Ship deck | Captain T-Bone |
+| 6 | Arlong Park | Sea floor | Captain Hina |
+| 7 | Loguetown | Town | Captain Smoker |
+| 8 | Drum Island | Snow | Tashigi |
+| 9 | Alabasta | Desert | Vice Admiral Doberman |
+| 10 | Jaya | Jungle | Vice Admiral Onigumo |
+| 11 | Skypiea | Clouds | Vice Admiral Momonga |
+| 12 | Water 7 | Town | Kaku of CP9 |
+| 13 | Enies Lobby | Marine base | Rob Lucci of CP9 |
+| 14 | Thriller Bark | Spooky | Vice Admiral Strawberry |
+| 15 | Sabaody Archipelago | Mangroves and bubbles | Admiral Kizaru |
+| 16 | Impel Down | Prison | Chief Warden Magellan |
+| 17 | Marineford | Marine base | Admiral Akainu |
+| 18 | Fishman Island | Sea floor | Admiral Aokiji |
+| 19 | Punk Hazard | Volcano | Vice Admiral Vergo |
+| 20 | Wano Country | Cherry blossoms | Fleet Admiral Sengoku |
+
+## Enemies
+
+| Enemy | How it fights | Shows up from |
+| ----- | ------------- | ------------- |
+| Marine Recruit | Walks up and hits | Map 1 |
+| Marine Swordsman | Faster, carries a sword | Map 1 |
+| Fishman | Fast and fragile | Map 2 |
+| Marine Rifleman | Keeps its distance and shoots bullets | Map 2 |
+| Pacifista | Slow, very tough | Map 4 |
+| Marine Cannoneer | Shells your position (red circle: move!) | Map 6 |
+| Marine Captain | Elite in a white coat | Map 8 |
+| CP9 Agent | Very fast elite | Map 12 |
+| Vice Admiral | Mini-boss with telegraphed slams | Every 2 minutes |
+| Named boss | Slams plus a ring of strikes | End of every run |
+
 ## Characters (One Piece fan game)
+
+Every character wears their own gear (straw hat, swords, Clima-Tact, slingshot and long nose, afro and cane...).
 
 | Character | Starting skill | Bonus |
 | --------- | -------------- | ----- |
@@ -39,10 +77,16 @@ If you are knocked out, your crew fights on; you return to the island when the a
 | Ace | Fire Fist | +15% area |
 | Robin | Cien Fleur | -10% cooldowns |
 | Chopper | Kung Fu Point | Heals you and nearby allies |
+| Usopp | Fire Bird Star | +1 reroll each run |
+| Franky | Coup de Vent | +8% damage, +20 max HP |
+| Brook | Yahazu Giri | +30% pickup range |
+| Jinbe | Fishman Karate | +50 max HP |
+| Law | Room: Amputate | -8% cooldowns, +8% area |
+| Hancock | Perfume Femur | +15% damage |
 
 ## Skills
 
-Every character has **6 skills**. You start a run with your character's first (signature) skill.
+Every character has **6 skills**, each with its own icon. You start a run with your character's first (signature) skill.
 Level-ups mostly offer your own character's skills; now and then a crewmate's skill shows up as a
 rare **Crew Skill** card.
 
@@ -57,6 +101,12 @@ You start with **3 skill slots**. Buy more with the **Skill Slot** upgrade in th
 | Ace | Fire Fist, Fire Gun, Firefly, Fire Pillar, Fire Fence, Cross Fire |
 | Robin | Cien Fleur, Seis Fleur, Mil Fleur, Flower Storm, Gigante Fleur, Petal Guard |
 | Chopper | Kung Fu Point, Heavy Gong, Horn Point, Rumble Ball, Cherry Blossom Hoof, Medicine Bomb |
+| Usopp | Fire Bird Star, Lead Star, Explosive Star, Tabasco Star, Pop Green, Impact Dial |
+| Franky | Coup de Vent, Weapons Left, Strong Right, Franky Fireball, General Cannon, Franky Center |
+| Brook | Yahazu Giri, Soul Solid, Aubade Coup Droit, Ghost Parade, Soul Parade, Ice Burn |
+| Jinbe | Fishman Karate, Shark Brick Fist, Water Heart, 5000 Brick Fist, Shark Arrows, Ocean Current |
+| Law | Room: Amputate, Counter Shock, Injection Shot, Shambles, Mes, Room Dome |
+| Hancock | Perfume Femur, Slave Arrow, Pistol Kiss, Mero Mero Mellow, Salome Strike, Love Hearts |
 
 **Fusion:** any two max-level (or evolved) skills can be fused into one. The fused skill fires both
 skills together with x2 damage, 20% faster attacks, 15% more area and +1 hit, and takes only one slot.
@@ -73,11 +123,17 @@ Signature skills also evolve when the skill and its partner passive are both max
 | Fire Fist | Expansion | Flame Emperor |
 | Cien Fleur | Haste | Gigantesco Mano |
 | Kung Fu Point | Vitality | Monster Point |
+| Fire Bird Star | Expansion | Firebird Barrage |
+| Coup de Vent | Vitality | Radical Beam |
+| Yahazu Giri | Haste | Soul King's Requiem |
+| Fishman Karate | Haki | Vagabond Drill |
+| Room: Amputate | Haste | Gamma Knife |
+| Perfume Femur | Haki | Love-Love Paradise |
 
 ## Run it
 
 **Easiest:** open `AnimeSwarm.rbxlx` in Roblox Studio (File > Open from File) and press Play.
-The spawn island and all three arenas are already built (the portals appear when you press Play). After editing code, rebuild it with `python3 tools/build_place.py`.
+The spawn island and all 20 arenas are already built (the voyage gates appear when you press Play). After editing code, rebuild it with `python3 tools/build_place.py`.
 
 **With Rojo (live sync while you edit):**
 
@@ -91,18 +147,19 @@ The spawn island and all three arenas are already built (the portals appear when
 
 | File | What it does |
 | ---- | ------------ |
-| `src/shared/Config.lua` | All balance: skills, passives, characters, enemies, adventures, upgrades |
-| `src/server/Main.server.lua` | Portal boarding, running each adventure, spawning, bosses, rewards |
-| `src/server/Portals.lua` | Builds the portals and tracks who is standing on their pads |
+| `src/shared/Config.lua` | All balance: skills and icons, passives, characters, enemies, maps, difficulties, upgrades |
+| `src/server/Main.server.lua` | Gate boarding and captains, running each adventure, spawning, bosses, rewards, unlocks |
+| `src/server/Portals.lua` | Builds the voyage gates and tracks who is standing on their pads |
+| `src/server/Gear.lua` | Each character's hats, swords and other gear |
 | `src/server/Weapons.lua` | How each skill fires and hits |
-| `src/server/Enemies.lua` | Enemy bodies, movement, damage, XP orbs |
+| `src/server/Enemies.lua` | Enemy bodies and gear, movement, rifle shots, telegraphed blasts, XP orbs |
 | `src/server/Progression.lua` | XP, level-up cards, evolutions |
-| `src/server/PlayerData.lua` | Saving gold and permanent upgrades |
+| `src/server/PlayerData.lua` | Saving gold, permanent upgrades and map progress |
 | `src/server/Fx.lua` | Sends effect events (what happened) to every client |
 | `src/client/SwarmClient.client.lua` | Connects the UI to the server |
 | `src/client/Theme.lua` | Colors, fonts and UI building blocks |
 | `src/client/Hud.lua` | In-run HUD, level-up cards, announcements, results screen |
-| `src/client/Lobby.lua` | Character select, upgrade shop, gold, portal boarding banner |
+| `src/client/Lobby.lua` | Character select, upgrade shop, map select, gold, gate boarding banner |
 | `src/client/Effects.lua` | Skill effects, hit sparks, damage numbers, portal swirls |
 | `src/client/Animate.lua` | Punch, slash, kick, throw and cast animations (R15) |
-| `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the spawn island, arenas, lighting and all scripts |
+| `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the spawn island, 20 themed arenas, lighting and all scripts |

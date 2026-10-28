@@ -1,6 +1,7 @@
 -- Game flow:
---   Spawn island: pick a character, buy upgrades, step onto an adventure portal's pad.
---   When the portal's countdown ends, everyone on the pad sails to that adventure's arena.
+--   Spawn island: pick a character, buy upgrades, step onto a voyage gate's pad.
+--   The first player on a pad is the captain and picks a map + difficulty they have unlocked.
+--   When the gate's countdown ends, everyone on the pad sails to that map's arena.
 --   Each adventure runs on its own until its boss falls or its whole crew is down.
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
@@ -13,6 +14,7 @@ local Progression = require(script.Parent.Progression)
 local Weapons = require(script.Parent.Weapons)
 local Fx = require(script.Parent.Fx)
 local Portals = require(script.Parent.Portals)
+local Gear = require(script.Parent.Gear)
 
 Players.CharacterAutoLoads = false
 
@@ -20,7 +22,8 @@ local remotes = {}
 local remoteFolder = Instance.new("Folder")
 remoteFolder.Name = "Remotes"
 for _, name in {
-	"State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results", "Fx", "Portal", "Announce",
+	"State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results", "Fx", "Portal",
+	"Announce", "Voyage",
 } do
 	local r = Instance.new("RemoteEvent")
 	r.Name = name
@@ -32,10 +35,18 @@ Progression.init(remotes)
 Fx.init(remotes.Fx)
 Portals.build()
 
-local LOBBY_TEXT = "Step into a portal to start an adventure!"
+local LOBBY_TEXT = "Step onto a voyage gate to choose an adventure!"
 local selectedClass = {}
 local runOf = {} -- [player] = the run they are in (nil = on the spawn island)
-local runs = {} -- [adventureKey] = run in progress
+local runs = {} -- [mapKey] = run in progress (one crew per map at a time)
+local gates = {} -- [gateIndex] = { captain, map, difficulty, launchAt }
+for i in Config.GATES do
+	gates[i] = {}
+end
+
+local function classOf(player)
+	return selectedClass[player] or Config.DEFAULT_CLASS
+end
 
 local function sendMeta(player)
 	local data = PlayerData.get(player)
@@ -47,8 +58,7 @@ local function sendMeta(player)
 		costs[name] = data.meta[name] < m.max and PlayerData.metaCost(name, data.meta[name]) or false
 	end
 	remotes.Meta:FireClient(player, {
-		gold = data.gold, levels = data.meta, costs = costs,
-		class = selectedClass[player] or Config.DEFAULT_CLASS,
+		gold = data.gold, levels = data.meta, costs = costs, progress = data.progress, class = classOf(player),
 	})
 end
 
@@ -84,6 +94,13 @@ local function onCharacter(player, character)
 		end
 	end)
 	Progression.applyStats(player)
+	task.spawn(function()
+		character:WaitForChild("HumanoidRootPart", 5)
+		task.wait(0.3) -- let the body parts finish loading
+		if character.Parent then
+			Gear.apply(character, classOf(player))
+		end
+	end)
 end
 
 local function onPlayerAdded(player)
@@ -123,12 +140,27 @@ remotes.Meta.OnServerEvent:Connect(sendMeta)
 remotes.SelectClass.OnServerEvent:Connect(function(player, name)
 	if not runOf[player] and typeof(name) == "string" and Config.Classes[name] then
 		selectedClass[player] = name
+		Gear.apply(player.Character, name)
 		sendMeta(player)
 	end
 end)
 remotes.BuyMeta.OnServerEvent:Connect(function(player, name)
 	if not runOf[player] and typeof(name) == "string" and PlayerData.buy(player, name) then
 		sendMeta(player)
+	end
+end)
+-- The captain of a gate picks where the crew sails.
+remotes.Voyage.OnServerEvent:Connect(function(player, mapKey, difficulty)
+	if typeof(mapKey) ~= "string" or typeof(difficulty) ~= "number" then
+		return
+	end
+	for _, gate in gates do
+		if gate.captain == player then
+			if PlayerData.unlocked(player, mapKey, difficulty) and not runs[mapKey] then
+				gate.map, gate.difficulty, gate.launchAt = mapKey, difficulty, nil
+			end
+			return
+		end
 	end
 end)
 
@@ -165,11 +197,11 @@ RunService.Heartbeat:Connect(function(dt)
 	Fx.flush()
 end)
 
-local function spawnAround(kind, run, targets, hpScale, dmgScale)
+local function spawnAround(kind, run, targets, hpScale, dmgScale, look)
 	-- only around crew members who have landed in the arena
 	local landed = {}
 	for _, t in targets do
-		local offset = t.root.Position - run.adv.center
+		local offset = t.root.Position - run.map.center
 		if math.abs(offset.X) <= Config.ARENA_HALF_SIZE and math.abs(offset.Z) <= Config.ARENA_HALF_SIZE then
 			table.insert(landed, t)
 		end
@@ -181,21 +213,30 @@ local function spawnAround(kind, run, targets, hpScale, dmgScale)
 	for _ = 1, 6 do
 		local a = math.random() * 2 * math.pi
 		local d = Config.SPAWN_MIN + math.random() * (Config.SPAWN_MAX - Config.SPAWN_MIN)
-		local e = Enemies.spawn(kind, p.X + math.cos(a) * d, p.Z + math.sin(a) * d, hpScale, dmgScale, run.key)
+		local e = Enemies.spawn(kind, p.X + math.cos(a) * d, p.Z + math.sin(a) * d, hpScale, dmgScale, run.key, look)
 		if e then
 			return e
 		end
 	end
 	-- the player is near the edge of the map: spawn close instead
-	return Enemies.spawn(kind, p.X, p.Z + 15, hpScale, dmgScale, run.key)
+	return Enemies.spawn(kind, p.X, p.Z + 15, hpScale, dmgScale, run.key, look)
 end
 
-local function pickKind(minutes)
-	local r = math.random()
-	if minutes >= 3 and r < 0.12 then
-		return "Brute"
-	elseif minutes >= 1 and r < 0.35 then
-		return "Runner"
+-- Weighted pick from Config.SPAWN_TABLE: later maps and later minutes bring tougher Marines.
+local function pickKind(minutes, mapIndex)
+	local options, total = {}, 0
+	for _, row in Config.SPAWN_TABLE do
+		if mapIndex >= row[2] and minutes >= row[3] then
+			table.insert(options, row)
+			total += row[4]
+		end
+	end
+	local roll = math.random() * total
+	for _, row in options do
+		roll -= row[4]
+		if roll <= 0 then
+			return row[1]
+		end
 	end
 	return "Grunt"
 end
@@ -220,7 +261,7 @@ local function announce(run, text, color)
 end
 
 local function playRun(run)
-	local adv = run.adv
+	local map, diff = run.map, run.diff
 	local start = os.clock()
 	local nextMini = Config.MINIBOSS_EVERY
 	local lastTick = 0
@@ -235,23 +276,24 @@ local function playRun(run)
 		end
 
 		local crew = 1 + 0.3 * (#targets - 1)
-		local hpScale = (1 + minutes * 0.4) * crew * adv.hp
-		local dmgScale = (1 + minutes * 0.15) * adv.damage
+		local hpScale = (1 + minutes * 0.4) * crew * map.hp * diff.hp
+		local dmgScale = (1 + minutes * 0.15) * map.damage * diff.damage
 		local desired = math.min(Config.MAX_ENEMIES, math.floor((15 + minutes * 12) * crew))
 		for _ = 1, math.min(4, desired - Enemies.count(run.key)) do
-			spawnAround(pickKind(minutes), run, targets, hpScale, dmgScale)
+			spawnAround(pickKind(minutes, map.index), run, targets, hpScale, dmgScale)
 		end
-		if elapsed >= nextMini and elapsed < adv.runLength then
+		if elapsed >= nextMini and elapsed < diff.runLength then
 			nextMini += Config.MINIBOSS_EVERY
 			if spawnAround("MiniBoss", run, targets, hpScale, dmgScale) then
 				announce(run, "A Vice Admiral appeared!", Color3.fromRGB(190, 90, 255))
 			end
 		end
-		if elapsed >= adv.runLength then
+		if elapsed >= diff.runLength then
 			if not boss then
-				boss = spawnAround("Boss", run, targets, crew * adv.hp, adv.damage)
+				local look = { name = map.boss, color = map.bossColor, accent = map.bossAccent }
+				boss = spawnAround("Boss", run, targets, crew * map.hp * diff.hp, map.damage * diff.damage, look)
 				if boss then
-					announce(run, "The Admiral has arrived!", Color3.fromRGB(255, 60, 60))
+					announce(run, map.boss .. " has arrived!", Color3.fromRGB(255, 60, 60))
 				end
 			elseif boss.dead then
 				return "Victory", elapsed
@@ -261,12 +303,13 @@ local function playRun(run)
 		if os.clock() - lastTick >= 1 then
 			lastTick = os.clock()
 			healers(targets)
-			local left = math.ceil(adv.runLength - elapsed)
+			local left = math.ceil(diff.runLength - elapsed)
 			local clock = left > 0 and string.format("%d:%02d", left // 60, left % 60) or "FINAL BOSS!"
 			for player in run.players do
 				local s = Progression.get(player)
 				remotes.State:FireClient(player, {
-					phase = "Run", text = clock, adventure = adv.name, color = adv.color, down = s ~= nil and s.dead,
+					phase = "Run", text = clock, adventure = map.name .. "  -  " .. diff.name, color = diff.color,
+					down = s ~= nil and s.dead,
 				})
 				Progression.sync(player)
 			end
@@ -275,18 +318,34 @@ local function playRun(run)
 	end
 end
 
+-- What a first clear of this map + difficulty opens up.
+local function unlockMessage(map, difficulty)
+	local unlocked = {}
+	if Config.Difficulties[difficulty + 1] then
+		table.insert(unlocked, map.name .. " " .. Config.Difficulties[difficulty + 1].name)
+	end
+	if difficulty == 1 and Config.Maps[map.index + 1] then
+		table.insert(unlocked, Config.Maps[map.index + 1].name)
+	end
+	return #unlocked > 0 and "Unlocked: " .. table.concat(unlocked, " and ") or nil
+end
+
 local function finishRun(run, result, elapsed)
-	local adv = run.adv
+	local map, diff = run.map, run.diff
 	for player in run.players do
 		local s, data = Progression.get(player), PlayerData.get(player)
 		if s and data then
 			local gold = s.kills + math.floor(elapsed / 10) + s.bonusGold + (result == "Victory" and 500 or 0)
-			gold = math.floor(gold * adv.gold * (1 + Progression.bonus(s, "gold")))
+			gold = math.floor(gold * map.gold * diff.gold * (1 + Progression.bonus(s, "gold")))
 			data.gold += gold
+			local unlocked
+			if result == "Victory" and PlayerData.recordClear(player, map.key, run.difficulty) then
+				unlocked = unlockMessage(map, run.difficulty)
+			end
 			task.spawn(PlayerData.save, player)
 			remotes.Results:FireClient(player, {
-				result = result, adventure = adv.name, color = adv.color,
-				gold = gold, kills = s.kills, level = s.level, time = math.floor(elapsed),
+				result = result, adventure = map.name .. "  -  " .. diff.name, color = diff.color,
+				gold = gold, kills = s.kills, level = s.level, time = math.floor(elapsed), unlocked = unlocked,
 			})
 			remotes.State:FireClient(player, { phase = "Results", text = result == "Victory" and "VICTORY!" or "DEFEATED" })
 		end
@@ -306,60 +365,75 @@ local function finishRun(run, result, elapsed)
 	runs[run.key] = nil
 end
 
-local function startRun(key, crew)
-	local adv = Config.Adventures[key]
-	local run = { key = key, adv = adv, players = {} }
-	runs[key] = run
+local function startRun(map, difficulty, crew)
+	local diff = Config.Difficulties[difficulty]
+	local run = { key = map.key, map = map, diff = diff, difficulty = difficulty, players = {} }
+	runs[map.key] = run
 	for _, player in crew do
 		local data = PlayerData.get(player)
 		if player.Parent and data and not runOf[player] then
 			run.players[player] = true
 			runOf[player] = run
-			Progression.start(player, selectedClass[player] or Config.DEFAULT_CLASS, data.meta)
+			Progression.start(player, classOf(player), data.meta)
 			Progression.applyStats(player)
 			Progression.sync(player)
-			remotes.State:FireClient(player, { phase = "Run", text = "Set sail!", adventure = adv.name, color = adv.color })
-			task.spawn(sendToArena, player, adv.center)
+			remotes.State:FireClient(player, {
+				phase = "Run", text = "Set sail!", adventure = map.name .. "  -  " .. diff.name, color = diff.color,
+			})
+			task.spawn(sendToArena, player, map.center)
 		end
 	end
 	finishRun(run, playRun(run))
 end
 
--- Portal boarding: whoever stands on a pad when its countdown ends sets sail together.
-local launchAt = {} -- [adventureKey] = os.clock() when that portal launches
-while true do
-	for _, key in Config.ADVENTURE_ORDER do
-		local adv = Config.Adventures[key]
-		local aboard = {}
-		for _, player in Portals.playersInside(key) do
-			if not runOf[player] then
-				table.insert(aboard, player)
-			end
+-- Voyage gates: the first player on a pad is captain; when the countdown ends, the crew sails.
+local function updateGate(index, gate)
+	local aboard = {}
+	for _, player in Portals.playersInside(index) do
+		if not runOf[player] then
+			table.insert(aboard, player)
 		end
-		local status
-		if runs[key] then
-			launchAt[key] = nil
-			status = "Adventure in progress..."
-		elseif #aboard == 0 then
-			launchAt[key] = nil
-			status = "Step in to set sail!"
+	end
+	if not table.find(aboard, gate.captain) then
+		-- the captain stepped off: the next player in line takes over and picks again
+		gate.captain, gate.map, gate.difficulty, gate.launchAt = aboard[1], nil, nil, nil
+	end
+	if gate.map and runs[gate.map] then
+		gate.map, gate.difficulty, gate.launchAt = nil, nil, nil -- another crew got there first
+	end
+	local map = gate.map and Config.MapByKey[gate.map]
+	local diff = gate.difficulty and Config.Difficulties[gate.difficulty]
+
+	local status
+	if not gate.captain then
+		status = "Step in to choose an adventure"
+	elseif not map then
+		status = gate.captain.DisplayName .. " is choosing an adventure..."
+	else
+		gate.launchAt = gate.launchAt or os.clock() + Config.PORTAL_COUNTDOWN
+		local left = math.ceil(gate.launchAt - os.clock())
+		if left <= 0 then
+			status = "Setting sail!"
+			local difficulty = gate.difficulty
+			gate.captain, gate.map, gate.difficulty, gate.launchAt = nil, nil, nil, nil
+			task.spawn(startRun, map, difficulty, aboard)
 		else
-			launchAt[key] = launchAt[key] or os.clock() + Config.PORTAL_COUNTDOWN
-			local left = math.ceil(launchAt[key] - os.clock())
-			if left <= 0 then
-				launchAt[key] = nil
-				status = "Setting sail!"
-				task.spawn(startRun, key, aboard)
-			else
-				status = string.format("%d aboard  -  sailing in %d", #aboard, left)
-			end
+			status = string.format("%s - %s  |  %d aboard  |  sailing in %d", map.name, diff.name, #aboard, left)
 		end
-		Portals.setStatus(key, status)
-		for _, player in aboard do
-			remotes.Portal:FireClient(player, {
-				name = adv.name, difficulty = adv.difficulty, stars = adv.stars, color = adv.color, text = status,
-			})
-		end
+	end
+	Portals.setStatus(index, status)
+	for _, player in aboard do
+		remotes.Portal:FireClient(player, {
+			gate = index, color = Config.GATE_COLORS[index], text = status,
+			captain = player == gate.captain, captainName = gate.captain and gate.captain.DisplayName,
+			map = gate.map, difficulty = gate.difficulty,
+		})
+	end
+end
+
+while true do
+	for index, gate in gates do
+		updateGate(index, gate)
 	end
 	task.wait(0.25)
 end

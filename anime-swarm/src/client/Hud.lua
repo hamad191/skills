@@ -133,7 +133,7 @@ local function fillSlot(slot, info, isWeapon, locked)
 		return
 	end
 	slot.stripe.BackgroundColor3 = info.color or Color3.fromRGB(200, 210, 230)
-	slot.name.Text = info.name
+	slot.name.Text = (info.icon and info.icon .. " " or "") .. info.name
 	slot.name.TextColor3 = Theme.TEXT
 	if info.fused then
 		slot.level.Text = "FUSED"
@@ -256,7 +256,7 @@ local function buildBanners(gui)
 		BackgroundTransparency = 0.4, Visible = false, ZIndex = 30,
 	}, gui)
 	ui.results = overlay
-	local card = Theme.panel({ Size = UDim2.fromOffset(460, 380), Position = UDim2.new(0.5, -230, 0.5, -190), ZIndex = 31 }, overlay)
+	local card = Theme.panel({ Size = UDim2.fromOffset(460, 400), Position = UDim2.new(0.5, -230, 0.5, -200), ZIndex = 31 }, overlay)
 	ui.resultScale = Theme.new("UIScale", {}, card)
 	ui.resultTitle = Theme.title({ Size = UDim2.new(1, -40, 0, 70), Position = UDim2.fromOffset(20, 18), ZIndex = 32 }, card)
 	ui.resultAdventure = Theme.text({ Size = UDim2.new(1, -40, 0, 26), Position = UDim2.fromOffset(20, 88), ZIndex = 32, MaxSize = 22 }, card)
@@ -269,8 +269,11 @@ local function buildBanners(gui)
 		ui.resultRows[i] = Theme.title({ Size = UDim2.new(0.4, -12, 1, -10), Position = UDim2.new(0.6, 0, 0, 5), TextColor3 = Theme.TEXT, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 33 }, row)
 	end
 	ui.resultGold = Theme.title({ Size = UDim2.new(1, -40, 0, 52), Position = UDim2.fromOffset(20, 262), ZIndex = 32 }, card)
+	ui.resultUnlocked = Theme.title({
+		Size = UDim2.new(1, -40, 0, 26), Position = UDim2.fromOffset(20, 318), ZIndex = 32, TextColor3 = Theme.GOOD, MaxSize = 22,
+	}, card)
 	Theme.text({
-		Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(20, 330), ZIndex = 32,
+		Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(20, 356), ZIndex = 32,
 		Text = "Returning to the island...", TextColor3 = Theme.MUTED, MaxSize = 18,
 	}, card)
 end
@@ -348,7 +351,7 @@ function Hud.showLevelUp(list, rerolls)
 			card.header.Square.BackgroundColor3 = tint
 			card.stroke.Color = tint
 			card.icon.BackgroundColor3 = c.color
-			card.iconText.Text = initials(c.title)
+			card.iconText.Text = c.icon or initials(c.title)
 			card.title.Text = c.title
 			card.title.TextColor3 = tint:Lerp(Color3.new(1, 1, 1), 0.35)
 			card.desc.Text = c.text
@@ -405,6 +408,7 @@ function Hud.showResults(r)
 	countUp(ui.resultRows[3], r.kills, function(v)
 		return Theme.comma(v)
 	end)
+	ui.resultUnlocked.Text = r.unlocked or ""
 	countUp(ui.resultGold, r.gold, function(v)
 		return "+" .. Theme.comma(v) .. " GOLD"
 	end)

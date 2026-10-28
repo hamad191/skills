@@ -75,7 +75,7 @@ local function fusionKey(a, b)
 		fusionDefs[key] = {
 			name = wa.name .. " x " .. wb.name,
 			desc = "Fires " .. wa.name .. " and " .. wb.name .. " together, much stronger.",
-			color = wa.color:Lerp(wb.color, 0.5), fused = true, parts = { a, b },
+			color = wa.color:Lerp(wb.color, 0.5), icon = wa.icon .. wb.icon, fused = true, parts = { a, b },
 		}
 	end
 	return key
@@ -139,11 +139,11 @@ function Progression.sync(player)
 	for name, level in s.weapons do
 		local w = Progression.def(name)
 		table.insert(weapons, {
-			name = w.name, level = level, evo = w.evolved == true, fused = w.fused == true, color = w.color,
+			name = w.name, level = level, evo = w.evolved == true, fused = w.fused == true, color = w.color, icon = w.icon,
 		})
 	end
 	for name, level in s.passives do
-		table.insert(passives, { name = Config.Passives[name].name, level = level })
+		table.insert(passives, { name = Config.Passives[name].name, level = level, icon = Config.Passives[name].icon })
 	end
 	remotes.Stats:FireClient(player, {
 		level = s.level, xp = s.xp, need = Progression.xpNeeded(s.level),
@@ -247,7 +247,7 @@ local function describe(s, c)
 		local owner = Config.SkillOwner[c.key]
 		local crew = level == 1 and owner ~= s.class
 		return {
-			title = w.name, color = w.color, level = level, max = Config.WEAPON_MAX,
+			title = w.name, color = w.color, icon = w.icon, level = level, max = Config.WEAPON_MAX,
 			tag = crew and "CREW SKILL" or level == 1 and "NEW SKILL" or "UPGRADE",
 			text = crew and owner .. "'s skill: " .. w.desc or level == 1 and w.desc or "More damage, faster attacks, more hits.",
 		}
@@ -255,22 +255,22 @@ local function describe(s, c)
 		local p = Config.Passives[c.key]
 		local level = (s.passives[c.key] or 0) + 1
 		return {
-			title = p.name, text = p.desc, color = Color3.fromRGB(200, 210, 230),
+			title = p.name, text = p.desc, color = Color3.fromRGB(200, 210, 230), icon = p.icon,
 			tag = level == 1 and "NEW PASSIVE" or "PASSIVE", level = level, max = Config.PASSIVE_MAX,
 		}
 	elseif c.type == "evolve" then
 		local evo = Config.Weapons[Config.Weapons[c.key].evolvesInto]
-		return { title = evo.name, text = evo.desc, color = evo.color, tag = "EVOLUTION" }
+		return { title = evo.name, text = evo.desc, color = evo.color, icon = evo.icon, tag = "EVOLUTION" }
 	elseif c.type == "fuse" then
 		local fused = Progression.def(fusionKey(c.a, c.b))
 		return {
-			title = fused.name, color = fused.color, tag = "FUSION",
+			title = fused.name, color = fused.color, icon = fused.icon, tag = "FUSION",
 			text = "Fuse two maxed skills into one: both fire together with double damage. Frees a slot!",
 		}
 	elseif c.type == "heal" then
-		return { title = "Meat on the Bone", text = "Heal 50 HP.", color = Color3.fromRGB(255, 170, 120), tag = "BONUS" }
+		return { title = "Meat on the Bone", text = "Heal 50 HP.", color = Color3.fromRGB(255, 170, 120), icon = "🍖", tag = "BONUS" }
 	end
-	return { title = "Gold Pouch", text = "+25 gold at the end of the run.", color = Color3.fromRGB(255, 215, 0), tag = "BONUS" }
+	return { title = "Gold Pouch", text = "+25 gold at the end of the run.", color = Color3.fromRGB(255, 215, 0), icon = "💰", tag = "BONUS" }
 end
 
 function Progression.offer(player)

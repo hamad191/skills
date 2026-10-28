@@ -1,4 +1,4 @@
-"""Builds AnimeSwarm.rbxlx: all scripts plus the map (spawn island and the three adventure arenas).
+"""Builds AnimeSwarm.rbxlx: all scripts plus the map (spawn island and the 20 adventure arenas).
 
 Usage: python3 tools/build_place.py   (run from the anime-swarm folder)
 """
@@ -7,6 +7,7 @@ import html
 import math
 import os
 import random
+import re
 import xml.etree.ElementTree as ET
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,7 +21,8 @@ PLAZA = (0, ISLAND_Z + 84, 48)  # x, z, radius: the portals stand here (position
 
 MATERIAL = {
     "plastic": 256, "smooth": 272, "neon": 288, "wood": 512, "planks": 528, "slate": 800,
-    "cobble": 880, "metal": 1088, "grass": 1280, "sand": 1296, "fabric": 1312, "glass": 1568,
+    "concrete": 816, "brick": 848, "cobble": 880, "metal": 1088, "grass": 1280, "sand": 1296, "fabric": 1312,
+    "ice": 1536, "glass": 1568,
 }
 SHAPE = {"ball": 0, "block": 1, "cylinder": 2}
 
@@ -233,8 +235,8 @@ def torch(name, x, z, y):
     ])
 
 
-def hut(name, x, z, w, d, h, wall, roof, sign=None):
-    P = Placer(x, GRASS_TOP, z, face_spawn(x, z))
+def hut(name, x, z, w, d, h, wall, roof, sign=None, y=GRASS_TOP, yaw=None, query=True):
+    P = Placer(x, y, z, face_spawn(x, z) if yaw is None else yaw, query)
     top = 0.6 + h
     rise = (w / 4) * math.tan(math.radians(30))
     slope = (w / 2) / math.cos(math.radians(30)) + 1.2
@@ -486,7 +488,25 @@ def spawn_island():
 
 
 # --- adventure arenas ---------------------------------------------------------
-# Decorations use CanQuery = false so enemy spawns and effects treat the floor as the ground.
+# One arena per map in Config.Maps, dressed by its theme. Decorations use CanQuery = false
+# so enemy spawns and effects treat the floor as the ground.
+
+MAP_SPACING = 1200  # keep in sync with Config.MAP_SPACING
+DENSITY = 1.5  # scales every theme's decoration counts
+
+
+def read_maps():
+    """(key, name, theme) for every map, in order, straight from Config.lua."""
+    with open(os.path.join(ROOT, "src/shared/Config.lua"), encoding="utf-8") as f:
+        text = f.read()
+    maps = re.findall(r'\{ key = "(\w+)", name = "([^"]+)", theme = "(\w+)"', text)
+    assert len(maps) == 20, f"expected 20 maps in Config.lua, found {len(maps)}"
+    return maps
+
+
+def map_center(index):
+    """Same formula as Config.lua: a 5-wide grid of arenas south of the island."""
+    return ((index % 5) - 2) * MAP_SPACING, -MAP_SPACING * (1 + index // 5)
 
 
 def scatter(cx, cz, count, min_r=80, max_r=480):
@@ -498,53 +518,306 @@ def scatter(cx, cz, count, min_r=80, max_r=480):
                 break
 
 
-def east_blue(cx, cz):
-    props = [part("Floor", (1000, 2, 1000), (cx, -1, cz), (85, 150, 70), "grass")]
-    for i, (x, z) in enumerate(scatter(cx, cz, 24, 200)):
-        props.append(palm(f"Palm{i}", x, z, 0, rng.uniform(13, 18), query=False))
-    for i, (x, z) in enumerate(scatter(cx, cz, 30)):
-        props.append(rock(f"Rock{i}", x, z, 0, (rng.uniform(3, 8), rng.uniform(2, 5), rng.uniform(3, 7)), query=False))
-    return model("EastBlueArena", props)
+def deco(name, size, x, y, z, rgb, material="plastic", shape="block", rot=IDENTITY, **kw):
+    kw.setdefault("query", False)
+    return part(name, size, (x, y, z), rgb, material, shape, rot, **kw)
 
 
-def grand_line(cx, cz):
-    sandstone = (215, 185, 125)
-    props = [part("Floor", (1000, 2, 1000), (cx, -1, cz), (226, 196, 135), "sand")]
-    for i, (x, z) in enumerate(scatter(cx, cz, 30)):
-        h = rng.uniform(7, 12)
-        P = Placer(x, 0, z, rng.uniform(0, 360), query=False)
-        props.append(model(f"Cactus{i}", [
-            P("Trunk", (h, 2, 2), (0, h / 2, 0), (70, 140, 60), "grass", "cylinder", UPRIGHT),
-            P("ArmL", (3, 1.2, 1.2), (-1.8, h * 0.5, 0), (70, 140, 60), "grass", "cylinder"),
-            P("ArmLUp", (3, 1.2, 1.2), (-3, h * 0.5 + 1.4, 0), (70, 140, 60), "grass", "cylinder", UPRIGHT),
-            P("ArmR", (2.6, 1.2, 1.2), (1.6, h * 0.65, 0), (70, 140, 60), "grass", "cylinder"),
-            P("ArmRUp", (2.4, 1.2, 1.2), (2.6, h * 0.65 + 1.2, 0), (70, 140, 60), "grass", "cylinder", UPRIGHT),
-        ]))
-    for i, (x, z) in enumerate(scatter(cx, cz, 14, 150)):
-        h = rng.uniform(8, 18)
-        P = Placer(x, 0, z, rng.uniform(0, 360), query=False)
-        props.append(model(f"Ruin{i}", [
-            P("Pillar", (3, h, 3), (0, h / 2, 0), sandstone, "slate"),
-            P("Top", (4, 1, 4), (0, h + 0.5, 0), sandstone, "slate"),
-            P("Fallen", (3, 3, 10), (5, 1.5, 2), sandstone, "slate", rot=rot_y(rng.uniform(0, 90))),
-        ]))
-    return model("GrandLineArena", props)
+def placer(x, z):
+    return Placer(x, 0, z, rng.uniform(0, 360), query=False)
 
 
-def new_world(cx, cz):
-    props = [part("Floor", (1000, 2, 1000), (cx, -1, cz), (55, 45, 50), "slate")]
-    for i, (x, z) in enumerate(scatter(cx, cz, 45, 30)):
-        props.append(part(f"LavaCrack{i}", (1.5, 0.1, rng.uniform(20, 60)), (x, 0.05, z), (255, 90, 20), "neon",
-                          rot=rot_y(rng.uniform(0, 180)), collide=False, query=False))
-    for i, (x, z) in enumerate(scatter(cx, cz, 8, 120)):
-        d = rng.uniform(10, 18)
-        props.append(part(f"MagmaPool{i}", (0.1, d, d), (x, 0.05, z), (255, 120, 30), "neon", "cylinder", UPRIGHT,
-                          collide=False, query=False))
-    for i, (x, z) in enumerate(scatter(cx, cz, 26, 200)):
-        h = rng.uniform(8, 20)
-        rot = mul(rot_y(rng.uniform(0, 360)), rot_x(rng.uniform(-20, 20)))
-        props.append(part(f"Spike{i}", (rng.uniform(3, 6), h, rng.uniform(3, 6)), (x, h * 0.4, z), (35, 30, 35), "slate", rot=rot, query=False))
-    return model("NewWorldArena", props)
+# decoration builders: (name, x, z) -> place-file item
+def p_palm(n, x, z):
+    return palm(n, x, z, 0, rng.uniform(13, 18), query=False)
+
+
+def p_rock(n, x, z, rgb=STONE):
+    return rock(n, x, z, 0, (rng.uniform(3, 8), rng.uniform(2, 5), rng.uniform(3, 7)), query=False, rgb=rgb)
+
+
+def p_bush(n, x, z):
+    d = rng.uniform(3, 5)
+    return deco(n, (d, d, d), x, d * 0.35, z, (rng.randint(50, 80), rng.randint(120, 160), 60), "grass", "ball")
+
+
+def p_cactus(n, x, z):
+    h, P, g = rng.uniform(7, 12), placer(x, z), (70, 140, 60)
+    return model(n, [
+        P("Trunk", (h, 2, 2), (0, h / 2, 0), g, "grass", "cylinder", UPRIGHT),
+        P("ArmL", (3, 1.2, 1.2), (-1.8, h * 0.5, 0), g, "grass", "cylinder"),
+        P("ArmLUp", (3, 1.2, 1.2), (-3, h * 0.5 + 1.4, 0), g, "grass", "cylinder", UPRIGHT),
+        P("ArmR", (2.6, 1.2, 1.2), (1.6, h * 0.65, 0), g, "grass", "cylinder"),
+        P("ArmRUp", (2.4, 1.2, 1.2), (2.6, h * 0.65 + 1.2, 0), g, "grass", "cylinder", UPRIGHT),
+    ])
+
+
+def p_ruin(n, x, z, rgb=(215, 185, 125)):
+    h, P = rng.uniform(8, 18), placer(x, z)
+    return model(n, [
+        P("Pillar", (3, h, 3), (0, h / 2, 0), rgb, "slate"),
+        P("Top", (4, 1, 4), (0, h + 0.5, 0), rgb, "slate"),
+        P("Fallen", (3, 3, 10), (5, 1.5, 2), rgb, "slate", rot=rot_y(rng.uniform(0, 90))),
+    ])
+
+
+def p_gold_ruin(n, x, z):
+    return p_ruin(n, x, z, (235, 200, 90))
+
+
+def p_lava(n, x, z):
+    return deco(n, (1.5, 0.1, rng.uniform(20, 60)), x, 0.05, z, (255, 90, 20), "neon", rot=rot_y(rng.uniform(0, 180)), collide=False)
+
+
+def p_magma(n, x, z):
+    d = rng.uniform(10, 18)
+    return deco(n, (0.1, d, d), x, 0.05, z, (255, 120, 30), "neon", "cylinder", UPRIGHT, collide=False)
+
+
+def p_spike(n, x, z, rgb=(35, 30, 35), material="slate"):
+    h = rng.uniform(8, 20)
+    rot = mul(rot_y(rng.uniform(0, 360)), rot_x(rng.uniform(-20, 20)))
+    return deco(n, (rng.uniform(3, 6), h, rng.uniform(3, 6)), x, h * 0.4, z, rgb, material, rot=rot)
+
+
+def p_ice(n, x, z):
+    return p_spike(n, x, z, (170, 215, 245), "ice")
+
+
+def p_pine(n, x, z):
+    P, h = placer(x, z), rng.uniform(12, 18)
+    pieces = [P("Trunk", (h * 0.4, 1.4, 1.4), (0, h * 0.2, 0), (100, 70, 45), "wood", "cylinder", UPRIGHT)]
+    for i in range(3):
+        w = 9 - i * 2.5
+        y = h * 0.35 + i * h * 0.22
+        pieces.append(P(f"Leaves{i}", (w, h * 0.25, w), (0, y, 0), (40, 100, 60), "grass", rot=rot_y(45 * i)))
+        pieces.append(P(f"Snow{i}", (w * 0.8, 0.4, w * 0.8), (0, y + h * 0.13, 0), (250, 250, 255), "sand", rot=rot_y(45 * i)))
+    return model(n, pieces)
+
+
+def p_big_tree(n, x, z):
+    P, h = placer(x, z), rng.uniform(16, 24)
+    pieces = [P("Trunk", (h, 3, 3), (0, h / 2, 0), (90, 60, 35), "wood", "cylinder", UPRIGHT)]
+    for i in range(3):
+        a = math.radians(i * 120)
+        d = rng.uniform(8, 11)
+        pieces.append(P(f"Leaves{i}", (d, d, d), (math.cos(a) * 3, h + rng.uniform(-1, 2), math.sin(a) * 3), (30, rng.randint(100, 130), 45), "grass", "ball"))
+    return model(n, pieces)
+
+
+def p_house(n, x, z):
+    wall = rng.choice([(205, 170, 120), (190, 160, 125), (215, 185, 140), (230, 220, 200)])
+    roof = rng.choice([(150, 60, 45), (60, 90, 150), (110, 45, 35), (70, 120, 80)])
+    return hut(n, x, z, rng.uniform(10, 14), rng.uniform(8, 11), rng.uniform(8, 10), wall, roof, y=0, yaw=rng.uniform(0, 360), query=False)
+
+
+def p_crate(n, x, z):
+    s = rng.uniform(2, 3.5)
+    return deco(n, (s, s, s), x, s / 2, z, (165, 125, 75), "planks", rot=rot_y(rng.uniform(0, 90)))
+
+
+def p_barrel(n, x, z):
+    return model(n, [
+        deco("Body", (3, 2.2, 2.2), x, 1.5, z, (125, 82, 45), "wood", "cylinder", UPRIGHT),
+        deco("Rim", (0.3, 2.35, 2.35), x, 2.5, z, (60, 60, 65), "metal", "cylinder", UPRIGHT),
+    ])
+
+
+def p_lamp(n, x, z):
+    return model(n, [
+        deco("Post", (0.5, 7, 0.5), x, 3.5, z, (40, 40, 45), "metal"),
+        deco("Lamp", (1.2, 1.2, 1.2), x, 7.4, z, (255, 220, 140), "neon", collide=False),
+    ])
+
+
+def p_wall(n, x, z, rgb=(170, 172, 180), material="concrete"):
+    return deco(n, (rng.uniform(12, 20), 5, 2), x, 2.5, z, rgb, material, rot=rot_y(rng.choice([0, 90]) + rng.uniform(-5, 5)))
+
+
+def p_brick_wall(n, x, z):
+    return p_wall(n, x, z, (150, 80, 60), "brick")
+
+
+def p_cannon(n, x, z):
+    P = placer(x, z)
+    return model(n, [
+        P("Base", (3, 1.5, 4), (0, 0.75, 0), (110, 75, 45), "wood"),
+        P("Barrel", (5, 1.4, 1.4), (0, 2, -1), (40, 40, 45), "metal", "cylinder", rot_y(90)),
+    ])
+
+
+def p_marine_flag(n, x, z):
+    return model(n, [
+        deco("Pole", (16, 0.6, 0.6), x, 8, z, (170, 170, 175), "metal", "cylinder", UPRIGHT),
+        deco("Flag", (6, 4, 0.2), x + 3.2, 13.5, z, (245, 245, 250), "fabric"),
+        deco("Stripe", (6, 0.8, 0.22), x + 3.2, 13.5, z, (40, 80, 170), "fabric"),
+    ])
+
+
+def p_mast(n, x, z):
+    return model(n, [
+        deco("Mast", (24, 1.4, 1.4), x, 12, z, (110, 75, 45), "wood", "cylinder", UPRIGHT),
+        deco("Sail", (12, 10, 0.3), x, 15, z, (245, 240, 225), "fabric", rot=rot_y(rng.uniform(0, 180))),
+    ])
+
+
+def p_rail(n, x, z):
+    return deco(n, (rng.uniform(10, 16), 1.2, 0.6), x, 0.6, z, (110, 75, 45), "wood", rot=rot_y(rng.uniform(0, 180)))
+
+
+def p_umbrella(n, x, z):
+    color = rng.choice([(230, 60, 60), (60, 120, 220), (250, 200, 40)])
+    return model(n, [
+        deco("Pole", (6, 0.3, 0.3), x, 3, z, (230, 230, 230), "metal", "cylinder", UPRIGHT),
+        deco("Shade", (0.4, 7, 7), x, 6, z, color, "fabric", "cylinder", UPRIGHT),
+    ])
+
+
+def p_cloud(n, x, z):
+    pieces = []
+    for i in range(4):
+        d = rng.uniform(4, 8)
+        pieces.append(deco(f"Puff{i}", (d, d, d), x + rng.uniform(-4, 4), d * 0.25, z + rng.uniform(-4, 4), (250, 250, 255), "smooth", "ball", collide=False))
+    return model(n, pieces)
+
+
+def p_dead_tree(n, x, z):
+    P, h = placer(x, z), rng.uniform(10, 16)
+    bark = (60, 45, 40)
+    return model(n, [
+        P("Trunk", (h, 1.4, 1.4), (0, h / 2, 0), bark, "wood", "cylinder", UPRIGHT),
+        P("BranchA", (5, 0.6, 0.6), (1.8, h * 0.7, 0), bark, "wood", "cylinder", rot_z(35)),
+        P("BranchB", (4, 0.5, 0.5), (-1.5, h * 0.8, 0.5), bark, "wood", "cylinder", rot_z(150)),
+    ])
+
+
+def p_grave(n, x, z):
+    P = placer(x, z)
+    return model(n, [
+        P("Stone", (2.2, 3, 0.6), (0, 1.5, 0), (120, 120, 130), "slate"),
+        P("Mound", (3, 0.6, 4), (0, 0.3, 2), (70, 60, 50), "grass"),
+    ])
+
+
+def p_pumpkin(n, x, z):
+    d = rng.uniform(1.6, 2.6)
+    return deco(n, (d, d, d), x, d * 0.4, z, (240, 120, 30), "smooth", "ball")
+
+
+def p_wisp(n, x, z):
+    return deco(n, (1, 1, 1), x, rng.uniform(3, 7), z, (120, 255, 150), "neon", "ball", collide=False)
+
+
+def p_root(n, x, z):
+    P = placer(x, z)
+    bark = (120, 95, 60)
+    return model(n, [
+        P("RootA", (16, 3, 3), (-4, 3, 0), bark, "wood", "cylinder", rot_z(40)),
+        P("RootB", (16, 3, 3), (4, 3, 0), bark, "wood", "cylinder", rot_z(140)),
+        P("Trunk", (26, 4, 4), (0, 14, 0), bark, "wood", "cylinder", UPRIGHT),
+    ])
+
+
+def p_bubble(n, x, z):
+    d = rng.uniform(2, 6)
+    return deco(n, (d, d, d), x, rng.uniform(3, 12), z, (200, 230, 255), "glass", "ball", transparency=0.5, collide=False)
+
+
+def p_bars(n, x, z):
+    P = placer(x, z)
+    pieces = [P("Top", (12, 0.6, 0.6), (0, 8, 0), (60, 60, 65), "metal"), P("Bottom", (12, 0.6, 0.6), (0, 0.3, 0), (60, 60, 65), "metal")]
+    for i in range(7):
+        pieces.append(P(f"Bar{i}", (8, 0.4, 0.4), (-5.4 + i * 1.8, 4, 0), (80, 80, 90), "metal", "cylinder", UPRIGHT))
+    return model(n, pieces)
+
+
+def p_block(n, x, z):
+    s = rng.uniform(3, 6)
+    return deco(n, (s, s, s), x, s / 2, z, (75, 70, 85), "slate", rot=rot_y(rng.uniform(0, 90)))
+
+
+def p_torch_post(n, x, z):
+    return model(n, [
+        deco("Post", (0.6, 6, 0.6), x, 3, z, (50, 40, 35), "wood"),
+        deco("Flame", (1, 1.4, 1), x, 6.5, z, (255, 140, 40), "neon", collide=False),
+    ])
+
+
+def p_coral(n, x, z):
+    pieces = []
+    for i in range(4):
+        h = rng.uniform(2, 6)
+        color = rng.choice([(255, 110, 120), (255, 170, 60), (180, 90, 220), (90, 220, 200)])
+        pieces.append(deco(f"Branch{i}", (h, 0.8, 0.8), x + rng.uniform(-2, 2), h / 2, z + rng.uniform(-2, 2), color, "smooth", "cylinder", UPRIGHT))
+        pieces.append(deco(f"Tip{i}", (1.4, 1.4, 1.4), x + rng.uniform(-2, 2), h, z + rng.uniform(-2, 2), color, "smooth", "ball"))
+    return model(n, pieces)
+
+
+def p_seaweed(n, x, z):
+    h = rng.uniform(6, 12)
+    return deco(n, (h, 0.6, 0.6), x, h / 2, z, (40, 150, 80), "grass", "cylinder", mul(UPRIGHT, rot_x(rng.uniform(-10, 10))), collide=False)
+
+
+def p_cherry(n, x, z):
+    P, h = placer(x, z), rng.uniform(9, 13)
+    pieces = [P("Trunk", (h, 1.4, 1.4), (0, h / 2, 0), (90, 55, 40), "wood", "cylinder", UPRIGHT)]
+    for i in range(4):
+        a = math.radians(i * 90 + 45)
+        d = rng.uniform(5, 7)
+        pieces.append(P(f"Blossom{i}", (d, d, d), (math.cos(a) * 2.5, h + rng.uniform(-1, 1.5), math.sin(a) * 2.5), (255, rng.randint(160, 190), 210), "grass", "ball"))
+    return model(n, pieces)
+
+
+def p_lantern(n, x, z):
+    return model(n, [
+        deco("Post", (0.5, 5, 0.5), x, 2.5, z, (50, 40, 35), "wood"),
+        deco("Lantern", (1.4, 1.8, 1.4), x, 5.6, z, (240, 60, 50), "neon", collide=False),
+    ])
+
+
+def p_torii(n, x, z):
+    P = placer(x, z)
+    red = (210, 40, 40)
+    return model(n, [
+        P("PostL", (12, 1.2, 1.2), (-5, 6, 0), red, "smooth", "cylinder", UPRIGHT),
+        P("PostR", (12, 1.2, 1.2), (5, 6, 0), red, "smooth", "cylinder", UPRIGHT),
+        P("Top", (14, 1, 1.6), (0, 12.3, 0), (30, 30, 30), "smooth"),
+        P("Beam", (12, 0.8, 1), (0, 10, 0), red, "smooth"),
+    ])
+
+
+# theme: floor color, floor material, [(builder, count, keep-clear radius around the arena center)]
+THEMES = {
+    "grass": ((85, 150, 70), "grass", [(p_palm, 20, 200), (p_rock, 30, 80), (p_bush, 30, 60)]),
+    "marine": ((150, 150, 158), "concrete", [(p_wall, 24, 120), (p_cannon, 16, 100), (p_marine_flag, 10, 150), (p_crate, 24, 60)]),
+    "town": ((175, 160, 135), "cobble", [(p_house, 22, 160), (p_barrel, 20, 60), (p_crate, 20, 60), (p_lamp, 20, 80)]),
+    "beach": ((230, 210, 150), "sand", [(p_palm, 26, 150), (p_umbrella, 12, 100), (p_rock, 24, 80)]),
+    "ship": ((150, 105, 65), "planks", [(p_mast, 14, 150), (p_barrel, 26, 60), (p_crate, 26, 60), (p_rail, 20, 100)]),
+    "deepsea": ((40, 110, 150), "sand", [(p_coral, 30, 80), (p_seaweed, 40, 60), (p_bubble, 40, 30)]),
+    "snow": ((240, 245, 252), "sand", [(p_pine, 30, 150), (p_ice, 20, 120), (p_rock, 16, 80)]),
+    "desert": ((226, 196, 135), "sand", [(p_cactus, 30, 80), (p_ruin, 14, 150)]),
+    "jungle": ((55, 110, 50), "grass", [(p_big_tree, 26, 180), (p_bush, 40, 60), (p_rock, 16, 80)]),
+    "sky": ((232, 240, 255), "smooth", [(p_cloud, 40, 60), (p_gold_ruin, 16, 150)]),
+    "spooky": ((60, 50, 65), "slate", [(p_dead_tree, 26, 150), (p_grave, 30, 80), (p_pumpkin, 20, 60), (p_wisp, 30, 40)]),
+    "mangrove": ((120, 170, 90), "grass", [(p_root, 12, 200), (p_bubble, 50, 30), (p_bush, 20, 60)]),
+    "prison": ((65, 60, 72), "slate", [(p_bars, 20, 150), (p_block, 24, 80), (p_torch_post, 24, 80)]),
+    "volcano": ((55, 45, 50), "slate", [(p_lava, 45, 30), (p_magma, 8, 120), (p_spike, 26, 200)]),
+    "wano": ((95, 150, 80), "grass", [(p_cherry, 26, 150), (p_lantern, 24, 80), (p_torii, 6, 180)]),
+}
+
+
+def arena(index, key, name, theme):
+    cx, cz = map_center(index)
+    floor_rgb, floor_material, decorations = THEMES[theme]
+    items = [part("Floor", (1000, 2, 1000), (cx, -1, cz), floor_rgb, floor_material)]
+    for builder, count, clear in decorations:
+        for i, (x, z) in enumerate(scatter(cx, cz, int(count * DENSITY), clear)):
+            items.append(builder(f"{builder.__name__[2:].title()}{i}", x, z))
+    return model(f"{index + 1:02d} {name}", items)
+
+
+def arenas():
+    return item("Folder", "Arenas", children=[arena(i, *m) for i, m in enumerate(read_maps())])
 
 
 # --- place ------------------------------------------------------------------
@@ -567,7 +840,7 @@ def build():
     workspace = item(
         "Workspace",
         "Workspace",
-        children=[spawn_island(), east_blue(0, 0), grand_line(-1600, 0), new_world(1600, 0)],
+        children=[spawn_island(), arenas()],
     )
     replicated = item("ReplicatedStorage", "ReplicatedStorage", children=[folder("Shared", "src/shared")])
     server = item("ServerScriptService", "ServerScriptService", children=[folder("Server", "src/server")])

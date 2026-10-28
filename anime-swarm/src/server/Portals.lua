@@ -1,4 +1,4 @@
--- Builds the adventure portals on the spawn island and tracks who is standing on their pads.
+-- Builds the voyage gates on the spawn island and tracks who is standing on their pads.
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local CollectionService = game:GetService("CollectionService")
@@ -6,7 +6,7 @@ local CollectionService = game:GetService("CollectionService")
 local Config = require(RS.Shared.Config)
 
 local Portals = {}
-local built = {} -- [adventureKey] = { pad = Vector3, status = TextLabel }
+local built = {} -- [gateIndex] = { pad = Vector3, status = TextLabel }
 
 local STONE = Color3.fromRGB(70, 72, 88)
 local RING_RADIUS = 7.5
@@ -51,14 +51,13 @@ local function groundY(pos)
 	return hit and hit.Position.Y or pos.Y
 end
 
-local function buildPortal(key, adv, folder)
+local function buildPortal(index, position, color, folder)
 	local model = Instance.new("Model")
-	model.Name = adv.name .. " Portal"
-	local y = groundY(adv.portal)
-	local base = Vector3.new(adv.portal.X, y, adv.portal.Z)
+	model.Name = "Voyage Gate " .. index
+	local y = groundY(position)
+	local base = Vector3.new(position.X, y, position.Z)
 	-- the portal's front (-Z) faces the spawn point
 	local cf = CFrame.lookAt(base, Vector3.new(Config.ISLAND_CENTER.X, y, Config.ISLAND_CENTER.Z))
-	local color = adv.color
 	local ringCenter = cf * CFrame.new(0, 10, 0)
 
 	makePart({
@@ -146,7 +145,7 @@ local function buildPortal(key, adv, folder)
 	plate.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
 	plate.PixelsPerStud = 40
 	plate.Parent = arch
-	label(plate, { Size = UDim2.fromScale(1, 1), Text = adv.name:upper(), TextColor3 = color })
+	label(plate, { Size = UDim2.fromScale(1, 1), Text = "VOYAGE GATE " .. index, TextColor3 = color })
 
 	-- floating info: difficulty, description, live status
 	local anchor = makePart({ Name = "Info", Transparency = 1, CanCollide = false, CanQuery = false, Size = Vector3.one, CFrame = cf * CFrame.new(0, 28, 0) }, model)
@@ -154,30 +153,29 @@ local function buildPortal(key, adv, folder)
 	board.Size = UDim2.fromOffset(320, 96)
 	board.MaxDistance = 220
 	board.Parent = anchor
-	local stars = string.rep("★", adv.stars)
-	label(board, { Size = UDim2.new(1, 0, 0.38, 0), Text = stars .. "  " .. adv.difficulty:upper() .. "  " .. stars, TextColor3 = Color3.fromRGB(255, 215, 80) })
-	label(board, { Size = UDim2.new(1, 0, 0.27, 0), Position = UDim2.fromScale(0, 0.4), Font = Enum.Font.FredokaOne, Text = adv.desc })
+	label(board, { Size = UDim2.new(1, 0, 0.38, 0), Text = "★ ADVENTURE ★", TextColor3 = Color3.fromRGB(255, 215, 80) })
+	label(board, { Size = UDim2.new(1, 0, 0.27, 0), Position = UDim2.fromScale(0, 0.4), Font = Enum.Font.FredokaOne, Text = "Step in to pick a map and difficulty" })
 	local status = label(board, {
 		Size = UDim2.new(1, 0, 0.3, 0), Position = UDim2.fromScale(0, 0.7),
 		Font = Enum.Font.FredokaOne, Text = "Step in to set sail!", TextColor3 = color,
 	})
 
 	model.Parent = folder
-	built[key] = { pad = padCF.Position, status = status }
+	built[index] = { pad = padCF.Position, status = status }
 end
 
 function Portals.build()
 	local folder = Instance.new("Folder")
 	folder.Name = "Portals"
 	folder.Parent = workspace
-	for _, key in Config.ADVENTURE_ORDER do
-		buildPortal(key, Config.Adventures[key], folder)
+	for index, position in Config.GATES do
+		buildPortal(index, position, Config.GATE_COLORS[index], folder)
 	end
 end
 
 -- Living players whose character stands on the portal's pad.
-function Portals.playersInside(key)
-	local portal = built[key]
+function Portals.playersInside(index)
+	local portal = built[index]
 	local inside = {}
 	if not portal then
 		return inside
@@ -196,8 +194,8 @@ function Portals.playersInside(key)
 	return inside
 end
 
-function Portals.setStatus(key, text)
-	local portal = built[key]
+function Portals.setStatus(index, text)
+	local portal = built[index]
 	if portal and portal.status.Text ~= text then
 		portal.status.Text = text
 	end

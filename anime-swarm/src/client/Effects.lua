@@ -556,12 +556,59 @@ end
 
 function handlers.anim(_ev) end -- the animation itself is played in Effects.play
 
+-- Enemy attacks -------------------------------------------------------------------
+
+-- A red warning circle on the ground: the blast lands when it fills up. Get out!
+function handlers.warn(ev)
+	local ground = groundAt(ev.pos) + Vector3.new(0, 0.15, 0)
+	local size = ev.r * 2
+	local ring = part({
+		Shape = Enum.PartType.Cylinder, Color = Color3.fromRGB(255, 40, 40), Transparency = 0.55,
+		Size = Vector3.new(0.15, size, size), CFrame = CFrame.new(ground) * UPRIGHT,
+	})
+	local fill = part({
+		Shape = Enum.PartType.Cylinder, Color = Color3.fromRGB(255, 130, 60), Transparency = 0.3,
+		Size = Vector3.new(0.2, 0.5, 0.5), CFrame = ring.CFrame,
+	})
+	tween(fill, ev.t, { Size = Vector3.new(0.2, size, size) }, Enum.EasingStyle.Linear)
+	Debris:AddItem(ring, ev.t)
+	Debris:AddItem(fill, ev.t)
+end
+
+function handlers.slam(ev)
+	local ground = groundAt(ev.pos)
+	local center = ground + Vector3.new(0, 1, 0)
+	shockwave(ground + Vector3.new(0, 0.3, 0), ev.r * 1.2, ev.c, 0.35)
+	local sphere = part({ Shape = Enum.PartType.Ball, Color = ev.c, Transparency = 0.2, Size = Vector3.one * 2, Position = center })
+	fadeOut(sphere, 0.3, { Size = Vector3.one * ev.r * 2 })
+	burst(center, ev.c, 16, { texture = TEX_FIRE, size = 2.5, speed = ev.r * 2, life = 0.4 })
+	burst(center, Color3.fromRGB(90, 90, 90), 8, { texture = TEX_SMOKE, size = 3, speed = ev.r, life = 0.6, gravity = Vector3.new(0, 6, 0) })
+end
+
+-- Marine rifle bullets. The server says when each one hits or runs out ("eshotEnd").
+local enemyShots = {}
+
+function handlers.eshot(ev)
+	local bullet = part({ Shape = Enum.PartType.Ball, Color = Color3.fromRGB(255, 230, 120), Size = Vector3.one * 0.7, Position = ev.o })
+	addTrail(bullet, Color3.fromRGB(255, 190, 80), 0.4, 0.15)
+	enemyShots[ev.id] = { part = bullet, pos = ev.o, dir = ev.d, left = ev.len, speed = ev.speed }
+	Debris:AddItem(bullet, ev.len / ev.speed + 0.5)
+end
+
+function handlers.eshotEnd(ev)
+	local shot = enemyShots[ev.id]
+	if shot then
+		shot.part:Destroy()
+		enemyShots[ev.id] = nil
+	end
+end
+
 -- Per-frame updates -------------------------------------------------------------
 
-RunService.RenderStepped:Connect(function(dt)
-	for id, shot in shots do
+local function moveShots(list, dt)
+	for id, shot in list do
 		if not shot.part.Parent then
-			shots[id] = nil
+			list[id] = nil
 		elseif shot.left > 0 then
 			local move = math.min(shot.left, shot.speed * dt)
 			shot.pos += shot.dir * move
@@ -569,6 +616,11 @@ RunService.RenderStepped:Connect(function(dt)
 			shot.part.Position = shot.pos
 		end
 	end
+end
+
+RunService.RenderStepped:Connect(function(dt)
+	moveShots(shots, dt)
+	moveShots(enemyShots, dt)
 
 	local now = workspace:GetServerTimeNow()
 	for player, mine in orbits do
@@ -614,10 +666,12 @@ function Effects.clear()
 	for player in orbits do
 		clearOrbits(player)
 	end
-	for _, shot in shots do
-		shot.part:Destroy()
+	for _, list in { shots, enemyShots } do
+		for _, shot in list do
+			shot.part:Destroy()
+		end
+		table.clear(list)
 	end
-	table.clear(shots)
 end
 
 return Effects

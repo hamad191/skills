@@ -1,4 +1,4 @@
--- Enemy spawning, chasing, damage, and XP orbs.
+-- Enemy spawning, movement, attacks (melee, rifle shots, telegraphed blasts), damage, and XP orbs.
 -- Enemies are anchored parts moved by the server: cheap enough for big swarms.
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
@@ -10,7 +10,12 @@ local Enemies = {}
 Enemies.onKilled = function(_enemy, _killer) end
 Enemies.onPickup = function(_player, _xp) end
 
-local list, orbs = {}, {}
+local list, orbs, bullets = {}, {}, {}
+local nextBulletId = 0
+local lastTargets = {} -- targets from the latest step, used when delayed blasts land
+local NO_TARGETS = {}
+local BULLET_SPEED = 45
+local BLAST_COLOR = Color3.fromRGB(255, 80, 40)
 
 local folder = Instance.new("Folder")
 folder.Name = "Enemies"
@@ -112,8 +117,8 @@ local function flash(e)
 	task.delay(0.07, function()
 		e.flashing = false
 		if not e.dead then
-			e.root.Color = e.def.color
-			e.head.Color = e.def.skin
+			e.root.Color = e.color
+			e.head.Color = e.skin
 		end
 	end)
 end
@@ -134,48 +139,133 @@ local BODY = {
 }
 local LEG_DEPTH = 2.6 -- torso center to the soles of the feet
 
+-- What enemies carry: same format as BODY, plus an optional rotation. Colors here are fixed.
+local STEEL = Color3.fromRGB(210, 215, 225)
+local GUNMETAL = Color3.fromRGB(45, 45, 50)
+local GEAR = {
+	sword = {
+		{ "Blade", Vector3.new(0.12, 0.3, 3), Vector3.new(1.45, -1.25, -1.6), STEEL },
+		{ "Guard", Vector3.new(0.6, 0.15, 0.15), Vector3.new(1.45, -1.25, -0.1), Color3.fromRGB(200, 170, 60) },
+	},
+	rifle = {
+		{ "Rifle", Vector3.new(0.35, 0.45, 3.4), Vector3.new(0.9, -0.5, -1.4), GUNMETAL },
+		{ "Stock", Vector3.new(0.4, 0.7, 0.9), Vector3.new(0.9, -0.6, 0.2), Color3.fromRGB(110, 70, 40) },
+	},
+	cannon = {
+		{ "Cannon", Vector3.new(3.2, 1.1, 1.1), Vector3.new(1.2, 1.2, -0.4), GUNMETAL, Enum.PartType.Cylinder, CFrame.Angles(0, math.pi / 2, 0) },
+	},
+	coat = {
+		{ "Coat", Vector3.new(2.4, 2.8, 0.2), Vector3.new(0, -0.5, 0.62), Color3.fromRGB(250, 250, 250) },
+		{ "EpauletL", Vector3.new(0.9, 0.25, 1.1), Vector3.new(-1.3, 0.95, 0), Color3.fromRGB(230, 190, 60) },
+		{ "EpauletR", Vector3.new(0.9, 0.25, 1.1), Vector3.new(1.3, 0.95, 0), Color3.fromRGB(230, 190, 60) },
+	},
+}
+
 -- runKey: which adventure this enemy belongs to; it only chases that crew.
-function Enemies.spawn(kind, x, z, hpScale, dmgScale, runKey)
+-- look (optional): { name, color, accent } to dress up a named boss.
+function Enemies.spawn(kind, x, z, hpScale, dmgScale, runKey, look)
 	local def = Config.Enemies[kind]
 	local y = groundY(x, z)
 	if not y then
 		return nil
 	end
+	look = look or {}
+	local colors = { color = look.color or def.color, accent = look.accent or def.accent, skin = def.skin, eyes = def.eyes }
+	local name = look.name or def.name
 	local s = def.scale
 	local model = Instance.new("Model")
-	model.Name = def.name
-	local torso = makePart({ Name = "Torso", Size = Vector3.new(2, 2, 1) * s, Color = def.color }, model)
+	model.Name = name
+	local torso = makePart({ Name = "Torso", Size = Vector3.new(2, 2, 1) * s, Color = colors.color }, model)
 	torso.CFrame = CFrame.new(x, y + LEG_DEPTH * s, z)
 	local parts = { Torso = torso }
-	for _, b in BODY do
-		local name, size, offset, colorKey, shape = b[1], b[2], b[3], b[4], b[5]
-		local color = def[colorKey] or Color3.fromRGB(20, 20, 20)
-		local p = makePart({ Name = name, Size = size * s, Color = color, Shape = shape or Enum.PartType.Block }, nil)
-		if colorKey == "eyes" and def.eyes then
-			p.Material = Enum.Material.Neon
-		end
+	local function attach(pieceName, size, offset, color, shape, rotation)
+		local p = makePart({ Name = pieceName, Size = size * s, Color = color, Shape = shape or Enum.PartType.Block }, nil)
 		p.Anchored, p.Massless = false, true
-		p.CFrame = torso.CFrame * CFrame.new(offset * s)
+		p.CFrame = torso.CFrame * CFrame.new(offset * s) * (rotation or CFrame.identity)
 		local weld = Instance.new("WeldConstraint")
 		weld.Part0, weld.Part1 = torso, p
 		weld.Parent = p
 		p.Parent = model
-		parts[name] = p
+		parts[pieceName] = p
+		return p
+	end
+	for _, b in BODY do
+		local p = attach(b[1], b[2], b[3], colors[b[4]] or Color3.fromRGB(20, 20, 20), b[5])
+		if b[4] == "eyes" and def.eyes then
+			p.Material = Enum.Material.Neon
+		end
+	end
+	for _, g in GEAR[def.gear] or {} do
+		attach(g[1], g[2], g[3], g[4], g[5], g[6])
 	end
 	model.PrimaryPart = torso
 	model.Parent = folder
 
 	local hp = def.hp * hpScale
+	local now = os.clock()
 	local e = {
 		model = model, root = torso, head = parts.Head, def = def, kind = kind, run = runKey,
+		color = colors.color, skin = colors.skin, name = name,
 		hp = hp, maxHp = hp, damage = def.damage * dmgScale,
 		radius = 1.2 * s, lastHit = 0, phase = math.random() * 10,
+		nextAttack = now + math.random() * (def.fireRate or 1) + 1,
+		nextSlam = now + (def.slamEvery or 0), nextRing = now + (def.ringEvery or 0),
 	}
 	if def.healthBar then
-		e.bar = makeBar(torso, s, def.name)
+		e.bar = makeBar(torso, s, name)
 	end
 	table.insert(list, e)
 	return e
+end
+
+-- A telegraphed blast: players see a red circle, then everyone still inside gets hit.
+local function blast(e, pos, radius, damage, delay)
+	Fx.emit("warn", { pos = pos, r = radius, t = delay })
+	local runKey = e.run
+	task.delay(delay, function()
+		for _, t in lastTargets[runKey] or NO_TARGETS do
+			if t.hum.Health > 0 and flat(t.root.Position - pos).Magnitude <= radius then
+				t.hum:TakeDamage(damage)
+			end
+		end
+		Fx.emit("slam", { pos = pos, r = radius, c = BLAST_COLOR })
+	end)
+end
+
+-- A rifle bullet flying flat toward the target.
+local function shoot(e, target)
+	nextBulletId += 1
+	local from = e.root.Position
+	local dir = flat(target.root.Position - from)
+	dir = dir.Magnitude > 0.1 and dir.Unit or Vector3.new(0, 0, -1)
+	local range = e.def.range * 1.6
+	table.insert(bullets, { id = nextBulletId, pos = from, dir = dir, left = range, damage = e.damage, run = e.run })
+	Fx.emit("eshot", { id = nextBulletId, o = from, d = dir, speed = BULLET_SPEED, len = range })
+end
+
+-- Ranged and boss attacks. Melee hits happen in Enemies.step.
+local function specialAttacks(e, target, dist, targets, now)
+	local def = e.def
+	if def.ai == "ranged" and dist <= def.range and now >= e.nextAttack then
+		e.nextAttack = now + def.fireRate
+		shoot(e, target)
+	elseif def.ai == "artillery" and dist <= def.range and now >= e.nextAttack then
+		e.nextAttack = now + def.fireRate
+		blast(e, target.root.Position, def.blast, e.damage, 1.4)
+	elseif def.ai == "boss" then
+		if now >= e.nextSlam then
+			e.nextSlam = now + def.slamEvery
+			local victim = targets[math.random(#targets)]
+			blast(e, victim.root.Position, def.blast, e.damage * 1.5, 1.2)
+		end
+		if def.ringEvery and now >= e.nextRing then
+			e.nextRing = now + def.ringEvery
+			for k = 1, 6 do
+				local a = k * math.pi / 3
+				blast(e, e.root.Position + Vector3.new(math.cos(a) * 14, 0, math.sin(a) * 14), 7, e.damage, 1.5)
+			end
+		end
+	end
 end
 
 function Enemies.damage(e, amount, player)
@@ -194,16 +284,15 @@ function Enemies.damage(e, amount, player)
 	if e.def.xp > 0 then
 		dropOrb(e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale - 0.8, 0), e.def.xp, e.run)
 	end
-	Fx.emit("death", { pos = e.root.Position, c = e.def.color, s = e.def.scale })
+	Fx.emit("death", { pos = e.root.Position, c = e.color, s = e.def.scale })
 	Enemies.onKilled(e, player)
 	e.model:Destroy()
 end
 
-local NO_TARGETS = {}
-
 -- targetsByRun: [runKey] = array of { player, root, hum, magnet }
 function Enemies.step(dt, targetsByRun)
 	local now = os.clock()
+	lastTargets = targetsByRun
 	for i = #list, 1, -1 do
 		local e = list[i]
 		if e.dead then
@@ -221,15 +310,40 @@ function Enemies.step(dt, targetsByRun)
 			local pos = e.root.Position
 			local to = flat(best.root.Position - pos)
 			local reach = e.radius + 2
-			if bestDist > reach then
-				local newPos = pos + to.Unit * math.min(e.def.speed * dt, bestDist - reach)
+			-- shooters stop at a distance; everyone else walks right up
+			local stopAt = (e.def.ai == "ranged" or e.def.ai == "artillery") and e.def.range * 0.8 or reach
+			if bestDist > stopAt then
+				local newPos = pos + to.Unit * math.min(e.def.speed * dt, bestDist - stopAt)
 				-- waddle side to side while walking
 				local sway = math.sin(now * 9 + e.phase) * 0.12
 				e.root.CFrame = CFrame.lookAt(newPos, newPos + to) * CFrame.Angles(0, 0, sway)
-			elseif now - e.lastHit >= 1 then
+			end
+			if bestDist <= reach and now - e.lastHit >= 1 then
 				e.lastHit = now
 				best.hum:TakeDamage(e.damage)
 			end
+			specialAttacks(e, best, bestDist, targetsByRun[e.run], now)
+		end
+	end
+
+	for i = #bullets, 1, -1 do
+		local b = bullets[i]
+		local move = BULLET_SPEED * dt
+		b.pos += b.dir * move
+		b.left -= move
+		local hit
+		for _, t in targetsByRun[b.run] or NO_TARGETS do
+			if flat(t.root.Position - b.pos).Magnitude <= 2.2 then
+				hit = t
+				break
+			end
+		end
+		if hit then
+			hit.hum:TakeDamage(b.damage)
+		end
+		if hit or b.left <= 0 then
+			Fx.emit("eshotEnd", { id = b.id })
+			table.remove(bullets, i)
 		end
 	end
 
@@ -314,8 +428,14 @@ function Enemies.count(runKey)
 	return n
 end
 
--- Removes one adventure's enemies and XP orbs.
+-- Removes one adventure's enemies, bullets and XP orbs.
 function Enemies.clear(runKey)
+	for i = #bullets, 1, -1 do
+		if bullets[i].run == runKey then
+			Fx.emit("eshotEnd", { id = bullets[i].id })
+			table.remove(bullets, i)
+		end
+	end
 	for i = #list, 1, -1 do
 		local e = list[i]
 		if e.run == runKey then
