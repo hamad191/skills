@@ -26,7 +26,7 @@ local remoteFolder = Instance.new("Folder")
 remoteFolder.Name = "Remotes"
 for _, name in {
 	"State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results", "Fx", "Portal",
-	"Announce", "Voyage", "Dash", "Leave", "Revive", "Train", "Gear",
+	"Announce", "Voyage", "Dash", "Leave", "Revive", "Train", "Gear", "UnlockClass",
 } do
 	local r = Instance.new("RemoteEvent")
 	r.Name = name
@@ -49,8 +49,10 @@ for i in Config.GATES do
 	gates[i] = {}
 end
 
+-- The class a player plays: their pick, if they have unlocked it, else the Marine.
 local function classOf(player)
-	return selectedClass[player] or Config.DEFAULT_CLASS
+	local pick = selectedClass[player]
+	return pick and PlayerData.hasClass(player, pick) and pick or Config.DEFAULT_CLASS
 end
 
 local function sendMeta(player)
@@ -69,6 +71,7 @@ local function sendMeta(player)
 	remotes.Meta:FireClient(player, {
 		gold = data.gold, levels = data.meta, costs = costs, progress = data.progress, class = classOf(player),
 		mastery = data.mastery, training = data.training, items = data.items, equipped = data.equipped,
+		gearLevels = data.gearLevels, gearCopies = data.gearCopies, classes = data.classes,
 		revives = data.revives, boosts = boosts, passes = Monetization.ownedList(player),
 		dashCooldown = Monetization.dashCooldown(player), loadFailed = data.loadFailed == true,
 	})
@@ -222,18 +225,15 @@ end)
 
 -- Rewards ---------------------------------------------------------------------------------
 
--- Picks a free gear drop for a victory, or nil. Owning it already turns it into gold.
-local function rollDrop(difficulty)
-	local drops = Config.DROPS[difficulty]
-	if math.random() > drops.chance then
-		return nil
-	end
+-- A random gear item, its rarity rolled with a difficulty's drop weights.
+local function rollItem(difficulty)
+	local weights = Config.DROPS[difficulty].weights
 	local total = 0
-	for _, weight in drops.weights do
+	for _, weight in weights do
 		total += weight
 	end
 	local roll, rarity = math.random() * total, "Common"
-	for name, weight in drops.weights do
+	for name, weight in weights do
 		roll -= weight
 		if roll <= 0 then
 			rarity = name
@@ -247,6 +247,43 @@ local function rollDrop(difficulty)
 		end
 	end
 	return pool[math.random(#pool)]
+end
+
+-- Gives a player a dropped item. New items are kept; owned ones become a spare copy for
+-- upgrading (or gold once they have enough copies). Returns what to show them.
+local function giveItem(player, item)
+	local outcome = PlayerData.grantItem(player, item.id)
+	local data = PlayerData.get(player)
+	local drop = { name = item.name, icon = item.icon, rarity = item.rarity, outcome = outcome }
+	if outcome == "gold" and data then
+		drop.gold = Config.DUPLICATE_GOLD[item.rarity]
+		data.gold += drop.gold
+	end
+	return drop
+end
+
+local function dropText(drop)
+	if drop.outcome == "new" then
+		return string.format("🎁 New gear: %s %s (%s)", drop.icon, drop.name, drop.rarity)
+	elseif drop.outcome == "copy" then
+		return string.format("🎁 Spare %s %s - use it to upgrade at Tom's", drop.icon, drop.name)
+	end
+	return string.format("🎁 %s %s (maxed) - +%s gold", drop.icon, drop.name, drop.gold or 0)
+end
+
+-- A treasure chest gives every crew member a gear roll: a Vice Admiral's follows the
+-- difficulty, an elite Marine's is one step lower.
+Enemies.onChest = function(runKey, kind, opener)
+	local run = runs[runKey]
+	if not run then
+		return
+	end
+	local tier = kind == "MiniBoss" and run.difficulty or math.max(1, run.difficulty - 1)
+	for player in run.players do
+		local drop = giveItem(player, rollItem(tier))
+		local who = player == opener and "" or opener.DisplayName .. " opened a chest!  "
+		remotes.Announce:FireClient(player, who .. dropText(drop), Config.RARITIES[drop.rarity])
+	end
 end
 
 -- What a first clear of this map + difficulty opens up.
@@ -276,14 +313,8 @@ local function reward(player, run, result)
 		if PlayerData.recordClear(player, map.key, run.difficulty) then
 			unlocked = unlockMessage(map, run.difficulty)
 		end
-		local item = rollDrop(run.difficulty)
-		if item then
-			if PlayerData.grantItem(player, item.id) then
-				drop = { name = item.name, icon = item.icon, rarity = item.rarity }
-			else
-				gold += Config.DUPLICATE_GOLD[item.rarity]
-				drop = { name = item.name, icon = item.icon, rarity = item.rarity, duplicate = Config.DUPLICATE_GOLD[item.rarity] }
-			end
+		if math.random() < Config.DROPS[run.difficulty].chance then
+			drop = dropText(giveItem(player, rollItem(run.difficulty)))
 		end
 	end
 	data.gold += gold
@@ -513,11 +544,21 @@ remotes.Choose.OnServerEvent:Connect(function(player, index)
 end)
 remotes.Reroll.OnServerEvent:Connect(Progression.reroll)
 remotes.Meta.OnServerEvent:Connect(sendMeta)
+local function selectClass(player, name)
+	selectedClass[player] = name
+	Gear.apply(player.Character, name)
+	sendMeta(player)
+end
 remotes.SelectClass.OnServerEvent:Connect(function(player, name)
-	if not runOf[player] and typeof(name) == "string" and Config.Classes[name] then
-		selectedClass[player] = name
-		Gear.apply(player.Character, name)
-		sendMeta(player)
+	if not runOf[player] and typeof(name) == "string" and PlayerData.hasClass(player, name) then
+		selectClass(player, name)
+	end
+end)
+-- Pirates are bought with gold; buying one also picks it.
+remotes.UnlockClass.OnServerEvent:Connect(function(player, name)
+	if not runOf[player] and typeof(name) == "string" and PlayerData.unlockClass(player, name) then
+		task.spawn(PlayerData.save, player)
+		selectClass(player, name)
 	end
 end)
 remotes.BuyMeta.OnServerEvent:Connect(function(player, name)
@@ -534,7 +575,9 @@ remotes.Gear.OnServerEvent:Connect(function(player, action, id)
 	if runOf[player] or typeof(action) ~= "string" or typeof(id) ~= "string" then
 		return
 	end
-	local changed = action == "buy" and PlayerData.buyGear(player, id) or action == "equip" and PlayerData.equipGear(player, id)
+	local changed = action == "buy" and PlayerData.buyGear(player, id)
+		or action == "equip" and PlayerData.equipGear(player, id)
+		or action == "upgrade" and PlayerData.upgradeGear(player, id)
 	if changed then
 		sendMeta(player)
 	end

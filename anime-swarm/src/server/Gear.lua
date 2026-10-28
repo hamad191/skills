@@ -68,6 +68,10 @@ local function join(...)
 end
 
 local GEAR = {
+	Marine = join(hat(rgb(245, 245, 250), rgb(245, 245, 250), rgb(30, 60, 140), 0.6), {
+		{ "UpperTorso", Vector3.new(2.3, 3, 0.15), CFrame.new(0, -0.4, 0.6), rgb(250, 250, 252), nil, FABRIC },
+		{ "UpperTorso", Vector3.new(0.9, 0.9, 0.06), CFrame.new(0, -0.3, 0.69), rgb(40, 70, 150) },
+	}),
 	Luffy = hat(rgb(240, 210, 110), rgb(240, 210, 110), rgb(200, 30, 30)),
 	Zoro = join(sword("RightHand", BLACK, 3.4), {
 		sheath(-1.05, rgb(240, 240, 240), 55),

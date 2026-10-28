@@ -121,6 +121,10 @@ local function buildCrew()
 		end
 
 		local selected = Theme.chip({ Size = UDim2.fromOffset(92, 22), Position = UDim2.fromOffset(10, 10), Text = "✓ SELECTED", Visible = false, ZIndex = 15, MaxSize = 11 }, card, Theme.GOLD)
+		local lock = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.BG, BackgroundTransparency = 0.35, ZIndex = 16, Visible = false }, card)
+		Theme.corner(lock, 16)
+		Theme.text({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 40), Text = "🔒", ZIndex = 17 }, lock)
+		local price = Theme.chip({ Size = UDim2.new(1, -30, 0, 30), Position = UDim2.new(0, 15, 0, 96), Text = "", ZIndex = 17, MaxSize = 14, BackgroundTransparency = 0.15 }, lock, Theme.GOLD)
 		card.MouseEnter:Connect(function()
 			Lobby.showSkills(name)
 		end)
@@ -128,9 +132,13 @@ local function buildCrew()
 			Lobby.showSkills(meta.class)
 		end)
 		card.Activated:Connect(function()
-			callbacks.selectClass(name)
+			if (meta.classes or {})[name] then
+				callbacks.selectClass(name)
+			elseif meta.gold >= class.cost then
+				callbacks.unlockClass(name)
+			end
 		end)
-		classCards[name] = { stroke = stroke, selected = selected, color = class.color }
+		classCards[name] = { stroke = stroke, selected = selected, color = class.color, lock = lock, price = price, cost = class.cost }
 	end
 end
 
@@ -311,7 +319,7 @@ end
 local gearTab = "weapon"
 
 local function buildGear()
-	local frame = panel("Gear", 840, 640, "GEAR", "Equip one weapon, one outfit and one charm. Mythic gear only drops from bosses.")
+	local frame = panel("Gear", 840, 640, "GEAR", "One weapon, outfit and charm. Drops give spare copies: upgrade with a copy + gold.")
 	ui.equippedCards = {}
 	for i, slot in Config.GEAR_SLOTS do
 		local card = Theme.card({ Size = UDim2.fromOffset(256, 80), Position = UDim2.fromOffset(28 + (i - 1) * 268, 88), ZIndex = 11 }, frame)
@@ -341,7 +349,9 @@ function Lobby.refreshGear()
 		card.icon.Text = item and item.icon or Config.GEAR_SLOT_ICONS[slot]
 		card.tile.BackgroundColor3 = item and Config.RARITIES[item.rarity] or Theme.CARD_LIGHT
 		card.name.Text = item and item.name or "No " .. Config.GEAR_SLOT_NAMES[slot]:lower()
-		card.stats.Text = item and Config.describeBonus(item.bonus) or "Pick one below"
+		local level = item and (meta.gearLevels or {})[item.id] or 0
+		card.name.Text = item and item.name .. (level > 0 and "  +" .. level or "") or card.name.Text
+		card.stats.Text = item and Config.describeBonus(Config.gearStats(item, level)) or "Pick one below"
 	end
 	for slot, button in ui.gearTabs do
 		button.BackgroundColor3 = slot == gearTab and Theme.ACCENT or Theme.CARD_LIGHT
@@ -358,23 +368,43 @@ function Lobby.refreshGear()
 			local color = Config.RARITIES[item.rarity]
 			local row = Theme.card({ Size = UDim2.new(1, -12, 0, 72), LayoutOrder = order, ZIndex = 12 }, ui.gearList)
 			Theme.icon({ Size = UDim2.fromOffset(50, 50), Position = UDim2.fromOffset(11, 11), ZIndex = 13 }, row, item.icon, color, 14)
-			Theme.title({ Size = UDim2.new(0, 260, 0, 22), Position = UDim2.fromOffset(74, 12), Text = item.name, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 18 }, row)
+			local owned = items[item.id] == true
+			local level = (meta.gearLevels or {})[item.id] or 0
+			local copies = (meta.gearCopies or {})[item.id] or 0
+			Theme.title({ Size = UDim2.new(0, 260, 0, 22), Position = UDim2.fromOffset(74, 12), Text = item.name .. (level > 0 and "  +" .. level or ""), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 18 }, row)
 			Theme.chip({ Size = UDim2.fromOffset(96, 20), Position = UDim2.fromOffset(74, 40), Text = item.rarity:upper(), ZIndex = 13, MaxSize = 11 }, row, color)
-			Theme.text({ Size = UDim2.new(0, 280, 0, 34), Position = UDim2.fromOffset(180, 34), Text = Config.describeBonus(item.bonus), TextWrapped = true, TextColor3 = Theme.MUTED, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 13 }, row)
+			Theme.text({
+				Size = UDim2.new(0, 230, 0, 34), Position = UDim2.fromOffset(178, 34), TextWrapped = true, TextColor3 = Theme.MUTED,
+				Text = Config.describeBonus(Config.gearStats(item, level)) .. (owned and string.format("\nSpare copies: %d", copies) or ""),
+				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 12,
+			}, row)
 			local text, color2, action
 			if equipped[item.slot] == item.id then
 				text, color2, action = "✓ EQUIPPED", Theme.ACCENT, "equip"
-			elseif items[item.id] then
+			elseif owned then
 				text, color2, action = "EQUIP", Theme.GOOD, "equip"
 			elseif item.cost > 0 then
 				text, color2, action = "💰 " .. Theme.comma(item.cost), meta.gold >= item.cost and Theme.GOOD or Color3.fromRGB(150, 60, 70), "buy"
 			else
 				text, color2 = "☠️ BOSS DROP", Theme.LOCKED
 			end
-			Theme.button({ Size = UDim2.fromOffset(150, 44), Position = UDim2.new(1, -162, 0.5, -22), Text = text, BackgroundColor3 = color2, ZIndex = 13 }, row,
+			Theme.button({ Size = UDim2.fromOffset(118, 44), Position = UDim2.new(1, -130, 0.5, -22), Text = text, BackgroundColor3 = color2, ZIndex = 13 }, row,
 				action and function()
 					callbacks.gear(action, item.id)
 				end or nil)
+			if owned then
+				-- upgrading costs one spare copy (from drops) plus gold
+				local cost = Config.gearUpgradeCost(item, level)
+				local maxed = level >= Config.GEAR_UPGRADE.max
+				local ready = not maxed and copies >= 1 and meta.gold >= cost
+				Theme.button({
+					Size = UDim2.fromOffset(136, 44), Position = UDim2.new(1, -274, 0.5, -22),
+					Text = maxed and "MAX +10" or copies < 1 and "⬆ NEED A COPY" or "⬆ 💰 " .. Theme.comma(cost),
+					BackgroundColor3 = ready and Color3.fromRGB(230, 150, 40) or Theme.LOCKED, ZIndex = 13,
+				}, row, ready and function()
+					callbacks.gear("upgrade", item.id)
+				end or nil)
+			end
 		end
 	end
 end
@@ -671,6 +701,10 @@ function Lobby.setMeta(data)
 	ui.playingTile.BackgroundColor3 = class.color
 	for name, card in classCards do
 		local chosen = name == data.class
+		local unlocked = (data.classes or {})[name] == true
+		card.lock.Visible = not unlocked
+		card.price.Text = "💰 " .. Theme.comma(card.cost) .. (data.gold >= card.cost and "  -  UNLOCK" or "")
+		card.price.TextColor3 = data.gold >= card.cost and Theme.GOOD or Theme.GOLD
 		card.selected.Visible = chosen
 		card.stroke.Color = chosen and Theme.GOLD or card.color
 		card.stroke.Thickness = chosen and 3 or 1.5

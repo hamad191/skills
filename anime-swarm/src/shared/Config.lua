@@ -329,6 +329,39 @@ Config.Weapons = {
 		kind = "projectile", damage = 28, cooldown = 2.4, range = 45, radius = 7, color = rgb(150, 255, 180),
 	},
 
+	-- Marine (starter class) -----------------------------------------------------------
+	MarineRifle = {
+		name = "Marine Rifle", desc = "A quick rifle shot through a line of enemies.",
+		fx = "wave", anim = "throw",
+		kind = "line", damage = 14, cooldown = 1.3, range = 40, width = 1.5, count = 1,
+		color = rgb(230, 220, 160), evolveWith = "Power", evolvesInto = "JusticeVolley",
+	},
+	CutlassSlash = {
+		name = "Cutlass Slash", desc = "A wide swing of a Marine cutlass.",
+		fx = "slash", anim = "slash", arcs = 1,
+		kind = "cone", damage = 18, cooldown = 1.5, range = 12, angle = 110, color = rgb(200, 210, 230),
+	},
+	Cannonball = {
+		name = "Cannonball", desc = "Lobs a cannonball that explodes.",
+		fx = "shot", anim = "throw", fire = true,
+		kind = "projectile", damage = 26, cooldown = 2.6, range = 50, radius = 6, color = rgb(90, 90, 100),
+	},
+	Rankyaku = {
+		name = "Rankyaku", desc = "A kick that launches a cutting blade of air.",
+		fx = "wave", anim = "kick",
+		kind = "line", damage = 24, cooldown = 2.2, range = 40, width = 3, count = 1, color = rgb(200, 240, 255),
+	},
+	Shigan = {
+		name = "Shigan", desc = "Finger Pistol strikes that hop between enemies.",
+		fx = "lightning", anim = "punch",
+		kind = "chain", damage = 16, cooldown = 1.8, range = 26, count = 3, color = rgb(240, 240, 255),
+	},
+	BusterCall = {
+		name = "Buster Call", desc = "Warship cannons shell the battlefield.",
+		fx = "strike", anim = "cast",
+		kind = "clones", damage = 34, cooldown = 4, range = 7, count = 2, color = rgb(70, 110, 200),
+	},
+
 	-- Usopp ------------------------------------------------------------------------
 	FireBirdStar = {
 		name = "Fire Bird Star", desc = "A flaming bird shot from Kabuto that explodes.",
@@ -528,6 +561,12 @@ Config.Weapons = {
 	},
 
 	-- Evolutions (cannot be picked directly, always level 1) --------------------------
+	JusticeVolley = {
+		name = "Justice Volley", desc = "A whole Marine squad fires at once.",
+		fx = "wave", anim = "throw",
+		kind = "line", damage = 60, cooldown = 0.9, range = 55, width = 2.5, count = 8,
+		color = rgb(255, 240, 170), evolved = true, from = "MarineRifle",
+	},
 	GumGumGatling = {
 		name = "Gum-Gum Gatling", desc = "A storm of rubber punches in every direction.",
 		fx = "punch", anim = "punch",
@@ -626,6 +665,8 @@ local ICONS = {
 	GumGumGatling = "👊", NineSwordStyle = "⚔️", ZeusTempo = "⛈️", IfritJambe = "🔥", FlameEmperor = "☀️",
 	GigantescoMano = "🙌", MonsterPoint = "🦍", FirebirdBarrage = "🐦", RadicalBeam = "🌟", SoulRequiem = "🎻",
 	VagabondDrill = "🌊", GammaKnife = "🔪", LoveParadise = "💖",
+	MarineRifle = "🔫", CutlassSlash = "🗡️", Cannonball = "💣", Rankyaku = "🌬️", Shigan = "👉", BusterCall = "⚓",
+	JusticeVolley = "🎖️",
 }
 for key, w in Config.Weapons do
 	w.icon = ICONS[key] or "✨"
@@ -646,88 +687,98 @@ Config.Passives = {
 	Armor = { icon = "🛡️", name = "Iron Body", desc = "-6% damage taken", stat = "defense", per = 0.06 },
 }
 
-Config.DEFAULT_CLASS = "Luffy"
+-- Everyone starts as a Marine. Pirates are unlocked with gold in CREW (cost).
+Config.DEFAULT_CLASS = "Marine"
 Config.Classes = {
+	Marine = {
+		icon = "⚓", title = "Marine Recruit", perk = "+10 max HP", color = Color3.fromRGB(50, 90, 170),
+		weapon = "MarineRifle", cost = 0,
+		skills = { "MarineRifle", "CutlassSlash", "Cannonball", "Rankyaku", "Shigan", "BusterCall" },
+		bonus = { health = 10 },
+	},
 	Luffy = {
 		icon = "👒", title = "Straw Hat", perk = "+30 max HP", color = Color3.fromRGB(220, 50, 50),
-		weapon = "GumGumPistol",
+		weapon = "GumGumPistol", cost = 150000,
 		skills = { "GumGumPistol", "GumGumBazooka", "GumGumWhip", "GumGumBalloon", "GumGumElephantGun", "RedHawk" },
 		bonus = { health = 30 },
 	},
 	Zoro = {
 		icon = "⚔️", title = "Pirate Hunter", perk = "+10% damage", color = Color3.fromRGB(60, 190, 90),
-		weapon = "ThreeSwordStyle",
+		weapon = "ThreeSwordStyle", cost = 12000,
 		skills = { "ThreeSwordStyle", "PoundCannon", "OniGiri", "Tatsumaki", "ShishiSonson", "BlackRopeDragon" },
 		bonus = { damage = 0.10 },
 	},
 	Nami = {
 		icon = "🍊", title = "Cat Burglar", perk = "+25% gold", color = Color3.fromRGB(255, 150, 40),
-		weapon = "ThunderTempo",
+		weapon = "ThunderTempo", cost = 6000,
 		skills = { "ThunderTempo", "CycloneTempo", "MirageTempo", "ThunderLance", "WeatherEgg", "BlackBall" },
 		bonus = { gold = 0.25 },
 	},
 	Sanji = {
 		icon = "🦵", title = "Black Leg", perk = "+15% move speed", color = Color3.fromRGB(240, 200, 60),
-		weapon = "DiableJambe",
+		weapon = "DiableJambe", cost = 12000,
 		skills = { "DiableJambe", "Concasse", "PartyTable", "MoutonShot", "PoeleAFrire", "FlambageShot" },
 		bonus = { speed = 0.15 },
 	},
 	Ace = {
 		icon = "🔥", title = "Fire Fist", perk = "+15% area", color = Color3.fromRGB(255, 100, 30),
-		weapon = "FireFist",
+		weapon = "FireFist", cost = 60000,
 		skills = { "FireFist", "FireGun", "Firefly", "FirePillar", "FireFence", "CrossFire" },
 		bonus = { area = 0.15 },
 	},
 	Robin = {
 		icon = "🌸", title = "Devil Child", perk = "-10% cooldowns", color = Color3.fromRGB(150, 90, 220),
-		weapon = "CienFleur",
+		weapon = "CienFleur", cost = 18000,
 		skills = { "CienFleur", "SeisFleur", "MilFleur", "FlowerStorm", "GiganteFleur", "PetalGuard" },
 		bonus = { cooldown = 0.10 },
 	},
 	Chopper = {
 		icon = "🦌", title = "Cotton Candy Lover", perk = "Heals nearby allies", color = Color3.fromRGB(255, 130, 180),
-		weapon = "KungFuPoint",
+		weapon = "KungFuPoint", cost = 8000,
 		skills = { "KungFuPoint", "HeavyGong", "HornPoint", "RumbleBall", "CherryBlossom", "MedicineBomb" },
 		bonus = { heal = 2 },
 	},
 	Usopp = {
 		icon = "🎯", title = "King of Snipers", perk = "+1 reroll each run", color = Color3.fromRGB(200, 160, 70),
-		weapon = "FireBirdStar",
+		weapon = "FireBirdStar", cost = 4000,
 		skills = { "FireBirdStar", "LeadStar", "ExplosiveStar", "TabascoStar", "PopGreen", "ImpactDial" },
 		bonus = { reroll = 1 },
 	},
 	Franky = {
 		icon = "🤖", title = "Cyborg", perk = "+8% damage, +20 max HP", color = Color3.fromRGB(70, 170, 240),
-		weapon = "CoupDeVent",
+		weapon = "CoupDeVent", cost = 25000,
 		skills = { "CoupDeVent", "WeaponsLeft", "StrongRight", "FrankyFireball", "GeneralCannon", "FrankyCenter" },
 		bonus = { damage = 0.08, health = 20 },
 	},
 	Brook = {
 		icon = "💀", title = "Soul King", perk = "+30% pickup range", color = Color3.fromRGB(150, 130, 200),
-		weapon = "YahazuGiri",
+		weapon = "YahazuGiri", cost = 30000,
 		skills = { "YahazuGiri", "FrostBite", "AubadeCoup", "GhostParade", "SoulParade", "IceBurn" },
 		bonus = { magnet = 0.3 },
 	},
 	Jinbe = {
 		icon = "🦈", title = "Knight of the Sea", perk = "+50 max HP", color = Color3.fromRGB(60, 120, 210),
-		weapon = "FishmanKarate",
+		weapon = "FishmanKarate", cost = 40000,
 		skills = { "FishmanKarate", "SharkBrick", "WaterHeart", "FiveThousandTiles", "SharkArrows", "OceanCurrent" },
 		bonus = { health = 50 },
 	},
 	Law = {
 		icon = "🩺", title = "Surgeon of Death", perk = "-8% cooldowns, +8% area", color = Color3.fromRGB(240, 210, 80),
-		weapon = "RoomAmputate",
+		weapon = "RoomAmputate", cost = 80000,
 		skills = { "RoomAmputate", "CounterShock", "Injection", "Shambles", "Mes", "RoomDome" },
 		bonus = { cooldown = 0.08, area = 0.08 },
 	},
 	Hancock = {
 		icon = "🐍", title = "Pirate Empress", perk = "+15% damage", color = Color3.fromRGB(240, 90, 150),
-		weapon = "PerfumeFemur",
+		weapon = "PerfumeFemur", cost = 100000,
 		skills = { "PerfumeFemur", "SlaveArrow", "PistolKiss", "MeroMellow", "Salome", "LoveHearts" },
 		bonus = { damage = 0.15 },
 	},
 }
-Config.CLASS_ORDER = { "Luffy", "Zoro", "Nami", "Sanji", "Ace", "Robin", "Chopper", "Usopp", "Franky", "Brook", "Jinbe", "Law", "Hancock" }
+-- Cheapest first, so CREW reads as a path from Marine recruit to Straw Hat captain.
+Config.CLASS_ORDER = {
+	"Marine", "Usopp", "Nami", "Chopper", "Zoro", "Sanji", "Robin", "Franky", "Brook", "Jinbe", "Ace", "Law", "Hancock", "Luffy",
+}
 
 -- Which character each skill belongs to (filled in from the skill lists above).
 Config.SkillOwner = {}
@@ -804,13 +855,13 @@ Config.SPAWN_TABLE = {
 -- Permanent upgrades bought with gold between runs. Cost = cost * (growth or META_GROWTH) ^ level.
 Config.Meta = {
 	SkillSlot = {
-		icon = "🧩", name = "Skill Slot", desc = "+1 skill slot", stat = "slots", per = 1, max = 5, cost = 300, growth = 1.7,
+		icon = "🧩", name = "Skill Slot", desc = "+1 skill slot", stat = "slots", per = 1, max = 5, cost = 2000, growth = 2,
 	},
-	Might = { icon = "⚔️", name = "Might", desc = "+5% damage", stat = "damage", per = 0.05, max = 10, cost = 100 },
-	Toughness = { icon = "❤️", name = "Toughness", desc = "+10 max HP", stat = "health", per = 10, max = 10, cost = 100 },
-	Greed = { icon = "💰", name = "Greed", desc = "+10% gold", stat = "gold", per = 0.10, max = 10, cost = 150 },
-	Reach = { icon = "🧲", name = "Reach", desc = "+10% pickup range", stat = "magnet", per = 0.10, max = 5, cost = 120 },
-	Reroll = { icon = "🎲", name = "Reroll", desc = "+1 reroll per run", stat = "reroll", per = 1, max = 5, cost = 300 },
+	Might = { icon = "⚔️", name = "Might", desc = "+5% damage", stat = "damage", per = 0.05, max = 10, cost = 400, growth = 1.6 },
+	Toughness = { icon = "❤️", name = "Toughness", desc = "+10 max HP", stat = "health", per = 10, max = 10, cost = 400, growth = 1.6 },
+	Greed = { icon = "💰", name = "Greed", desc = "+10% gold", stat = "gold", per = 0.10, max = 10, cost = 600, growth = 1.7 },
+	Reach = { icon = "🧲", name = "Reach", desc = "+10% pickup range", stat = "magnet", per = 0.10, max = 5, cost = 500, growth = 1.6 },
+	Reroll = { icon = "🎲", name = "Reroll", desc = "+1 reroll per run", stat = "reroll", per = 1, max = 5, cost = 1500, growth = 1.9 },
 }
 Config.META_ORDER = { "SkillSlot", "Might", "Toughness", "Greed", "Reach", "Reroll" }
 Config.META_GROWTH = 1.5
@@ -832,8 +883,8 @@ Config.NPCS = {
 }
 
 -- Island training, paid with gold and kept forever. Rayleigh trains skills, Dr. Kureha passives.
-Config.MASTERY = { max = 10, damage = 0.06, cooldown = 0.02, cost = 200, growth = 1.45 }
-Config.TRAINING = { max = 5, boost = 0.15, cost = 300, growth = 1.6 }
+Config.MASTERY = { max = 10, damage = 0.06, cooldown = 0.02, cost = 600, growth = 1.6 }
+Config.TRAINING = { max = 5, boost = 0.15, cost = 1000, growth = 1.8 }
 
 function Config.trainCost(kind, level)
 	local t = kind == "skill" and Config.MASTERY or Config.TRAINING
@@ -850,23 +901,23 @@ Config.GEAR_SLOTS = { "weapon", "outfit", "charm" }
 Config.GEAR_SLOT_NAMES = { weapon = "Weapon", outfit = "Outfit", charm = "Charm" }
 Config.GEAR_SLOT_ICONS = { weapon = "🗡️", outfit = "🧥", charm = "🧿" }
 Config.GEAR_ITEMS = {
-	{ id = "RustyCutlass", slot = "weapon", name = "Rusty Cutlass", icon = "🗡️", rarity = "Common", cost = 500, bonus = { damage = 0.05 } },
-	{ id = "MarineSaber", slot = "weapon", name = "Marine Saber", icon = "⚔️", rarity = "Rare", cost = 2500, bonus = { damage = 0.10, crit = 0.03 } },
-	{ id = "Kabuto", slot = "weapon", name = "Kabuto", icon = "🎯", rarity = "Epic", cost = 9000, bonus = { area = 0.12, cooldown = 0.06 } },
-	{ id = "WadoIchimonji", slot = "weapon", name = "Wado Ichimonji", icon = "🗡️", rarity = "Epic", cost = 9000, bonus = { damage = 0.15, crit = 0.05 } },
-	{ id = "Shusui", slot = "weapon", name = "Shusui", icon = "⚔️", rarity = "Legendary", cost = 30000, bonus = { damage = 0.22, critDamage = 0.30 } },
+	{ id = "RustyCutlass", slot = "weapon", name = "Rusty Cutlass", icon = "🗡️", rarity = "Common", cost = 1500, bonus = { damage = 0.05 } },
+	{ id = "MarineSaber", slot = "weapon", name = "Marine Saber", icon = "⚔️", rarity = "Rare", cost = 7500, bonus = { damage = 0.10, crit = 0.03 } },
+	{ id = "Kabuto", slot = "weapon", name = "Kabuto", icon = "🎯", rarity = "Epic", cost = 25000, bonus = { area = 0.12, cooldown = 0.06 } },
+	{ id = "WadoIchimonji", slot = "weapon", name = "Wado Ichimonji", icon = "🗡️", rarity = "Epic", cost = 25000, bonus = { damage = 0.15, crit = 0.05 } },
+	{ id = "Shusui", slot = "weapon", name = "Shusui", icon = "⚔️", rarity = "Legendary", cost = 90000, bonus = { damage = 0.22, critDamage = 0.30 } },
 	{ id = "Enma", slot = "weapon", name = "Enma", icon = "🔥", rarity = "Mythic", cost = 0, bonus = { damage = 0.30, crit = 0.08, critDamage = 0.40 } },
-	{ id = "SailorShirt", slot = "outfit", name = "Sailor Shirt", icon = "👕", rarity = "Common", cost = 500, bonus = { health = 20 } },
-	{ id = "MarineCoat", slot = "outfit", name = "Marine Coat", icon = "🧥", rarity = "Rare", cost = 2500, bonus = { health = 40, defense = 0.04 } },
-	{ id = "FrankySpeedo", slot = "outfit", name = "Super Speedo", icon = "🩳", rarity = "Epic", cost = 9000, bonus = { speed = 0.10, regen = 1 } },
-	{ id = "JinbeKimono", slot = "outfit", name = "Jinbe's Kimono", icon = "👘", rarity = "Epic", cost = 9000, bonus = { health = 60, defense = 0.08 } },
-	{ id = "SeastoneArmor", slot = "outfit", name = "Seastone Armor", icon = "🛡️", rarity = "Legendary", cost = 30000, bonus = { health = 100, defense = 0.12 } },
+	{ id = "SailorShirt", slot = "outfit", name = "Sailor Shirt", icon = "👕", rarity = "Common", cost = 1500, bonus = { health = 20 } },
+	{ id = "MarineCoat", slot = "outfit", name = "Marine Coat", icon = "🧥", rarity = "Rare", cost = 7500, bonus = { health = 40, defense = 0.04 } },
+	{ id = "FrankySpeedo", slot = "outfit", name = "Super Speedo", icon = "🩳", rarity = "Epic", cost = 25000, bonus = { speed = 0.10, regen = 1 } },
+	{ id = "JinbeKimono", slot = "outfit", name = "Jinbe's Kimono", icon = "👘", rarity = "Epic", cost = 25000, bonus = { health = 60, defense = 0.08 } },
+	{ id = "SeastoneArmor", slot = "outfit", name = "Seastone Armor", icon = "🛡️", rarity = "Legendary", cost = 90000, bonus = { health = 100, defense = 0.12 } },
 	{ id = "EmperorCloak", slot = "outfit", name = "Emperor's Cloak", icon = "👑", rarity = "Mythic", cost = 0, bonus = { health = 150, defense = 0.15, regen = 2 } },
-	{ id = "LuckyCoin", slot = "charm", name = "Lucky Coin", icon = "🪙", rarity = "Common", cost = 500, bonus = { gold = 0.10 } },
-	{ id = "LogPose", slot = "charm", name = "Log Pose", icon = "🧭", rarity = "Rare", cost = 2500, bonus = { magnet = 0.30, xp = 0.10 } },
-	{ id = "DenDenMushi", slot = "charm", name = "Den Den Mushi", icon = "🐌", rarity = "Epic", cost = 9000, bonus = { cooldown = 0.08, area = 0.08 } },
-	{ id = "EternalPose", slot = "charm", name = "Eternal Pose", icon = "📍", rarity = "Epic", cost = 9000, bonus = { xp = 0.20, cooldown = 0.05 } },
-	{ id = "TreasureMap", slot = "charm", name = "Treasure Map", icon = "🗺️", rarity = "Legendary", cost = 30000, bonus = { gold = 0.30, magnet = 0.40 } },
+	{ id = "LuckyCoin", slot = "charm", name = "Lucky Coin", icon = "🪙", rarity = "Common", cost = 1500, bonus = { gold = 0.10 } },
+	{ id = "LogPose", slot = "charm", name = "Log Pose", icon = "🧭", rarity = "Rare", cost = 7500, bonus = { magnet = 0.30, xp = 0.10 } },
+	{ id = "DenDenMushi", slot = "charm", name = "Den Den Mushi", icon = "🐌", rarity = "Epic", cost = 25000, bonus = { cooldown = 0.08, area = 0.08 } },
+	{ id = "EternalPose", slot = "charm", name = "Eternal Pose", icon = "📍", rarity = "Epic", cost = 25000, bonus = { xp = 0.20, cooldown = 0.05 } },
+	{ id = "TreasureMap", slot = "charm", name = "Treasure Map", icon = "🗺️", rarity = "Legendary", cost = 90000, bonus = { gold = 0.30, magnet = 0.40 } },
 	{ id = "DevilFruit", slot = "charm", name = "Devil Fruit", icon = "🍇", rarity = "Mythic", cost = 0, bonus = { damage = 0.15, cooldown = 0.10, xp = 0.25 } },
 }
 Config.GearById = {}
@@ -883,7 +934,32 @@ Config.DROPS = {
 	{ chance = 0.5, weights = { Rare = 40, Epic = 40, Legendary = 17, Mythic = 3 } },
 	{ chance = 0.6, weights = { Epic = 50, Legendary = 38, Mythic = 12 } },
 }
-Config.DUPLICATE_GOLD = { Common = 250, Rare = 1200, Epic = 4000, Legendary = 12000, Mythic = 25000 }
+-- Getting gear you already own gives a spare copy, used to upgrade it (gold once you have
+-- enough copies to reach +10).
+Config.DUPLICATE_GOLD = { Common = 500, Rare = 2000, Epic = 6000, Legendary = 15000, Mythic = 30000 }
+
+-- Gear upgrades at Tom's: each level costs one duplicate copy of the item plus gold, and adds
+-- 10% of the item's base stats (+10 doubles them).
+Config.GEAR_UPGRADE = {
+	max = 10, per = 0.10, growth = 1.55,
+	cost = { Common = 400, Rare = 1200, Epic = 3500, Legendary = 9000, Mythic = 20000 },
+}
+function Config.gearUpgradeCost(item, level)
+	return math.floor(Config.GEAR_UPGRADE.cost[item.rarity] * Config.GEAR_UPGRADE.growth ^ level)
+end
+-- An item's stats at an upgrade level.
+function Config.gearStats(item, level)
+	local scale = 1 + Config.GEAR_UPGRADE.per * (level or 0)
+	local stats = {}
+	for stat, value in item.bonus do
+		stats[stat] = stat == "health" and math.floor(value * scale) or value * scale
+	end
+	return stats
+end
+
+-- Treasure chests dropped during adventures: chance per enemy kind. Opening one gives every
+-- crew member a gear roll (rarity follows the difficulty, see Config.DROPS).
+Config.CHESTS = { MiniBoss = 1, Captain = 0.04, Agent = 0.04, Brute = 0.03 }
 
 -- How each stat reads in menus, e.g. "+10% damage".
 local STAT_TEXT = {
@@ -910,6 +986,8 @@ end
 
 -- Robux purchases. Create these on the Roblox Creator Dashboard (your experience > Monetization)
 -- and paste their IDs here. Anything left at id = 0 shows as "not set up" and can't be bought.
+-- Prices are set on the dashboard. Suggested: 2x Gold 299, VIP 399, Lucky Pirate 149,
+-- Swift Dash 99; gold packs 49 / 199 / 649; boosts 79 each; Revive 25.
 Config.GAME_PASSES = {
 	DoubleGold = { id = 0, icon = "💰", name = "2x Gold", desc = "Double gold from every adventure, forever." },
 	VIP = { id = 0, icon = "👑", name = "VIP", desc = "+25% XP, +10% damage and a VIP tag.", bonus = { xp = 0.25, damage = 0.10 } },

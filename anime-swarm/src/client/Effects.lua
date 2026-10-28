@@ -578,6 +578,15 @@ function handlers.death(ev)
 	burst(ev.pos, ev.c, 6, { size = 1, speed = 15, life = 0.3 })
 end
 
+-- A treasure chest bursts open: gold sparkles fountain up.
+function handlers.chest(ev)
+	local gold = Color3.fromRGB(255, 205, 60)
+	burst(ev.pos, gold, 24, { size = 1.2, speed = 18, life = 0.6, gravity = Vector3.new(0, -30, 0) })
+	burst(ev.pos, WHITE, 8, { size = 0.8, speed = 10, life = 0.4 })
+	shockwave(groundAt(ev.pos) + Vector3.new(0, 0.2, 0), 6, gold, 0.4)
+	flashLight(ev.pos, gold, 18, 0.6)
+end
+
 function handlers.anim(_ev) end -- the animation itself is played in Effects.play
 
 -- Enemy attacks -------------------------------------------------------------------

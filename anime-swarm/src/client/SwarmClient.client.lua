@@ -138,6 +138,9 @@ for key, product in Config.PRODUCTS do
 			local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, product.id, Enum.InfoType.Product)
 			if ok and info and info.PriceInRobux then
 				Lobby.setPrice("product", key, info.PriceInRobux)
+				if key == "Revive" then
+					Hud.setRevivePrice(info.PriceInRobux)
+				end
 			end
 		end)
 	end
@@ -168,6 +171,9 @@ Hud.init(root, {
 Lobby.init(root, {
 	selectClass = function(name)
 		remotes.SelectClass:FireServer(name)
+	end,
+	unlockClass = function(name)
+		remotes.UnlockClass:FireServer(name)
 	end,
 	buy = function(name)
 		remotes.BuyMeta:FireServer(name)

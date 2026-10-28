@@ -330,6 +330,39 @@ Config.Weapons = {
 		kind = "projectile", damage = 28, cooldown = 2.4, range = 45, radius = 7, color = rgb(150, 255, 180),
 	},
 
+	-- Marine (starter class) -----------------------------------------------------------
+	MarineRifle = {
+		name = "Marine Rifle", desc = "A quick rifle shot through a line of enemies.",
+		fx = "wave", anim = "throw",
+		kind = "line", damage = 14, cooldown = 1.3, range = 40, width = 1.5, count = 1,
+		color = rgb(230, 220, 160), evolveWith = "Power", evolvesInto = "JusticeVolley",
+	},
+	CutlassSlash = {
+		name = "Cutlass Slash", desc = "A wide swing of a Marine cutlass.",
+		fx = "slash", anim = "slash", arcs = 1,
+		kind = "cone", damage = 18, cooldown = 1.5, range = 12, angle = 110, color = rgb(200, 210, 230),
+	},
+	Cannonball = {
+		name = "Cannonball", desc = "Lobs a cannonball that explodes.",
+		fx = "shot", anim = "throw", fire = true,
+		kind = "projectile", damage = 26, cooldown = 2.6, range = 50, radius = 6, color = rgb(90, 90, 100),
+	},
+	Rankyaku = {
+		name = "Rankyaku", desc = "A kick that launches a cutting blade of air.",
+		fx = "wave", anim = "kick",
+		kind = "line", damage = 24, cooldown = 2.2, range = 40, width = 3, count = 1, color = rgb(200, 240, 255),
+	},
+	Shigan = {
+		name = "Shigan", desc = "Finger Pistol strikes that hop between enemies.",
+		fx = "lightning", anim = "punch",
+		kind = "chain", damage = 16, cooldown = 1.8, range = 26, count = 3, color = rgb(240, 240, 255),
+	},
+	BusterCall = {
+		name = "Buster Call", desc = "Warship cannons shell the battlefield.",
+		fx = "strike", anim = "cast",
+		kind = "clones", damage = 34, cooldown = 4, range = 7, count = 2, color = rgb(70, 110, 200),
+	},
+
 	-- Usopp ------------------------------------------------------------------------
 	FireBirdStar = {
 		name = "Fire Bird Star", desc = "A flaming bird shot from Kabuto that explodes.",
@@ -529,6 +562,12 @@ Config.Weapons = {
 	},
 
 	-- Evolutions (cannot be picked directly, always level 1) --------------------------
+	JusticeVolley = {
+		name = "Justice Volley", desc = "A whole Marine squad fires at once.",
+		fx = "wave", anim = "throw",
+		kind = "line", damage = 60, cooldown = 0.9, range = 55, width = 2.5, count = 8,
+		color = rgb(255, 240, 170), evolved = true, from = "MarineRifle",
+	},
 	GumGumGatling = {
 		name = "Gum-Gum Gatling", desc = "A storm of rubber punches in every direction.",
 		fx = "punch", anim = "punch",
@@ -627,6 +666,8 @@ local ICONS = {
 	GumGumGatling = "👊", NineSwordStyle = "⚔️", ZeusTempo = "⛈️", IfritJambe = "🔥", FlameEmperor = "☀️",
 	GigantescoMano = "🙌", MonsterPoint = "🦍", FirebirdBarrage = "🐦", RadicalBeam = "🌟", SoulRequiem = "🎻",
 	VagabondDrill = "🌊", GammaKnife = "🔪", LoveParadise = "💖",
+	MarineRifle = "🔫", CutlassSlash = "🗡️", Cannonball = "💣", Rankyaku = "🌬️", Shigan = "👉", BusterCall = "⚓",
+	JusticeVolley = "🎖️",
 }
 for key, w in Config.Weapons do
 	w.icon = ICONS[key] or "✨"
@@ -647,88 +688,98 @@ Config.Passives = {
 	Armor = { icon = "🛡️", name = "Iron Body", desc = "-6% damage taken", stat = "defense", per = 0.06 },
 }
 
-Config.DEFAULT_CLASS = "Luffy"
+-- Everyone starts as a Marine. Pirates are unlocked with gold in CREW (cost).
+Config.DEFAULT_CLASS = "Marine"
 Config.Classes = {
+	Marine = {
+		icon = "⚓", title = "Marine Recruit", perk = "+10 max HP", color = Color3.fromRGB(50, 90, 170),
+		weapon = "MarineRifle", cost = 0,
+		skills = { "MarineRifle", "CutlassSlash", "Cannonball", "Rankyaku", "Shigan", "BusterCall" },
+		bonus = { health = 10 },
+	},
 	Luffy = {
 		icon = "👒", title = "Straw Hat", perk = "+30 max HP", color = Color3.fromRGB(220, 50, 50),
-		weapon = "GumGumPistol",
+		weapon = "GumGumPistol", cost = 150000,
 		skills = { "GumGumPistol", "GumGumBazooka", "GumGumWhip", "GumGumBalloon", "GumGumElephantGun", "RedHawk" },
 		bonus = { health = 30 },
 	},
 	Zoro = {
 		icon = "⚔️", title = "Pirate Hunter", perk = "+10% damage", color = Color3.fromRGB(60, 190, 90),
-		weapon = "ThreeSwordStyle",
+		weapon = "ThreeSwordStyle", cost = 12000,
 		skills = { "ThreeSwordStyle", "PoundCannon", "OniGiri", "Tatsumaki", "ShishiSonson", "BlackRopeDragon" },
 		bonus = { damage = 0.10 },
 	},
 	Nami = {
 		icon = "🍊", title = "Cat Burglar", perk = "+25% gold", color = Color3.fromRGB(255, 150, 40),
-		weapon = "ThunderTempo",
+		weapon = "ThunderTempo", cost = 6000,
 		skills = { "ThunderTempo", "CycloneTempo", "MirageTempo", "ThunderLance", "WeatherEgg", "BlackBall" },
 		bonus = { gold = 0.25 },
 	},
 	Sanji = {
 		icon = "🦵", title = "Black Leg", perk = "+15% move speed", color = Color3.fromRGB(240, 200, 60),
-		weapon = "DiableJambe",
+		weapon = "DiableJambe", cost = 12000,
 		skills = { "DiableJambe", "Concasse", "PartyTable", "MoutonShot", "PoeleAFrire", "FlambageShot" },
 		bonus = { speed = 0.15 },
 	},
 	Ace = {
 		icon = "🔥", title = "Fire Fist", perk = "+15% area", color = Color3.fromRGB(255, 100, 30),
-		weapon = "FireFist",
+		weapon = "FireFist", cost = 60000,
 		skills = { "FireFist", "FireGun", "Firefly", "FirePillar", "FireFence", "CrossFire" },
 		bonus = { area = 0.15 },
 	},
 	Robin = {
 		icon = "🌸", title = "Devil Child", perk = "-10% cooldowns", color = Color3.fromRGB(150, 90, 220),
-		weapon = "CienFleur",
+		weapon = "CienFleur", cost = 18000,
 		skills = { "CienFleur", "SeisFleur", "MilFleur", "FlowerStorm", "GiganteFleur", "PetalGuard" },
 		bonus = { cooldown = 0.10 },
 	},
 	Chopper = {
 		icon = "🦌", title = "Cotton Candy Lover", perk = "Heals nearby allies", color = Color3.fromRGB(255, 130, 180),
-		weapon = "KungFuPoint",
+		weapon = "KungFuPoint", cost = 8000,
 		skills = { "KungFuPoint", "HeavyGong", "HornPoint", "RumbleBall", "CherryBlossom", "MedicineBomb" },
 		bonus = { heal = 2 },
 	},
 	Usopp = {
 		icon = "🎯", title = "King of Snipers", perk = "+1 reroll each run", color = Color3.fromRGB(200, 160, 70),
-		weapon = "FireBirdStar",
+		weapon = "FireBirdStar", cost = 4000,
 		skills = { "FireBirdStar", "LeadStar", "ExplosiveStar", "TabascoStar", "PopGreen", "ImpactDial" },
 		bonus = { reroll = 1 },
 	},
 	Franky = {
 		icon = "🤖", title = "Cyborg", perk = "+8% damage, +20 max HP", color = Color3.fromRGB(70, 170, 240),
-		weapon = "CoupDeVent",
+		weapon = "CoupDeVent", cost = 25000,
 		skills = { "CoupDeVent", "WeaponsLeft", "StrongRight", "FrankyFireball", "GeneralCannon", "FrankyCenter" },
 		bonus = { damage = 0.08, health = 20 },
 	},
 	Brook = {
 		icon = "💀", title = "Soul King", perk = "+30% pickup range", color = Color3.fromRGB(150, 130, 200),
-		weapon = "YahazuGiri",
+		weapon = "YahazuGiri", cost = 30000,
 		skills = { "YahazuGiri", "FrostBite", "AubadeCoup", "GhostParade", "SoulParade", "IceBurn" },
 		bonus = { magnet = 0.3 },
 	},
 	Jinbe = {
 		icon = "🦈", title = "Knight of the Sea", perk = "+50 max HP", color = Color3.fromRGB(60, 120, 210),
-		weapon = "FishmanKarate",
+		weapon = "FishmanKarate", cost = 40000,
 		skills = { "FishmanKarate", "SharkBrick", "WaterHeart", "FiveThousandTiles", "SharkArrows", "OceanCurrent" },
 		bonus = { health = 50 },
 	},
 	Law = {
 		icon = "🩺", title = "Surgeon of Death", perk = "-8% cooldowns, +8% area", color = Color3.fromRGB(240, 210, 80),
-		weapon = "RoomAmputate",
+		weapon = "RoomAmputate", cost = 80000,
 		skills = { "RoomAmputate", "CounterShock", "Injection", "Shambles", "Mes", "RoomDome" },
 		bonus = { cooldown = 0.08, area = 0.08 },
 	},
 	Hancock = {
 		icon = "🐍", title = "Pirate Empress", perk = "+15% damage", color = Color3.fromRGB(240, 90, 150),
-		weapon = "PerfumeFemur",
+		weapon = "PerfumeFemur", cost = 100000,
 		skills = { "PerfumeFemur", "SlaveArrow", "PistolKiss", "MeroMellow", "Salome", "LoveHearts" },
 		bonus = { damage = 0.15 },
 	},
 }
-Config.CLASS_ORDER = { "Luffy", "Zoro", "Nami", "Sanji", "Ace", "Robin", "Chopper", "Usopp", "Franky", "Brook", "Jinbe", "Law", "Hancock" }
+-- Cheapest first, so CREW reads as a path from Marine recruit to Straw Hat captain.
+Config.CLASS_ORDER = {
+	"Marine", "Usopp", "Nami", "Chopper", "Zoro", "Sanji", "Robin", "Franky", "Brook", "Jinbe", "Ace", "Law", "Hancock", "Luffy",
+}
 
 -- Which character each skill belongs to (filled in from the skill lists above).
 Config.SkillOwner = {}
@@ -805,13 +856,13 @@ Config.SPAWN_TABLE = {
 -- Permanent upgrades bought with gold between runs. Cost = cost * (growth or META_GROWTH) ^ level.
 Config.Meta = {
 	SkillSlot = {
-		icon = "🧩", name = "Skill Slot", desc = "+1 skill slot", stat = "slots", per = 1, max = 5, cost = 300, growth = 1.7,
+		icon = "🧩", name = "Skill Slot", desc = "+1 skill slot", stat = "slots", per = 1, max = 5, cost = 2000, growth = 2,
 	},
-	Might = { icon = "⚔️", name = "Might", desc = "+5% damage", stat = "damage", per = 0.05, max = 10, cost = 100 },
-	Toughness = { icon = "❤️", name = "Toughness", desc = "+10 max HP", stat = "health", per = 10, max = 10, cost = 100 },
-	Greed = { icon = "💰", name = "Greed", desc = "+10% gold", stat = "gold", per = 0.10, max = 10, cost = 150 },
-	Reach = { icon = "🧲", name = "Reach", desc = "+10% pickup range", stat = "magnet", per = 0.10, max = 5, cost = 120 },
-	Reroll = { icon = "🎲", name = "Reroll", desc = "+1 reroll per run", stat = "reroll", per = 1, max = 5, cost = 300 },
+	Might = { icon = "⚔️", name = "Might", desc = "+5% damage", stat = "damage", per = 0.05, max = 10, cost = 400, growth = 1.6 },
+	Toughness = { icon = "❤️", name = "Toughness", desc = "+10 max HP", stat = "health", per = 10, max = 10, cost = 400, growth = 1.6 },
+	Greed = { icon = "💰", name = "Greed", desc = "+10% gold", stat = "gold", per = 0.10, max = 10, cost = 600, growth = 1.7 },
+	Reach = { icon = "🧲", name = "Reach", desc = "+10% pickup range", stat = "magnet", per = 0.10, max = 5, cost = 500, growth = 1.6 },
+	Reroll = { icon = "🎲", name = "Reroll", desc = "+1 reroll per run", stat = "reroll", per = 1, max = 5, cost = 1500, growth = 1.9 },
 }
 Config.META_ORDER = { "SkillSlot", "Might", "Toughness", "Greed", "Reach", "Reroll" }
 Config.META_GROWTH = 1.5
@@ -833,8 +884,8 @@ Config.NPCS = {
 }
 
 -- Island training, paid with gold and kept forever. Rayleigh trains skills, Dr. Kureha passives.
-Config.MASTERY = { max = 10, damage = 0.06, cooldown = 0.02, cost = 200, growth = 1.45 }
-Config.TRAINING = { max = 5, boost = 0.15, cost = 300, growth = 1.6 }
+Config.MASTERY = { max = 10, damage = 0.06, cooldown = 0.02, cost = 600, growth = 1.6 }
+Config.TRAINING = { max = 5, boost = 0.15, cost = 1000, growth = 1.8 }
 
 function Config.trainCost(kind, level)
 	local t = kind == "skill" and Config.MASTERY or Config.TRAINING
@@ -851,23 +902,23 @@ Config.GEAR_SLOTS = { "weapon", "outfit", "charm" }
 Config.GEAR_SLOT_NAMES = { weapon = "Weapon", outfit = "Outfit", charm = "Charm" }
 Config.GEAR_SLOT_ICONS = { weapon = "🗡️", outfit = "🧥", charm = "🧿" }
 Config.GEAR_ITEMS = {
-	{ id = "RustyCutlass", slot = "weapon", name = "Rusty Cutlass", icon = "🗡️", rarity = "Common", cost = 500, bonus = { damage = 0.05 } },
-	{ id = "MarineSaber", slot = "weapon", name = "Marine Saber", icon = "⚔️", rarity = "Rare", cost = 2500, bonus = { damage = 0.10, crit = 0.03 } },
-	{ id = "Kabuto", slot = "weapon", name = "Kabuto", icon = "🎯", rarity = "Epic", cost = 9000, bonus = { area = 0.12, cooldown = 0.06 } },
-	{ id = "WadoIchimonji", slot = "weapon", name = "Wado Ichimonji", icon = "🗡️", rarity = "Epic", cost = 9000, bonus = { damage = 0.15, crit = 0.05 } },
-	{ id = "Shusui", slot = "weapon", name = "Shusui", icon = "⚔️", rarity = "Legendary", cost = 30000, bonus = { damage = 0.22, critDamage = 0.30 } },
+	{ id = "RustyCutlass", slot = "weapon", name = "Rusty Cutlass", icon = "🗡️", rarity = "Common", cost = 1500, bonus = { damage = 0.05 } },
+	{ id = "MarineSaber", slot = "weapon", name = "Marine Saber", icon = "⚔️", rarity = "Rare", cost = 7500, bonus = { damage = 0.10, crit = 0.03 } },
+	{ id = "Kabuto", slot = "weapon", name = "Kabuto", icon = "🎯", rarity = "Epic", cost = 25000, bonus = { area = 0.12, cooldown = 0.06 } },
+	{ id = "WadoIchimonji", slot = "weapon", name = "Wado Ichimonji", icon = "🗡️", rarity = "Epic", cost = 25000, bonus = { damage = 0.15, crit = 0.05 } },
+	{ id = "Shusui", slot = "weapon", name = "Shusui", icon = "⚔️", rarity = "Legendary", cost = 90000, bonus = { damage = 0.22, critDamage = 0.30 } },
 	{ id = "Enma", slot = "weapon", name = "Enma", icon = "🔥", rarity = "Mythic", cost = 0, bonus = { damage = 0.30, crit = 0.08, critDamage = 0.40 } },
-	{ id = "SailorShirt", slot = "outfit", name = "Sailor Shirt", icon = "👕", rarity = "Common", cost = 500, bonus = { health = 20 } },
-	{ id = "MarineCoat", slot = "outfit", name = "Marine Coat", icon = "🧥", rarity = "Rare", cost = 2500, bonus = { health = 40, defense = 0.04 } },
-	{ id = "FrankySpeedo", slot = "outfit", name = "Super Speedo", icon = "🩳", rarity = "Epic", cost = 9000, bonus = { speed = 0.10, regen = 1 } },
-	{ id = "JinbeKimono", slot = "outfit", name = "Jinbe's Kimono", icon = "👘", rarity = "Epic", cost = 9000, bonus = { health = 60, defense = 0.08 } },
-	{ id = "SeastoneArmor", slot = "outfit", name = "Seastone Armor", icon = "🛡️", rarity = "Legendary", cost = 30000, bonus = { health = 100, defense = 0.12 } },
+	{ id = "SailorShirt", slot = "outfit", name = "Sailor Shirt", icon = "👕", rarity = "Common", cost = 1500, bonus = { health = 20 } },
+	{ id = "MarineCoat", slot = "outfit", name = "Marine Coat", icon = "🧥", rarity = "Rare", cost = 7500, bonus = { health = 40, defense = 0.04 } },
+	{ id = "FrankySpeedo", slot = "outfit", name = "Super Speedo", icon = "🩳", rarity = "Epic", cost = 25000, bonus = { speed = 0.10, regen = 1 } },
+	{ id = "JinbeKimono", slot = "outfit", name = "Jinbe's Kimono", icon = "👘", rarity = "Epic", cost = 25000, bonus = { health = 60, defense = 0.08 } },
+	{ id = "SeastoneArmor", slot = "outfit", name = "Seastone Armor", icon = "🛡️", rarity = "Legendary", cost = 90000, bonus = { health = 100, defense = 0.12 } },
 	{ id = "EmperorCloak", slot = "outfit", name = "Emperor's Cloak", icon = "👑", rarity = "Mythic", cost = 0, bonus = { health = 150, defense = 0.15, regen = 2 } },
-	{ id = "LuckyCoin", slot = "charm", name = "Lucky Coin", icon = "🪙", rarity = "Common", cost = 500, bonus = { gold = 0.10 } },
-	{ id = "LogPose", slot = "charm", name = "Log Pose", icon = "🧭", rarity = "Rare", cost = 2500, bonus = { magnet = 0.30, xp = 0.10 } },
-	{ id = "DenDenMushi", slot = "charm", name = "Den Den Mushi", icon = "🐌", rarity = "Epic", cost = 9000, bonus = { cooldown = 0.08, area = 0.08 } },
-	{ id = "EternalPose", slot = "charm", name = "Eternal Pose", icon = "📍", rarity = "Epic", cost = 9000, bonus = { xp = 0.20, cooldown = 0.05 } },
-	{ id = "TreasureMap", slot = "charm", name = "Treasure Map", icon = "🗺️", rarity = "Legendary", cost = 30000, bonus = { gold = 0.30, magnet = 0.40 } },
+	{ id = "LuckyCoin", slot = "charm", name = "Lucky Coin", icon = "🪙", rarity = "Common", cost = 1500, bonus = { gold = 0.10 } },
+	{ id = "LogPose", slot = "charm", name = "Log Pose", icon = "🧭", rarity = "Rare", cost = 7500, bonus = { magnet = 0.30, xp = 0.10 } },
+	{ id = "DenDenMushi", slot = "charm", name = "Den Den Mushi", icon = "🐌", rarity = "Epic", cost = 25000, bonus = { cooldown = 0.08, area = 0.08 } },
+	{ id = "EternalPose", slot = "charm", name = "Eternal Pose", icon = "📍", rarity = "Epic", cost = 25000, bonus = { xp = 0.20, cooldown = 0.05 } },
+	{ id = "TreasureMap", slot = "charm", name = "Treasure Map", icon = "🗺️", rarity = "Legendary", cost = 90000, bonus = { gold = 0.30, magnet = 0.40 } },
 	{ id = "DevilFruit", slot = "charm", name = "Devil Fruit", icon = "🍇", rarity = "Mythic", cost = 0, bonus = { damage = 0.15, cooldown = 0.10, xp = 0.25 } },
 }
 Config.GearById = {}
@@ -884,7 +935,32 @@ Config.DROPS = {
 	{ chance = 0.5, weights = { Rare = 40, Epic = 40, Legendary = 17, Mythic = 3 } },
 	{ chance = 0.6, weights = { Epic = 50, Legendary = 38, Mythic = 12 } },
 }
-Config.DUPLICATE_GOLD = { Common = 250, Rare = 1200, Epic = 4000, Legendary = 12000, Mythic = 25000 }
+-- Getting gear you already own gives a spare copy, used to upgrade it (gold once you have
+-- enough copies to reach +10).
+Config.DUPLICATE_GOLD = { Common = 500, Rare = 2000, Epic = 6000, Legendary = 15000, Mythic = 30000 }
+
+-- Gear upgrades at Tom's: each level costs one duplicate copy of the item plus gold, and adds
+-- 10% of the item's base stats (+10 doubles them).
+Config.GEAR_UPGRADE = {
+	max = 10, per = 0.10, growth = 1.55,
+	cost = { Common = 400, Rare = 1200, Epic = 3500, Legendary = 9000, Mythic = 20000 },
+}
+function Config.gearUpgradeCost(item, level)
+	return math.floor(Config.GEAR_UPGRADE.cost[item.rarity] * Config.GEAR_UPGRADE.growth ^ level)
+end
+-- An item's stats at an upgrade level.
+function Config.gearStats(item, level)
+	local scale = 1 + Config.GEAR_UPGRADE.per * (level or 0)
+	local stats = {}
+	for stat, value in item.bonus do
+		stats[stat] = stat == "health" and math.floor(value * scale) or value * scale
+	end
+	return stats
+end
+
+-- Treasure chests dropped during adventures: chance per enemy kind. Opening one gives every
+-- crew member a gear roll (rarity follows the difficulty, see Config.DROPS).
+Config.CHESTS = { MiniBoss = 1, Captain = 0.04, Agent = 0.04, Brute = 0.03 }
 
 -- How each stat reads in menus, e.g. "+10% damage".
 local STAT_TEXT = {
@@ -911,6 +987,8 @@ end
 
 -- Robux purchases. Create these on the Roblox Creator Dashboard (your experience > Monetization)
 -- and paste their IDs here. Anything left at id = 0 shows as "not set up" and can't be bought.
+-- Prices are set on the dashboard. Suggested: 2x Gold 299, VIP 399, Lucky Pirate 149,
+-- Swift Dash 99; gold packs 49 / 199 / 649; boosts 79 each; Revive 25.
 Config.GAME_PASSES = {
 	DoubleGold = { id = 0, icon = "💰", name = "2x Gold", desc = "Double gold from every adventure, forever." },
 	VIP = { id = 0, icon = "👑", name = "VIP", desc = "+25% XP, +10% damage and a VIP tag.", bonus = { xp = 0.25, damage = 0.10 } },
@@ -941,8 +1019,9 @@ local Fx = require(script.Parent.Fx)
 local Enemies = {}
 Enemies.onKilled = function(_enemy, _killer) end
 Enemies.onPickup = function(_player, _xp) end
+Enemies.onChest = function(_runKey, _kind, _opener) end -- a crew member opened a treasure chest
 
-local list, orbs, bullets = {}, {}, {}
+local list, orbs, bullets, chests = {}, {}, {}, {}
 local nextBulletId = 0
 local lastTargets = {} -- targets from the latest step, used when delayed blasts land
 local NO_TARGETS = {}
@@ -1046,6 +1125,34 @@ local function dropOrb(pos, xp, runKey)
 		Position = pos,
 	}, orbFolder)
 	table.insert(orbs, { part = part, xp = xp, run = runKey })
+end
+
+-- A glowing treasure chest; the first crew member to walk up opens it for the whole crew.
+local function dropChest(pos, runKey, kind)
+	local model = Instance.new("Model")
+	model.Name = "TreasureChest"
+	local gold = Color3.fromRGB(255, 200, 50)
+	local base = makePart({ Name = "Base", Size = Vector3.new(3, 2, 2.2), Color = Color3.fromRGB(110, 70, 35), Material = Enum.Material.Wood, CFrame = CFrame.new(pos + Vector3.new(0, 1, 0)) }, model)
+	makePart({ Name = "Lid", Size = Vector3.new(3.1, 0.8, 2.3), Color = Color3.fromRGB(130, 85, 40), Material = Enum.Material.Wood, CFrame = base.CFrame * CFrame.new(0, 1.4, 0) }, model)
+	makePart({ Name = "Band", Size = Vector3.new(0.3, 2.9, 2.35), Color = gold, Material = Enum.Material.Metal, CFrame = base.CFrame * CFrame.new(0, 0.4, 0) }, model)
+	local glow = makePart({ Name = "Glow", Shape = Enum.PartType.Ball, Size = Vector3.one * 5, Color = gold, Material = Enum.Material.ForceField, CFrame = base.CFrame * CFrame.new(0, 0.6, 0) }, model)
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness = gold, 14, 2
+	light.Parent = glow
+	local tag = Instance.new("BillboardGui")
+	tag.Size = UDim2.fromOffset(60, 60)
+	tag.StudsOffset = Vector3.new(0, 4, 0)
+	tag.AlwaysOnTop = true
+	tag.MaxDistance = 250
+	tag.Parent = base
+	local icon = Instance.new("TextLabel")
+	icon.Size = UDim2.fromScale(1, 1)
+	icon.BackgroundTransparency = 1
+	icon.TextScaled = true
+	icon.Text = "🎁"
+	icon.Parent = tag
+	model.Parent = folder
+	table.insert(chests, { model = model, pos = base.Position, run = runKey, kind = kind, born = os.clock() })
 end
 
 local function flash(e)
@@ -1226,6 +1333,10 @@ function Enemies.damage(e, amount, player)
 		dropOrb(e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale - 0.8, 0), e.def.xp, e.run)
 	end
 	Fx.emit("death", { pos = e.root.Position, c = e.color, s = e.def.scale })
+	local chestChance = Config.CHESTS[e.kind]
+	if chestChance and math.random() < chestChance then
+		dropChest(e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale, 0), e.run, e.kind)
+	end
 	Enemies.onKilled(e, player)
 	e.model:Destroy()
 end
@@ -1264,6 +1375,21 @@ function Enemies.step(dt, targetsByRun)
 				hurt(best, e.damage)
 			end
 			specialAttacks(e, best, bestDist, targetsByRun[e.run], now)
+		end
+	end
+
+	for i = #chests, 1, -1 do
+		local chest = chests[i]
+		-- bob gently so it catches the eye
+		chest.model:PivotTo(CFrame.new(chest.pos + Vector3.new(0, math.sin((now - chest.born) * 3) * 0.3, 0)) * CFrame.Angles(0, now - chest.born, 0))
+		for _, t in targetsByRun[chest.run] or NO_TARGETS do
+			if flat(t.root.Position - chest.pos).Magnitude <= 5 then
+				Fx.emit("chest", { pos = chest.pos })
+				Enemies.onChest(chest.run, chest.kind, t.player)
+				chest.model:Destroy()
+				table.remove(chests, i)
+				break
+			end
 		end
 	end
 
@@ -1369,8 +1495,14 @@ function Enemies.count(runKey)
 	return n
 end
 
--- Removes one adventure's enemies, bullets and XP orbs.
+-- Removes one adventure's enemies, bullets, chests and XP orbs.
 function Enemies.clear(runKey)
+	for i = #chests, 1, -1 do
+		if chests[i].run == runKey then
+			chests[i].model:Destroy()
+			table.remove(chests, i)
+		end
+	end
 	for i = #bullets, 1, -1 do
 		if bullets[i].run == runKey then
 			Fx.emit("eshotEnd", { id = bullets[i].id })
@@ -1487,6 +1619,10 @@ local function join(...)
 end
 
 local GEAR = {
+	Marine = join(hat(rgb(245, 245, 250), rgb(245, 245, 250), rgb(30, 60, 140), 0.6), {
+		{ "UpperTorso", Vector3.new(2.3, 3, 0.15), CFrame.new(0, -0.4, 0.6), rgb(250, 250, 252), nil, FABRIC },
+		{ "UpperTorso", Vector3.new(0.9, 0.9, 0.06), CFrame.new(0, -0.3, 0.69), rgb(40, 70, 150) },
+	}),
 	Luffy = hat(rgb(240, 210, 110), rgb(240, 210, 110), rgb(200, 30, 30)),
 	Zoro = join(sword("RightHand", BLACK, 3.4), {
 		sheath(-1.05, rgb(240, 240, 240), 55),
@@ -1616,7 +1752,7 @@ local remoteFolder = Instance.new("Folder")
 remoteFolder.Name = "Remotes"
 for _, name in {
 	"State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results", "Fx", "Portal",
-	"Announce", "Voyage", "Dash", "Leave", "Revive", "Train", "Gear",
+	"Announce", "Voyage", "Dash", "Leave", "Revive", "Train", "Gear", "UnlockClass",
 } do
 	local r = Instance.new("RemoteEvent")
 	r.Name = name
@@ -1639,8 +1775,10 @@ for i in Config.GATES do
 	gates[i] = {}
 end
 
+-- The class a player plays: their pick, if they have unlocked it, else the Marine.
 local function classOf(player)
-	return selectedClass[player] or Config.DEFAULT_CLASS
+	local pick = selectedClass[player]
+	return pick and PlayerData.hasClass(player, pick) and pick or Config.DEFAULT_CLASS
 end
 
 local function sendMeta(player)
@@ -1659,6 +1797,7 @@ local function sendMeta(player)
 	remotes.Meta:FireClient(player, {
 		gold = data.gold, levels = data.meta, costs = costs, progress = data.progress, class = classOf(player),
 		mastery = data.mastery, training = data.training, items = data.items, equipped = data.equipped,
+		gearLevels = data.gearLevels, gearCopies = data.gearCopies, classes = data.classes,
 		revives = data.revives, boosts = boosts, passes = Monetization.ownedList(player),
 		dashCooldown = Monetization.dashCooldown(player), loadFailed = data.loadFailed == true,
 	})
@@ -1812,18 +1951,15 @@ end)
 
 -- Rewards ---------------------------------------------------------------------------------
 
--- Picks a free gear drop for a victory, or nil. Owning it already turns it into gold.
-local function rollDrop(difficulty)
-	local drops = Config.DROPS[difficulty]
-	if math.random() > drops.chance then
-		return nil
-	end
+-- A random gear item, its rarity rolled with a difficulty's drop weights.
+local function rollItem(difficulty)
+	local weights = Config.DROPS[difficulty].weights
 	local total = 0
-	for _, weight in drops.weights do
+	for _, weight in weights do
 		total += weight
 	end
 	local roll, rarity = math.random() * total, "Common"
-	for name, weight in drops.weights do
+	for name, weight in weights do
 		roll -= weight
 		if roll <= 0 then
 			rarity = name
@@ -1837,6 +1973,43 @@ local function rollDrop(difficulty)
 		end
 	end
 	return pool[math.random(#pool)]
+end
+
+-- Gives a player a dropped item. New items are kept; owned ones become a spare copy for
+-- upgrading (or gold once they have enough copies). Returns what to show them.
+local function giveItem(player, item)
+	local outcome = PlayerData.grantItem(player, item.id)
+	local data = PlayerData.get(player)
+	local drop = { name = item.name, icon = item.icon, rarity = item.rarity, outcome = outcome }
+	if outcome == "gold" and data then
+		drop.gold = Config.DUPLICATE_GOLD[item.rarity]
+		data.gold += drop.gold
+	end
+	return drop
+end
+
+local function dropText(drop)
+	if drop.outcome == "new" then
+		return string.format("🎁 New gear: %s %s (%s)", drop.icon, drop.name, drop.rarity)
+	elseif drop.outcome == "copy" then
+		return string.format("🎁 Spare %s %s - use it to upgrade at Tom's", drop.icon, drop.name)
+	end
+	return string.format("🎁 %s %s (maxed) - +%s gold", drop.icon, drop.name, drop.gold or 0)
+end
+
+-- A treasure chest gives every crew member a gear roll: a Vice Admiral's follows the
+-- difficulty, an elite Marine's is one step lower.
+Enemies.onChest = function(runKey, kind, opener)
+	local run = runs[runKey]
+	if not run then
+		return
+	end
+	local tier = kind == "MiniBoss" and run.difficulty or math.max(1, run.difficulty - 1)
+	for player in run.players do
+		local drop = giveItem(player, rollItem(tier))
+		local who = player == opener and "" or opener.DisplayName .. " opened a chest!  "
+		remotes.Announce:FireClient(player, who .. dropText(drop), Config.RARITIES[drop.rarity])
+	end
 end
 
 -- What a first clear of this map + difficulty opens up.
@@ -1866,14 +2039,8 @@ local function reward(player, run, result)
 		if PlayerData.recordClear(player, map.key, run.difficulty) then
 			unlocked = unlockMessage(map, run.difficulty)
 		end
-		local item = rollDrop(run.difficulty)
-		if item then
-			if PlayerData.grantItem(player, item.id) then
-				drop = { name = item.name, icon = item.icon, rarity = item.rarity }
-			else
-				gold += Config.DUPLICATE_GOLD[item.rarity]
-				drop = { name = item.name, icon = item.icon, rarity = item.rarity, duplicate = Config.DUPLICATE_GOLD[item.rarity] }
-			end
+		if math.random() < Config.DROPS[run.difficulty].chance then
+			drop = dropText(giveItem(player, rollItem(run.difficulty)))
 		end
 	end
 	data.gold += gold
@@ -2103,11 +2270,21 @@ remotes.Choose.OnServerEvent:Connect(function(player, index)
 end)
 remotes.Reroll.OnServerEvent:Connect(Progression.reroll)
 remotes.Meta.OnServerEvent:Connect(sendMeta)
+local function selectClass(player, name)
+	selectedClass[player] = name
+	Gear.apply(player.Character, name)
+	sendMeta(player)
+end
 remotes.SelectClass.OnServerEvent:Connect(function(player, name)
-	if not runOf[player] and typeof(name) == "string" and Config.Classes[name] then
-		selectedClass[player] = name
-		Gear.apply(player.Character, name)
-		sendMeta(player)
+	if not runOf[player] and typeof(name) == "string" and PlayerData.hasClass(player, name) then
+		selectClass(player, name)
+	end
+end)
+-- Pirates are bought with gold; buying one also picks it.
+remotes.UnlockClass.OnServerEvent:Connect(function(player, name)
+	if not runOf[player] and typeof(name) == "string" and PlayerData.unlockClass(player, name) then
+		task.spawn(PlayerData.save, player)
+		selectClass(player, name)
 	end
 end)
 remotes.BuyMeta.OnServerEvent:Connect(function(player, name)
@@ -2124,7 +2301,9 @@ remotes.Gear.OnServerEvent:Connect(function(player, action, id)
 	if runOf[player] or typeof(action) ~= "string" or typeof(id) ~= "string" then
 		return
 	end
-	local changed = action == "buy" and PlayerData.buyGear(player, id) or action == "equip" and PlayerData.equipGear(player, id)
+	local changed = action == "buy" and PlayerData.buyGear(player, id)
+		or action == "equip" and PlayerData.equipGear(player, id)
+		or action == "upgrade" and PlayerData.upgradeGear(player, id)
 	if changed then
 		sendMeta(player)
 	end
@@ -2472,7 +2651,7 @@ function Npcs.build()
 end
 
 return Npcs
-]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX13483"><Properties><string name="Name">PlayerData</string><ProtectedString name="Source"><![CDATA[-- Saves gold, upgrades, training, gear, map progress and purchases between sessions.
+]]></ProtectedString></Properties></Item><Item class="ModuleScript" referent="RBX13483"><Properties><string name="Name">PlayerData</string><ProtectedString name="Source"><![CDATA[-- Saves gold, unlocked pirates, upgrades, training, gear, map progress and purchases.
 -- Safety rules:
 --   * every write uses UpdateAsync with a session lock, so two servers never overwrite each other
 --   * failed loads are retried; if a save still can't be read, this session never saves for that
@@ -2509,7 +2688,7 @@ end
 local function fresh()
 	return {
 		gold = 0, meta = {}, progress = {}, mastery = {}, training = {}, items = {}, equipped = {},
-		revives = 0, boosts = {}, receipts = {},
+		gearLevels = {}, gearCopies = {}, classes = { [Config.DEFAULT_CLASS] = true }, revives = 0, boosts = {}, receipts = {},
 	}
 end
 
@@ -2546,6 +2725,21 @@ local function clean(saved)
 	for id in section("items") do
 		if Config.GearById[id] then
 			data.items[id] = true
+		end
+	end
+	for name in section("classes") do
+		if Config.Classes[name] then
+			data.classes[name] = true
+		end
+	end
+	for id, level in section("gearLevels") do
+		if data.items[id] and num(level) then
+			data.gearLevels[id] = math.clamp(math.floor(num(level)), 0, Config.GEAR_UPGRADE.max)
+		end
+	end
+	for id, copies in section("gearCopies") do
+		if data.items[id] and num(copies) then
+			data.gearCopies[id] = math.max(0, math.floor(num(copies)))
 		end
 	end
 	for slot, id in section("equipped") do
@@ -2687,6 +2881,23 @@ function PlayerData.train(player, kind, name)
 	return true
 end
 
+-- Pirates ---------------------------------------------------------------------------------
+
+function PlayerData.hasClass(player, name)
+	local data = cache[player]
+	return data ~= nil and data.classes[name] == true
+end
+
+function PlayerData.unlockClass(player, name)
+	local data, class = cache[player], Config.Classes[name]
+	if not data or not class or data.classes[name] or data.gold < class.cost then
+		return false
+	end
+	data.gold -= class.cost
+	data.classes[name] = true
+	return true
+end
+
 -- Gear ------------------------------------------------------------------------------------
 
 function PlayerData.buyGear(player, id)
@@ -2709,14 +2920,41 @@ function PlayerData.equipGear(player, id)
 	return true
 end
 
--- Gives an item (a boss drop). Returns false if they already had it.
-function PlayerData.grantItem(player, id)
-	local data = cache[player]
-	if not data or data.items[id] then
+-- Upgrades an owned item one level at Tom's: costs one duplicate copy of it plus gold.
+function PlayerData.upgradeGear(player, id)
+	local data, item = cache[player], Config.GearById[id]
+	if not data or not item or not data.items[id] then
 		return false
 	end
-	data.items[id] = true
+	local level = data.gearLevels[id] or 0
+	local cost = Config.gearUpgradeCost(item, level)
+	if level >= Config.GEAR_UPGRADE.max or (data.gearCopies[id] or 0) < 1 or data.gold < cost then
+		return false
+	end
+	data.gold -= cost
+	data.gearCopies[id] -= 1
+	data.gearLevels[id] = level + 1
 	return true
+end
+
+-- Gives a dropped item. Returns "new", "copy" (already owned: a spare copy to upgrade it with)
+-- or "gold" (already owned and maxed: the caller pays out Config.DUPLICATE_GOLD).
+function PlayerData.grantItem(player, id)
+	local data = cache[player]
+	if not data then
+		return nil
+	end
+	if not data.items[id] then
+		data.items[id] = true
+		return "new"
+	end
+	-- copies beyond what reaching +10 needs are paid out as gold
+	local needed = Config.GEAR_UPGRADE.max - (data.gearLevels[id] or 0)
+	if (data.gearCopies[id] or 0) < needed then
+		data.gearCopies[id] = (data.gearCopies[id] or 0) + 1
+		return "copy"
+	end
+	return "gold"
 end
 
 -- All stat bonuses from the player's equipped gear.
@@ -2724,7 +2962,7 @@ function PlayerData.gearBonus(player)
 	local bonus = {}
 	local data = cache[player]
 	for _, id in data and data.equipped or {} do
-		for stat, value in Config.GearById[id].bonus do
+		for stat, value in Config.gearStats(Config.GearById[id], data.gearLevels[id]) do
 			bonus[stat] = (bonus[stat] or 0) + value
 		end
 	end
@@ -4379,6 +4617,15 @@ function handlers.death(ev)
 	burst(ev.pos, ev.c, 6, { size = 1, speed = 15, life = 0.3 })
 end
 
+-- A treasure chest bursts open: gold sparkles fountain up.
+function handlers.chest(ev)
+	local gold = Color3.fromRGB(255, 205, 60)
+	burst(ev.pos, gold, 24, { size = 1.2, speed = 18, life = 0.6, gravity = Vector3.new(0, -30, 0) })
+	burst(ev.pos, WHITE, 8, { size = 0.8, speed = 10, life = 0.4 })
+	shockwave(groundAt(ev.pos) + Vector3.new(0, 0.2, 0), 6, gold, 0.4)
+	flashLight(ev.pos, gold, 18, 0.6)
+end
+
 function handlers.anim(_ev) end -- the animation itself is played in Effects.play
 
 -- Enemy attacks -------------------------------------------------------------------
@@ -4986,9 +5233,27 @@ function Hud.setState(state)
 end
 
 -- Revives the player owns (from the store), shown on the knocked-out panel.
+local function refreshRevive()
+	if not ui.revive then
+		return -- not built yet: Hud.init shows it
+	end
+	local count = ui.revives or 0
+	if count > 0 then
+		ui.revive.Text = string.format("💖  REVIVE  (%d left)", count)
+	else
+		ui.revive.Text = ui.revivePrice and string.format("💖  REVIVE NOW  R$ %d", ui.revivePrice) or "💖  BUY A REVIVE"
+	end
+end
+
 function Hud.setRevives(count)
 	ui.revives = count
-	ui.revive.Text = count > 0 and string.format("💖  REVIVE  (%d left)", count) or "💖  BUY A REVIVE"
+	refreshRevive()
+end
+
+-- The Robux price of a revive, shown when the player has none left.
+function Hud.setRevivePrice(price)
+	ui.revivePrice = price
+	refreshRevive()
 end
 
 function Hud.setWatching(name)
@@ -5091,8 +5356,7 @@ function Hud.showResults(r)
 		table.insert(notes, "🔓 " .. r.unlocked)
 	end
 	if r.drop then
-		table.insert(notes, string.format("🎁 %s %s%s", r.drop.icon, r.drop.name,
-			r.drop.duplicate and " (owned: +" .. Theme.comma(r.drop.duplicate) .. " gold)" or " (" .. r.drop.rarity .. ")"))
+		table.insert(notes, r.drop)
 	end
 	ui.resultUnlocked.Text = table.concat(notes, "   ")
 	ui.resultUnlocked.Visible = #notes > 0
@@ -5243,6 +5507,10 @@ local function buildCrew()
 		end
 
 		local selected = Theme.chip({ Size = UDim2.fromOffset(92, 22), Position = UDim2.fromOffset(10, 10), Text = "✓ SELECTED", Visible = false, ZIndex = 15, MaxSize = 11 }, card, Theme.GOLD)
+		local lock = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.BG, BackgroundTransparency = 0.35, ZIndex = 16, Visible = false }, card)
+		Theme.corner(lock, 16)
+		Theme.text({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 40), Text = "🔒", ZIndex = 17 }, lock)
+		local price = Theme.chip({ Size = UDim2.new(1, -30, 0, 30), Position = UDim2.new(0, 15, 0, 96), Text = "", ZIndex = 17, MaxSize = 14, BackgroundTransparency = 0.15 }, lock, Theme.GOLD)
 		card.MouseEnter:Connect(function()
 			Lobby.showSkills(name)
 		end)
@@ -5250,9 +5518,13 @@ local function buildCrew()
 			Lobby.showSkills(meta.class)
 		end)
 		card.Activated:Connect(function()
-			callbacks.selectClass(name)
+			if (meta.classes or {})[name] then
+				callbacks.selectClass(name)
+			elseif meta.gold >= class.cost then
+				callbacks.unlockClass(name)
+			end
 		end)
-		classCards[name] = { stroke = stroke, selected = selected, color = class.color }
+		classCards[name] = { stroke = stroke, selected = selected, color = class.color, lock = lock, price = price, cost = class.cost }
 	end
 end
 
@@ -5433,7 +5705,7 @@ end
 local gearTab = "weapon"
 
 local function buildGear()
-	local frame = panel("Gear", 840, 640, "GEAR", "Equip one weapon, one outfit and one charm. Mythic gear only drops from bosses.")
+	local frame = panel("Gear", 840, 640, "GEAR", "One weapon, outfit and charm. Drops give spare copies: upgrade with a copy + gold.")
 	ui.equippedCards = {}
 	for i, slot in Config.GEAR_SLOTS do
 		local card = Theme.card({ Size = UDim2.fromOffset(256, 80), Position = UDim2.fromOffset(28 + (i - 1) * 268, 88), ZIndex = 11 }, frame)
@@ -5463,7 +5735,9 @@ function Lobby.refreshGear()
 		card.icon.Text = item and item.icon or Config.GEAR_SLOT_ICONS[slot]
 		card.tile.BackgroundColor3 = item and Config.RARITIES[item.rarity] or Theme.CARD_LIGHT
 		card.name.Text = item and item.name or "No " .. Config.GEAR_SLOT_NAMES[slot]:lower()
-		card.stats.Text = item and Config.describeBonus(item.bonus) or "Pick one below"
+		local level = item and (meta.gearLevels or {})[item.id] or 0
+		card.name.Text = item and item.name .. (level > 0 and "  +" .. level or "") or card.name.Text
+		card.stats.Text = item and Config.describeBonus(Config.gearStats(item, level)) or "Pick one below"
 	end
 	for slot, button in ui.gearTabs do
 		button.BackgroundColor3 = slot == gearTab and Theme.ACCENT or Theme.CARD_LIGHT
@@ -5480,23 +5754,43 @@ function Lobby.refreshGear()
 			local color = Config.RARITIES[item.rarity]
 			local row = Theme.card({ Size = UDim2.new(1, -12, 0, 72), LayoutOrder = order, ZIndex = 12 }, ui.gearList)
 			Theme.icon({ Size = UDim2.fromOffset(50, 50), Position = UDim2.fromOffset(11, 11), ZIndex = 13 }, row, item.icon, color, 14)
-			Theme.title({ Size = UDim2.new(0, 260, 0, 22), Position = UDim2.fromOffset(74, 12), Text = item.name, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 18 }, row)
+			local owned = items[item.id] == true
+			local level = (meta.gearLevels or {})[item.id] or 0
+			local copies = (meta.gearCopies or {})[item.id] or 0
+			Theme.title({ Size = UDim2.new(0, 260, 0, 22), Position = UDim2.fromOffset(74, 12), Text = item.name .. (level > 0 and "  +" .. level or ""), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 18 }, row)
 			Theme.chip({ Size = UDim2.fromOffset(96, 20), Position = UDim2.fromOffset(74, 40), Text = item.rarity:upper(), ZIndex = 13, MaxSize = 11 }, row, color)
-			Theme.text({ Size = UDim2.new(0, 280, 0, 34), Position = UDim2.fromOffset(180, 34), Text = Config.describeBonus(item.bonus), TextWrapped = true, TextColor3 = Theme.MUTED, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 13 }, row)
+			Theme.text({
+				Size = UDim2.new(0, 230, 0, 34), Position = UDim2.fromOffset(178, 34), TextWrapped = true, TextColor3 = Theme.MUTED,
+				Text = Config.describeBonus(Config.gearStats(item, level)) .. (owned and string.format("\nSpare copies: %d", copies) or ""),
+				TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 12,
+			}, row)
 			local text, color2, action
 			if equipped[item.slot] == item.id then
 				text, color2, action = "✓ EQUIPPED", Theme.ACCENT, "equip"
-			elseif items[item.id] then
+			elseif owned then
 				text, color2, action = "EQUIP", Theme.GOOD, "equip"
 			elseif item.cost > 0 then
 				text, color2, action = "💰 " .. Theme.comma(item.cost), meta.gold >= item.cost and Theme.GOOD or Color3.fromRGB(150, 60, 70), "buy"
 			else
 				text, color2 = "☠️ BOSS DROP", Theme.LOCKED
 			end
-			Theme.button({ Size = UDim2.fromOffset(150, 44), Position = UDim2.new(1, -162, 0.5, -22), Text = text, BackgroundColor3 = color2, ZIndex = 13 }, row,
+			Theme.button({ Size = UDim2.fromOffset(118, 44), Position = UDim2.new(1, -130, 0.5, -22), Text = text, BackgroundColor3 = color2, ZIndex = 13 }, row,
 				action and function()
 					callbacks.gear(action, item.id)
 				end or nil)
+			if owned then
+				-- upgrading costs one spare copy (from drops) plus gold
+				local cost = Config.gearUpgradeCost(item, level)
+				local maxed = level >= Config.GEAR_UPGRADE.max
+				local ready = not maxed and copies >= 1 and meta.gold >= cost
+				Theme.button({
+					Size = UDim2.fromOffset(136, 44), Position = UDim2.new(1, -274, 0.5, -22),
+					Text = maxed and "MAX +10" or copies < 1 and "⬆ NEED A COPY" or "⬆ 💰 " .. Theme.comma(cost),
+					BackgroundColor3 = ready and Color3.fromRGB(230, 150, 40) or Theme.LOCKED, ZIndex = 13,
+				}, row, ready and function()
+					callbacks.gear("upgrade", item.id)
+				end or nil)
+			end
 		end
 	end
 end
@@ -5793,6 +6087,10 @@ function Lobby.setMeta(data)
 	ui.playingTile.BackgroundColor3 = class.color
 	for name, card in classCards do
 		local chosen = name == data.class
+		local unlocked = (data.classes or {})[name] == true
+		card.lock.Visible = not unlocked
+		card.price.Text = "💰 " .. Theme.comma(card.cost) .. (data.gold >= card.cost and "  -  UNLOCK" or "")
+		card.price.TextColor3 = data.gold >= card.cost and Theme.GOOD or Theme.GOLD
 		card.selected.Visible = chosen
 		card.stroke.Color = chosen and Theme.GOLD or card.color
 		card.stroke.Thickness = chosen and 3 or 1.5
@@ -5991,6 +6289,9 @@ for key, product in Config.PRODUCTS do
 			local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, product.id, Enum.InfoType.Product)
 			if ok and info and info.PriceInRobux then
 				Lobby.setPrice("product", key, info.PriceInRobux)
+				if key == "Revive" then
+					Hud.setRevivePrice(info.PriceInRobux)
+				end
 			end
 		end)
 	end
@@ -6021,6 +6322,9 @@ Hud.init(root, {
 Lobby.init(root, {
 	selectClass = function(name)
 		remotes.SelectClass:FireServer(name)
+	end,
+	unlockClass = function(name)
+		remotes.UnlockClass:FireServer(name)
 	end,
 	buy = function(name)
 		remotes.BuyMeta:FireServer(name)

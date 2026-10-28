@@ -1,4 +1,4 @@
--- Saves gold, upgrades, training, gear, map progress and purchases between sessions.
+-- Saves gold, unlocked pirates, upgrades, training, gear, map progress and purchases.
 -- Safety rules:
 --   * every write uses UpdateAsync with a session lock, so two servers never overwrite each other
 --   * failed loads are retried; if a save still can't be read, this session never saves for that
@@ -35,7 +35,7 @@ end
 local function fresh()
 	return {
 		gold = 0, meta = {}, progress = {}, mastery = {}, training = {}, items = {}, equipped = {},
-		revives = 0, boosts = {}, receipts = {},
+		gearLevels = {}, gearCopies = {}, classes = { [Config.DEFAULT_CLASS] = true }, revives = 0, boosts = {}, receipts = {},
 	}
 end
 
@@ -72,6 +72,21 @@ local function clean(saved)
 	for id in section("items") do
 		if Config.GearById[id] then
 			data.items[id] = true
+		end
+	end
+	for name in section("classes") do
+		if Config.Classes[name] then
+			data.classes[name] = true
+		end
+	end
+	for id, level in section("gearLevels") do
+		if data.items[id] and num(level) then
+			data.gearLevels[id] = math.clamp(math.floor(num(level)), 0, Config.GEAR_UPGRADE.max)
+		end
+	end
+	for id, copies in section("gearCopies") do
+		if data.items[id] and num(copies) then
+			data.gearCopies[id] = math.max(0, math.floor(num(copies)))
 		end
 	end
 	for slot, id in section("equipped") do
@@ -213,6 +228,23 @@ function PlayerData.train(player, kind, name)
 	return true
 end
 
+-- Pirates ---------------------------------------------------------------------------------
+
+function PlayerData.hasClass(player, name)
+	local data = cache[player]
+	return data ~= nil and data.classes[name] == true
+end
+
+function PlayerData.unlockClass(player, name)
+	local data, class = cache[player], Config.Classes[name]
+	if not data or not class or data.classes[name] or data.gold < class.cost then
+		return false
+	end
+	data.gold -= class.cost
+	data.classes[name] = true
+	return true
+end
+
 -- Gear ------------------------------------------------------------------------------------
 
 function PlayerData.buyGear(player, id)
@@ -235,14 +267,41 @@ function PlayerData.equipGear(player, id)
 	return true
 end
 
--- Gives an item (a boss drop). Returns false if they already had it.
-function PlayerData.grantItem(player, id)
-	local data = cache[player]
-	if not data or data.items[id] then
+-- Upgrades an owned item one level at Tom's: costs one duplicate copy of it plus gold.
+function PlayerData.upgradeGear(player, id)
+	local data, item = cache[player], Config.GearById[id]
+	if not data or not item or not data.items[id] then
 		return false
 	end
-	data.items[id] = true
+	local level = data.gearLevels[id] or 0
+	local cost = Config.gearUpgradeCost(item, level)
+	if level >= Config.GEAR_UPGRADE.max or (data.gearCopies[id] or 0) < 1 or data.gold < cost then
+		return false
+	end
+	data.gold -= cost
+	data.gearCopies[id] -= 1
+	data.gearLevels[id] = level + 1
 	return true
+end
+
+-- Gives a dropped item. Returns "new", "copy" (already owned: a spare copy to upgrade it with)
+-- or "gold" (already owned and maxed: the caller pays out Config.DUPLICATE_GOLD).
+function PlayerData.grantItem(player, id)
+	local data = cache[player]
+	if not data then
+		return nil
+	end
+	if not data.items[id] then
+		data.items[id] = true
+		return "new"
+	end
+	-- copies beyond what reaching +10 needs are paid out as gold
+	local needed = Config.GEAR_UPGRADE.max - (data.gearLevels[id] or 0)
+	if (data.gearCopies[id] or 0) < needed then
+		data.gearCopies[id] = (data.gearCopies[id] or 0) + 1
+		return "copy"
+	end
+	return "gold"
 end
 
 -- All stat bonuses from the player's equipped gear.
@@ -250,7 +309,7 @@ function PlayerData.gearBonus(player)
 	local bonus = {}
 	local data = cache[player]
 	for _, id in data and data.equipped or {} do
-		for stat, value in Config.GearById[id].bonus do
+		for stat, value in Config.gearStats(Config.GearById[id], data.gearLevels[id]) do
 			bonus[stat] = (bonus[stat] or 0) + value
 		end
 	end

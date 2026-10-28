@@ -9,8 +9,9 @@ local Fx = require(script.Parent.Fx)
 local Enemies = {}
 Enemies.onKilled = function(_enemy, _killer) end
 Enemies.onPickup = function(_player, _xp) end
+Enemies.onChest = function(_runKey, _kind, _opener) end -- a crew member opened a treasure chest
 
-local list, orbs, bullets = {}, {}, {}
+local list, orbs, bullets, chests = {}, {}, {}, {}
 local nextBulletId = 0
 local lastTargets = {} -- targets from the latest step, used when delayed blasts land
 local NO_TARGETS = {}
@@ -114,6 +115,34 @@ local function dropOrb(pos, xp, runKey)
 		Position = pos,
 	}, orbFolder)
 	table.insert(orbs, { part = part, xp = xp, run = runKey })
+end
+
+-- A glowing treasure chest; the first crew member to walk up opens it for the whole crew.
+local function dropChest(pos, runKey, kind)
+	local model = Instance.new("Model")
+	model.Name = "TreasureChest"
+	local gold = Color3.fromRGB(255, 200, 50)
+	local base = makePart({ Name = "Base", Size = Vector3.new(3, 2, 2.2), Color = Color3.fromRGB(110, 70, 35), Material = Enum.Material.Wood, CFrame = CFrame.new(pos + Vector3.new(0, 1, 0)) }, model)
+	makePart({ Name = "Lid", Size = Vector3.new(3.1, 0.8, 2.3), Color = Color3.fromRGB(130, 85, 40), Material = Enum.Material.Wood, CFrame = base.CFrame * CFrame.new(0, 1.4, 0) }, model)
+	makePart({ Name = "Band", Size = Vector3.new(0.3, 2.9, 2.35), Color = gold, Material = Enum.Material.Metal, CFrame = base.CFrame * CFrame.new(0, 0.4, 0) }, model)
+	local glow = makePart({ Name = "Glow", Shape = Enum.PartType.Ball, Size = Vector3.one * 5, Color = gold, Material = Enum.Material.ForceField, CFrame = base.CFrame * CFrame.new(0, 0.6, 0) }, model)
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness = gold, 14, 2
+	light.Parent = glow
+	local tag = Instance.new("BillboardGui")
+	tag.Size = UDim2.fromOffset(60, 60)
+	tag.StudsOffset = Vector3.new(0, 4, 0)
+	tag.AlwaysOnTop = true
+	tag.MaxDistance = 250
+	tag.Parent = base
+	local icon = Instance.new("TextLabel")
+	icon.Size = UDim2.fromScale(1, 1)
+	icon.BackgroundTransparency = 1
+	icon.TextScaled = true
+	icon.Text = "🎁"
+	icon.Parent = tag
+	model.Parent = folder
+	table.insert(chests, { model = model, pos = base.Position, run = runKey, kind = kind, born = os.clock() })
 end
 
 local function flash(e)
@@ -294,6 +323,10 @@ function Enemies.damage(e, amount, player)
 		dropOrb(e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale - 0.8, 0), e.def.xp, e.run)
 	end
 	Fx.emit("death", { pos = e.root.Position, c = e.color, s = e.def.scale })
+	local chestChance = Config.CHESTS[e.kind]
+	if chestChance and math.random() < chestChance then
+		dropChest(e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale, 0), e.run, e.kind)
+	end
 	Enemies.onKilled(e, player)
 	e.model:Destroy()
 end
@@ -332,6 +365,21 @@ function Enemies.step(dt, targetsByRun)
 				hurt(best, e.damage)
 			end
 			specialAttacks(e, best, bestDist, targetsByRun[e.run], now)
+		end
+	end
+
+	for i = #chests, 1, -1 do
+		local chest = chests[i]
+		-- bob gently so it catches the eye
+		chest.model:PivotTo(CFrame.new(chest.pos + Vector3.new(0, math.sin((now - chest.born) * 3) * 0.3, 0)) * CFrame.Angles(0, now - chest.born, 0))
+		for _, t in targetsByRun[chest.run] or NO_TARGETS do
+			if flat(t.root.Position - chest.pos).Magnitude <= 5 then
+				Fx.emit("chest", { pos = chest.pos })
+				Enemies.onChest(chest.run, chest.kind, t.player)
+				chest.model:Destroy()
+				table.remove(chests, i)
+				break
+			end
 		end
 	end
 
@@ -437,8 +485,14 @@ function Enemies.count(runKey)
 	return n
 end
 
--- Removes one adventure's enemies, bullets and XP orbs.
+-- Removes one adventure's enemies, bullets, chests and XP orbs.
 function Enemies.clear(runKey)
+	for i = #chests, 1, -1 do
+		if chests[i].run == runKey then
+			chests[i].model:Destroy()
+			table.remove(chests, i)
+		end
+	end
 	for i = #bullets, 1, -1 do
 		if bullets[i].run == runKey then
 			Fx.emit("eshotEnd", { id = bullets[i].id })

@@ -368,9 +368,27 @@ function Hud.setState(state)
 end
 
 -- Revives the player owns (from the store), shown on the knocked-out panel.
+local function refreshRevive()
+	if not ui.revive then
+		return -- not built yet: Hud.init shows it
+	end
+	local count = ui.revives or 0
+	if count > 0 then
+		ui.revive.Text = string.format("💖  REVIVE  (%d left)", count)
+	else
+		ui.revive.Text = ui.revivePrice and string.format("💖  REVIVE NOW  R$ %d", ui.revivePrice) or "💖  BUY A REVIVE"
+	end
+end
+
 function Hud.setRevives(count)
 	ui.revives = count
-	ui.revive.Text = count > 0 and string.format("💖  REVIVE  (%d left)", count) or "💖  BUY A REVIVE"
+	refreshRevive()
+end
+
+-- The Robux price of a revive, shown when the player has none left.
+function Hud.setRevivePrice(price)
+	ui.revivePrice = price
+	refreshRevive()
 end
 
 function Hud.setWatching(name)
@@ -473,8 +491,7 @@ function Hud.showResults(r)
 		table.insert(notes, "🔓 " .. r.unlocked)
 	end
 	if r.drop then
-		table.insert(notes, string.format("🎁 %s %s%s", r.drop.icon, r.drop.name,
-			r.drop.duplicate and " (owned: +" .. Theme.comma(r.drop.duplicate) .. " gold)" or " (" .. r.drop.rarity .. ")"))
+		table.insert(notes, r.drop)
 	end
 	ui.resultUnlocked.Text = table.concat(notes, "   ")
 	ui.resultUnlocked.Visible = #notes > 0
