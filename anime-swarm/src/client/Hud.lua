@@ -92,15 +92,27 @@ local function buildActionBar(root)
 end
 
 local function buildHealth(root)
-	local panel = Theme.panel({ Size = UDim2.fromOffset(400, 40), Position = UDim2.new(0.5, -200, 1, -52) }, root)
+	local panel = Theme.panel({ Size = UDim2.fromOffset(480, 40), Position = UDim2.new(0.5, -240, 1, -52) }, root)
 	Theme.icon({ Size = UDim2.fromOffset(28, 28), Position = UDim2.fromOffset(7, 6), ZIndex = 2 }, panel, "❤️", Theme.BAD, 8)
-	local _, fill, text = Theme.bar({ Size = UDim2.new(1, -54, 0, 18), Position = UDim2.fromOffset(44, 11), ZIndex = 2 }, panel,
+	local _, fill, text = Theme.bar({ Size = UDim2.new(1, -140, 0, 18), Position = UDim2.fromOffset(44, 11), ZIndex = 2 }, panel,
 		Color3.fromRGB(255, 120, 130), Color3.fromRGB(220, 40, 70))
 	ui.hpFill, ui.hpText = fill, text
-	ui.down = Theme.title({
-		Size = UDim2.fromOffset(600, 34), Position = UDim2.new(0.5, -300, 1, -176), Visible = false,
-		Text = "KNOCKED OUT  -  your crew fights on", TextColor3 = Theme.BAD,
-	}, root)
+
+	-- dash: Shift / L2 / the on-screen button; the dark overlay drains as it recharges
+	local dash = Theme.new("TextButton", {
+		Size = UDim2.fromOffset(84, 28), Position = UDim2.new(1, -90, 0, 6), Text = "💨 SHIFT", Font = Theme.BOLD,
+		TextScaled = true, TextColor3 = Theme.TEXT, BackgroundColor3 = Theme.ACCENT, AutoButtonColor = false, ZIndex = 2,
+	}, panel)
+	Theme.corner(dash, 8)
+	Theme.padding(dash, 5)
+	ui.dashShade = Theme.new("Frame", {
+		Size = UDim2.new(0, 0, 1, 10), Position = UDim2.fromOffset(-5, -5), BackgroundColor3 = Theme.BG,
+		BackgroundTransparency = 0.25, BorderSizePixel = 0, ZIndex = 3,
+	}, dash)
+	Theme.corner(ui.dashShade, 8)
+	dash.Activated:Connect(function()
+		callbacks.dash()
+	end)
 
 	local function bind(character)
 		local hum = character:WaitForChild("Humanoid")
@@ -148,6 +160,46 @@ local function fillSlot(slot, info, max, locked)
 		slot.level.TextColor3 = maxed and Theme.GOLD or Theme.TEXT
 	end
 	slot.tip = info.name .. (info.fused and "  (fused)" or info.evo and "  (evolved)" or "  -  level " .. info.level)
+end
+
+-- Leave button and the knocked-out panel ---------------------------------------------------
+
+local function buildCrewControls(root)
+	local confirmUntil = 0
+	ui.leave = Theme.button({
+		Size = UDim2.fromOffset(150, 38), Position = UDim2.fromOffset(16, 16), Text = "🏳️  LEAVE",
+		BackgroundColor3 = Theme.CARD_LIGHT, ZIndex = 2,
+	}, root, function()
+		if os.clock() < confirmUntil then
+			callbacks.leave()
+		else
+			-- ask twice so nobody leaves by accident
+			confirmUntil = os.clock() + 3
+			ui.leave.Text = "TAP AGAIN"
+			ui.leave.BackgroundColor3 = Theme.BAD
+			task.delay(3, function()
+				ui.leave.Text = "🏳️  LEAVE"
+				ui.leave.BackgroundColor3 = Theme.CARD_LIGHT
+			end)
+		end
+	end)
+
+	local down = Theme.panel({ Size = UDim2.fromOffset(440, 118), Position = UDim2.new(0.5, -220, 1, -262), Visible = false, ZIndex = 5 }, root)
+	ui.down = down
+	Theme.title({ Size = UDim2.new(1, -24, 0, 26), Position = UDim2.fromOffset(12, 10), Text = "KNOCKED OUT", TextColor3 = Theme.BAD, ZIndex = 6 }, down)
+	Theme.button({ Size = UDim2.fromOffset(38, 32), Position = UDim2.fromOffset(12, 42), Text = "◀", BackgroundColor3 = Theme.CARD_LIGHT, ZIndex = 6 }, down, function()
+		callbacks.spectate(-1)
+	end)
+	ui.watching = Theme.text({ Size = UDim2.new(1, -124, 0, 32), Position = UDim2.fromOffset(62, 42), Text = "", Font = Theme.BOLD, ZIndex = 6, MaxSize = 16 }, down)
+	Theme.button({ Size = UDim2.fromOffset(38, 32), Position = UDim2.new(1, -50, 0, 42), Text = "▶", BackgroundColor3 = Theme.CARD_LIGHT, ZIndex = 6 }, down, function()
+		callbacks.spectate(1)
+	end)
+	ui.revive = Theme.button({
+		Size = UDim2.new(1, -24, 0, 30), Position = UDim2.fromOffset(12, 80), Text = "💖  REVIVE",
+		BackgroundColor3 = Color3.fromRGB(230, 70, 130), ZIndex = 6,
+	}, down, function()
+		callbacks.revive(ui.revives or 0)
+	end)
 end
 
 -- Level-up cards ----------------------------------------------------------------------
@@ -294,6 +346,7 @@ function Hud.init(gui, cb)
 	buildStatus(root)
 	buildActionBar(root)
 	buildHealth(root)
+	buildCrewControls(root)
 	buildLevelUp(gui)
 	buildBanners(gui)
 	Hud.setStats({ level = 1, xp = 0, need = 1, kills = 0, weapons = {}, passives = {}, slots = Config.WEAPON_SLOTS_START })
@@ -310,8 +363,24 @@ function Hud.setState(state)
 	ui.adventure.Text = (state.adventure or ""):upper()
 	ui.adventure.TextColor3 = state.color or Theme.MUTED
 	ui.timer.Text = state.text or ""
-	ui.timer.TextColor3 = state.text == "FINAL BOSS!" and Theme.BAD or Theme.TEXT
+	ui.timer.TextColor3 = state.boss and Theme.BAD or Theme.TEXT
 	ui.down.Visible = state.down == true
+end
+
+-- Revives the player owns (from the store), shown on the knocked-out panel.
+function Hud.setRevives(count)
+	ui.revives = count
+	ui.revive.Text = count > 0 and string.format("💖  REVIVE  (%d left)", count) or "💖  BUY A REVIVE"
+end
+
+function Hud.setWatching(name)
+	ui.watching.Text = name and "Watching " .. name or "No crewmates standing"
+end
+
+-- Shows the dash recharging over `cooldown` seconds.
+function Hud.dashUsed(cooldown)
+	ui.dashShade.Size = UDim2.new(1, 10, 1, 10)
+	Theme.tween(ui.dashShade, cooldown, { Size = UDim2.new(0, 0, 1, 10) }, Enum.EasingStyle.Linear)
 end
 
 function Hud.setStats(st)
@@ -399,8 +468,16 @@ function Hud.showResults(r)
 	ui.resultTile.BackgroundColor3 = victory and Theme.GOLD or Theme.BAD
 	ui.resultAdventure.Text = r.adventure or ""
 	ui.resultAdventure.BackgroundColor3 = r.color or Theme.ACCENT
-	ui.resultUnlocked.Text = r.unlocked and "🔓 " .. r.unlocked or ""
-	ui.resultUnlocked.Visible = r.unlocked ~= nil
+	local notes = {}
+	if r.unlocked then
+		table.insert(notes, "🔓 " .. r.unlocked)
+	end
+	if r.drop then
+		table.insert(notes, string.format("🎁 %s %s%s", r.drop.icon, r.drop.name,
+			r.drop.duplicate and " (owned: +" .. Theme.comma(r.drop.duplicate) .. " gold)" or " (" .. r.drop.rarity .. ")"))
+	end
+	ui.resultUnlocked.Text = table.concat(notes, "   ")
+	ui.resultUnlocked.Visible = #notes > 0
 	countUp(ui.resultRows[1], r.time, function(v)
 		v = math.floor(v)
 		return string.format("%d:%02d", v // 60, v % 60)

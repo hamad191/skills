@@ -19,13 +19,14 @@ local function count(t)
 	return n
 end
 
--- Sum of class bonus, passives and permanent upgrades for one stat.
+-- Sum of class bonus, passives (boosted by Dr. Kureha's training), permanent upgrades,
+-- gear, game passes and boosts for one stat.
 function Progression.bonus(s, stat)
-	local total = s.classBonus[stat] or 0
+	local total = (s.classBonus[stat] or 0) + (s.extra[stat] or 0)
 	for name, level in s.passives do
 		local p = Config.Passives[name]
 		if p.stat == stat then
-			total += p.per * level
+			total += p.per * level * (1 + Config.TRAINING.boost * (s.training[name] or 0))
 		end
 	end
 	for name, level in s.meta do
@@ -94,7 +95,9 @@ function Progression.all()
 	return states
 end
 
-function Progression.start(player, className, meta)
+-- data: the player's save (upgrades, mastery, training). extra: stat bonuses from gear,
+-- passes and boosts for this run.
+function Progression.start(player, className, data, extra)
 	if not Config.Classes[className] then
 		className = Config.DEFAULT_CLASS
 	end
@@ -102,7 +105,8 @@ function Progression.start(player, className, meta)
 	local s = {
 		class = className, level = 1, xp = 0, kills = 0, bonusGold = 0, dead = false,
 		weapons = { [class.weapon] = 1 }, passives = {}, timers = {},
-		classBonus = class.bonus, meta = meta, choices = nil, pending = 0,
+		classBonus = class.bonus, meta = data.meta, mastery = data.mastery, training = data.training,
+		extra = extra or {}, choices = nil, pending = 0, invulnerableUntil = 0,
 	}
 	s.rerolls = math.floor(Progression.bonus(s, "reroll"))
 	states[player] = s
@@ -276,6 +280,8 @@ end
 function Progression.offer(player)
 	local s = states[player]
 	s.choices = buildChoices(s)
+	-- a moment of safety while the cards are open (the run keeps going in co-op)
+	s.invulnerableUntil = math.max(s.invulnerableUntil, os.clock() + Config.LEVELUP_SHIELD)
 	local cards = {}
 	for i, c in s.choices do
 		cards[i] = describe(s, c)
@@ -288,7 +294,7 @@ function Progression.addXP(player, amount)
 	if not s or s.dead then
 		return
 	end
-	s.xp += amount
+	s.xp += amount * (1 + Progression.bonus(s, "xp"))
 	while s.xp >= Progression.xpNeeded(s.level) do
 		s.xp -= Progression.xpNeeded(s.level)
 		s.level += 1

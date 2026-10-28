@@ -351,6 +351,14 @@ def ship(x, z):
 BLOCKED = []  # (x, z, radius) areas bushes should avoid
 
 
+def npc_spots():
+    """(x, z) of every island NPC, read from Config.NPCS so bushes keep clear of them."""
+    with open(os.path.join(ROOT, "src/shared/Config.lua"), encoding="utf-8") as f:
+        text = f.read()
+    block = text[text.index("Config.NPCS = {"):text.index("Config.MASTERY")]
+    return [(float(x), float(z)) for x, z in re.findall(r"position = Vector3\.new\((-?[\d.]+), 0, (-?[\d.]+)\)", block)]
+
+
 def free(x, z):
     if abs(x) < 9 and ISLAND_Z < z < ISLAND_Z + 40:  # the path
         return False
@@ -372,6 +380,7 @@ def spawn_island():
         part("Plaza", (0.6, PLAZA[2] * 2, PLAZA[2] * 2), (0, 1.55, PLAZA[1]), (150, 150, 160), "cobble", "cylinder", UPRIGHT),
     ]
     BLOCKED.extend([(0, cz, 14), (PLAZA[0], PLAZA[1], PLAZA[2] + 4)])
+    BLOCKED.extend((x, z, 8) for x, z in npc_spots())  # the island NPCs (server/Npcs.lua) stand here
 
     # signs and landmarks around the spawn
     S = Placer(16, GRASS_TOP, cz + 16, 0)
@@ -1089,7 +1098,8 @@ def build():
     starter = item(
         "StarterPlayer",
         "StarterPlayer",
-        '<token name="GameSettingsAvatar">1</token>',  # R15 avatars: the attack animations bend R15 joints
+        # R15 avatars (the attack animations bend R15 joints); Shift is dash, so no Shift-lock
+        '<token name="GameSettingsAvatar">1</token><bool name="EnableMouseLockOption">false</bool>',
         children=[
             item("StarterPlayerScripts", "StarterPlayerScripts", children=[folder("Client", "src/client")]),
             item(

@@ -1,5 +1,6 @@
--- Spawn island UI: character select, upgrade shop, the gate's map select, gold counter,
--- hints and the voyage gate boarding banner. Maps are only chosen at a voyage gate.
+-- Spawn island UI: character select, training, gear, upgrades shop, Robux store, the gate's
+-- map select, gold counter, hints and the voyage gate boarding banner. NPC prompts open these
+-- menus too (see SwarmClient). Maps are only chosen at a voyage gate.
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -192,11 +193,12 @@ local function buildVoyage()
 		end
 		local lock = Theme.text({ Size = UDim2.fromScale(1, 1), Text = "🔒", BackgroundTransparency = 0.3, BackgroundColor3 = Theme.BG, ZIndex = 16, Visible = false, MaxSize = 28 }, card)
 		Theme.corner(lock, 12)
+		local busy = Theme.chip({ Size = UDim2.fromOffset(70, 20), Position = UDim2.new(1, -78, 0, 46), Text = "IN USE", Visible = false, ZIndex = 15, MaxSize = 11 }, card, Theme.BAD)
 		card.Activated:Connect(function()
 			selectedMap = map.key
 			Lobby.refreshVoyage()
 		end)
-		mapCards[map.key] = { stroke = stroke, pips = pipFrames, lock = lock }
+		mapCards[map.key] = { stroke = stroke, pips = pipFrames, lock = lock, busy = busy }
 	end
 
 	local side = Theme.card({ Size = UDim2.fromOffset(284, 520), Position = UDim2.fromOffset(604, 96), ZIndex = 11 }, frame)
@@ -217,19 +219,243 @@ local function buildVoyage()
 		BackgroundColor3 = Theme.GOOD, ZIndex = 12,
 	}, side, function()
 		local map = Config.MapByKey[selectedMap]
-		if isCaptain() and Config.unlocked(meta.progress, map, selectedDifficulty) then
+		local busy = portal and portal.busy and portal.busy[selectedMap]
+		if isCaptain() and not busy and Config.unlocked(meta.progress, map, selectedDifficulty) then
 			callbacks.voyage(selectedMap, selectedDifficulty)
 			Lobby.toggle("voyage", false)
 		end
 	end)
 end
 
+-- Training (Rayleigh: skills, Dr. Kureha: passives) ------------------------------------------
+
+local trainTab = "skills"
+
+local function buildTrain()
+	local frame, sub = panel("Train", 780, 640, "TRAINING")
+	ui.trainHint = sub
+	ui.trainTabs = {}
+	for i, tab in { { "skills", "⚔️  SKILLS  -  Rayleigh" }, { "passives", "💊  PASSIVES  -  Dr. Kureha" } } do
+		ui.trainTabs[tab[1]] = Theme.button({
+			Size = UDim2.fromOffset(250, 38), Position = UDim2.fromOffset(28 + (i - 1) * 262, 88), Text = tab[2],
+			BackgroundColor3 = Theme.CARD_LIGHT, ZIndex = 12,
+		}, frame, function()
+			trainTab = tab[1]
+			Lobby.refreshTrain()
+		end)
+	end
+	ui.trainList = scroller(frame, { Size = UDim2.new(1, -40, 1, -156), Position = UDim2.fromOffset(20, 138) })
+	Theme.new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, ui.trainList)
+end
+
+local function trainRow(order, icon, color, name, effect, level, max, cost, onTrain)
+	local row = Theme.card({ Size = UDim2.new(1, -12, 0, 72), LayoutOrder = order, ZIndex = 12 }, ui.trainList)
+	Theme.icon({ Size = UDim2.fromOffset(50, 50), Position = UDim2.fromOffset(11, 11), ZIndex = 13 }, row, icon, color, 14)
+	Theme.title({ Size = UDim2.new(0, 300, 0, 22), Position = UDim2.fromOffset(74, 12), Text = name, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 18 }, row)
+	Theme.text({ Size = UDim2.new(0, 330, 0, 16), Position = UDim2.fromOffset(74, 40), Text = effect, TextColor3 = Theme.MUTED, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 13 }, row)
+	local pips = Theme.new("Frame", { Size = UDim2.fromOffset(130, 8), Position = UDim2.new(1, -300, 0.5, -4), BackgroundTransparency = 1, ZIndex = 13 }, row)
+	Theme.new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 3) }, pips)
+	for i = 1, max do
+		local pip = Theme.new("Frame", {
+			Size = UDim2.fromOffset(math.floor(130 / max) - 3, 8), BackgroundColor3 = i <= level and Theme.GOLD or Theme.LINE,
+			BackgroundTransparency = i <= level and 0 or 0.88, ZIndex = 14,
+		}, pips)
+		Theme.corner(pip, 4)
+	end
+	local maxed = level >= max
+	Theme.button({
+		Size = UDim2.fromOffset(140, 44), Position = UDim2.new(1, -152, 0.5, -22),
+		Text = maxed and "MAXED" or "💰 " .. Theme.comma(cost),
+		BackgroundColor3 = maxed and Theme.LOCKED or meta.gold >= cost and Theme.GOOD or Color3.fromRGB(150, 60, 70), ZIndex = 13,
+	}, row, not maxed and onTrain or nil)
+end
+
+function Lobby.refreshTrain()
+	for _, child in ui.trainList:GetChildren() do
+		if child:IsA("GuiObject") then
+			child:Destroy()
+		end
+	end
+	for tab, button in ui.trainTabs do
+		button.BackgroundColor3 = tab == trainTab and Theme.ACCENT or Theme.CARD_LIGHT
+	end
+	local mastery, training = meta.mastery or {}, meta.training or {}
+	if trainTab == "skills" then
+		local class = Config.Classes[meta.class] or Config.Classes[Config.DEFAULT_CLASS]
+		ui.trainHint.Text = "Permanently power up " .. (meta.class or "your pirate") .. "'s skills. Switch pirates in CREW to train others."
+		for i, key in class.skills do
+			local w = Config.Weapons[key]
+			local level = mastery[key] or 0
+			local effect = string.format("+%d%% damage, -%d%% cooldown per level  (now +%d%% / -%d%%)",
+				Config.MASTERY.damage * 100, Config.MASTERY.cooldown * 100, Config.MASTERY.damage * 100 * level, Config.MASTERY.cooldown * 100 * level)
+			trainRow(i, w.icon, w.color, w.name, effect, level, Config.MASTERY.max, Config.trainCost("skill", level), function()
+				callbacks.train("skill", key)
+			end)
+		end
+	else
+		ui.trainHint.Text = "Make every passive stronger, forever. Each level adds 15% to that passive's effect."
+		local order = 0
+		for key, p in Config.Passives do
+			order += 1
+			local level = training[key] or 0
+			local effect = string.format("%s per level  -  boosted +%d%%", p.desc, Config.TRAINING.boost * 100 * level)
+			trainRow(order, p.icon, Theme.ACCENT, p.name, effect, level, Config.TRAINING.max, Config.trainCost("passive", level), function()
+				callbacks.train("passive", key)
+			end)
+		end
+	end
+end
+
+-- Gear (Tom the Shipwright) ----------------------------------------------------------------
+
+local gearTab = "weapon"
+
+local function buildGear()
+	local frame = panel("Gear", 840, 640, "GEAR", "Equip one weapon, one outfit and one charm. Mythic gear only drops from bosses.")
+	ui.equippedCards = {}
+	for i, slot in Config.GEAR_SLOTS do
+		local card = Theme.card({ Size = UDim2.fromOffset(256, 80), Position = UDim2.fromOffset(28 + (i - 1) * 268, 88), ZIndex = 11 }, frame)
+		local tile, icon = Theme.icon({ Size = UDim2.fromOffset(56, 56), Position = UDim2.fromOffset(12, 12), ZIndex = 12 }, card, "", Theme.CARD_LIGHT, 14)
+		local name = Theme.title({ Size = UDim2.new(1, -86, 0, 20), Position = UDim2.fromOffset(78, 14), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12, MaxSize = 17 }, card)
+		local stats = Theme.text({ Size = UDim2.new(1, -86, 0, 30), Position = UDim2.fromOffset(78, 38), TextWrapped = true, TextColor3 = Theme.MUTED, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12, MaxSize = 12 }, card)
+		ui.equippedCards[slot] = { tile = tile, icon = icon, name = name, stats = stats }
+	end
+	ui.gearTabs = {}
+	for i, slot in Config.GEAR_SLOTS do
+		ui.gearTabs[slot] = Theme.button({
+			Size = UDim2.fromOffset(180, 36), Position = UDim2.fromOffset(28 + (i - 1) * 192, 182),
+			Text = Config.GEAR_SLOT_ICONS[slot] .. "  " .. Config.GEAR_SLOT_NAMES[slot]:upper(), BackgroundColor3 = Theme.CARD_LIGHT, ZIndex = 12,
+		}, frame, function()
+			gearTab = slot
+			Lobby.refreshGear()
+		end)
+	end
+	ui.gearList = scroller(frame, { Size = UDim2.new(1, -40, 1, -250), Position = UDim2.fromOffset(20, 230) })
+	Theme.new("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, ui.gearList)
+end
+
+function Lobby.refreshGear()
+	local items, equipped = meta.items or {}, meta.equipped or {}
+	for slot, card in ui.equippedCards do
+		local item = equipped[slot] and Config.GearById[equipped[slot]]
+		card.icon.Text = item and item.icon or Config.GEAR_SLOT_ICONS[slot]
+		card.tile.BackgroundColor3 = item and Config.RARITIES[item.rarity] or Theme.CARD_LIGHT
+		card.name.Text = item and item.name or "No " .. Config.GEAR_SLOT_NAMES[slot]:lower()
+		card.stats.Text = item and Config.describeBonus(item.bonus) or "Pick one below"
+	end
+	for slot, button in ui.gearTabs do
+		button.BackgroundColor3 = slot == gearTab and Theme.ACCENT or Theme.CARD_LIGHT
+	end
+	for _, child in ui.gearList:GetChildren() do
+		if child:IsA("GuiObject") then
+			child:Destroy()
+		end
+	end
+	local order = 0
+	for _, item in Config.GEAR_ITEMS do
+		if item.slot == gearTab then
+			order += 1
+			local color = Config.RARITIES[item.rarity]
+			local row = Theme.card({ Size = UDim2.new(1, -12, 0, 72), LayoutOrder = order, ZIndex = 12 }, ui.gearList)
+			Theme.icon({ Size = UDim2.fromOffset(50, 50), Position = UDim2.fromOffset(11, 11), ZIndex = 13 }, row, item.icon, color, 14)
+			Theme.title({ Size = UDim2.new(0, 260, 0, 22), Position = UDim2.fromOffset(74, 12), Text = item.name, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 18 }, row)
+			Theme.chip({ Size = UDim2.fromOffset(96, 20), Position = UDim2.fromOffset(74, 40), Text = item.rarity:upper(), ZIndex = 13, MaxSize = 11 }, row, color)
+			Theme.text({ Size = UDim2.new(0, 280, 0, 34), Position = UDim2.fromOffset(180, 34), Text = Config.describeBonus(item.bonus), TextWrapped = true, TextColor3 = Theme.MUTED, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 13, MaxSize = 13 }, row)
+			local text, color2, action
+			if equipped[item.slot] == item.id then
+				text, color2, action = "✓ EQUIPPED", Theme.ACCENT, "equip"
+			elseif items[item.id] then
+				text, color2, action = "EQUIP", Theme.GOOD, "equip"
+			elseif item.cost > 0 then
+				text, color2, action = "💰 " .. Theme.comma(item.cost), meta.gold >= item.cost and Theme.GOOD or Color3.fromRGB(150, 60, 70), "buy"
+			else
+				text, color2 = "☠️ BOSS DROP", Theme.LOCKED
+			end
+			Theme.button({ Size = UDim2.fromOffset(150, 44), Position = UDim2.new(1, -162, 0.5, -22), Text = text, BackgroundColor3 = color2, ZIndex = 13 }, row,
+				action and function()
+					callbacks.gear(action, item.id)
+				end or nil)
+		end
+	end
+end
+
+-- Robux store (Buggy) --------------------------------------------------------------------
+
+local function buildStore()
+	local frame = panel("Store", 840, 640, "STORE", "Support the game and get perks. Game passes are forever; products are used up.")
+	Theme.title({ Size = UDim2.fromOffset(300, 22), Position = UDim2.fromOffset(28, 90), Text = "GAME PASSES", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 11, MaxSize = 18 }, frame)
+	ui.passButtons = {}
+	for i, key in Config.PASS_ORDER do
+		local pass = Config.GAME_PASSES[key]
+		local card = Theme.card({ Size = UDim2.fromOffset(188, 196), Position = UDim2.fromOffset(28 + (i - 1) * 198, 120), ZIndex = 11 }, frame)
+		Theme.icon({ Size = UDim2.fromOffset(60, 60), Position = UDim2.new(0.5, -30, 0, 12), ZIndex = 12 }, card, pass.icon, Theme.GOLD, 16)
+		Theme.title({ Size = UDim2.new(1, -16, 0, 22), Position = UDim2.fromOffset(8, 78), Text = pass.name, ZIndex = 12, MaxSize = 18 }, card)
+		Theme.text({ Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 102), Text = pass.desc, TextWrapped = true, TextColor3 = Theme.MUTED, ZIndex = 12, MaxSize = 13 }, card)
+		ui.passButtons[key] = Theme.button({ Size = UDim2.new(1, -20, 0, 36), Position = UDim2.new(0, 10, 1, -46), Text = "", ZIndex = 12 }, card, function()
+			callbacks.buyPass(key)
+		end)
+	end
+	Theme.title({ Size = UDim2.fromOffset(300, 22), Position = UDim2.fromOffset(28, 330), Text = "PRODUCTS", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 11, MaxSize = 18 }, frame)
+	ui.productButtons, ui.productNotes = {}, {}
+	for i, key in Config.PRODUCT_ORDER do
+		local product = Config.PRODUCTS[key]
+		local col, row = (i - 1) % 3, math.floor((i - 1) / 3)
+		local card = Theme.card({ Size = UDim2.fromOffset(254, 116), Position = UDim2.fromOffset(28 + col * 264, 360 + row * 126), ZIndex = 11 }, frame)
+		Theme.icon({ Size = UDim2.fromOffset(48, 48), Position = UDim2.fromOffset(12, 12), ZIndex = 12 }, card, product.icon, Theme.ACCENT, 14)
+		Theme.title({ Size = UDim2.new(1, -84, 0, 20), Position = UDim2.fromOffset(72, 12), Text = product.name, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12, MaxSize = 16 }, card)
+		ui.productNotes[key] = Theme.text({ Size = UDim2.new(1, -84, 0, 30), Position = UDim2.fromOffset(72, 34), Text = product.desc, TextWrapped = true, TextColor3 = Theme.MUTED, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12, MaxSize = 12 }, card)
+		ui.productButtons[key] = Theme.button({ Size = UDim2.new(1, -24, 0, 34), Position = UDim2.new(0, 12, 1, -44), Text = "", ZIndex = 12 }, card, function()
+			callbacks.buyProduct(key)
+		end)
+	end
+end
+
+-- prices: [kind .. key] = Robux price, filled in by Lobby.setPrice
+local prices = {}
+
+function Lobby.setPrice(kind, key, robux)
+	prices[kind .. key] = robux
+	Lobby.refreshStore()
+end
+
+function Lobby.refreshStore()
+	local owned = {}
+	for _, key in meta.passes or {} do
+		owned[key] = true
+	end
+	for key, button in ui.passButtons do
+		local pass = Config.GAME_PASSES[key]
+		if owned[key] then
+			button.Text, button.BackgroundColor3 = "✓ OWNED", Theme.ACCENT
+		elseif pass.id == 0 then
+			button.Text, button.BackgroundColor3 = "NOT SET UP", Theme.LOCKED
+		else
+			button.Text, button.BackgroundColor3 = prices["pass" .. key] and "R$ " .. prices["pass" .. key] or "BUY", Theme.GOOD
+		end
+	end
+	for key, button in ui.productButtons do
+		local product = Config.PRODUCTS[key]
+		if product.id == 0 then
+			button.Text, button.BackgroundColor3 = "NOT SET UP", Theme.LOCKED
+		else
+			button.Text, button.BackgroundColor3 = prices["product" .. key] and "R$ " .. prices["product" .. key] or "BUY", Theme.GOOD
+		end
+		local note = product.desc
+		if product.boost and (meta.boosts or {})[product.boost] and meta.boosts[product.boost] > 0 then
+			note = string.format("Active: %d min left", math.ceil(meta.boosts[product.boost] / 60))
+		elseif product.revive then
+			note = product.desc .. string.format("  (you have %d)", meta.revives or 0)
+		end
+		ui.productNotes[key].Text = note
+	end
+end
+
 -- Gold, side menu, hint and the gate banner ----------------------------------------------
 
 local function navButton(parent, icon, label, color, order, onClick)
-	local button = Theme.button({ Size = UDim2.fromOffset(92, 92), Text = "", BackgroundColor3 = color, LayoutOrder = order }, parent, onClick)
-	Theme.text({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 4), Text = icon, ZIndex = 3 }, button)
-	Theme.title({ Size = UDim2.new(1, 0, 0, 18), Position = UDim2.new(0, 0, 1, -26), Text = label, ZIndex = 3, MaxSize = 15 }, button)
+	local button = Theme.button({ Size = UDim2.fromOffset(78, 78), Text = "", BackgroundColor3 = color, LayoutOrder = order }, parent, onClick)
+	Theme.text({ Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 2), Text = icon, ZIndex = 3 }, button)
+	Theme.title({ Size = UDim2.new(1, 0, 0, 15), Position = UDim2.new(0, 0, 1, -22), Text = label, ZIndex = 3, MaxSize = 13 }, button)
 	return button
 end
 
@@ -238,19 +464,28 @@ local function buildHud()
 	Theme.icon({ Size = UDim2.fromOffset(34, 34), Position = UDim2.fromOffset(8, 8), ZIndex = 2 }, gold, "💰", Theme.GOLD, 10)
 	ui.gold = Theme.title({ Size = UDim2.new(1, -60, 1, -18), Position = UDim2.fromOffset(50, 9), Text = "0", TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2 }, gold)
 
-	local nav = Theme.panel({ Size = UDim2.fromOffset(116, 220), Position = UDim2.new(0, 16, 0.5, -130) }, ui.root)
-	Theme.new("UIListLayout", { Padding = UDim.new(0, 12), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }, nav)
-	navButton(nav, "👒", "CREW", Color3.fromRGB(220, 70, 90), 1, function()
-		Lobby.toggle("crew")
-	end)
-	navButton(nav, "🛒", "SHOP", Color3.fromRGB(230, 160, 40), 2, function()
-		Lobby.toggle("shop")
-	end)
-	local playing = Theme.panel({ Size = UDim2.fromOffset(200, 44), Position = UDim2.new(0, 16, 0.5, 100) }, ui.root)
+	local nav = Theme.panel({ Size = UDim2.fromOffset(100, 460), Position = UDim2.new(0, 16, 0.5, -250) }, ui.root)
+	Theme.new("UIListLayout", { Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }, nav)
+	for i, item in {
+		{ "👒", "CREW", Color3.fromRGB(220, 70, 90), "crew" },
+		{ "⚔️", "TRAIN", Color3.fromRGB(99, 132, 255), "train" },
+		{ "🛡️", "GEAR", Color3.fromRGB(70, 170, 140), "gear" },
+		{ "🛒", "SHOP", Color3.fromRGB(230, 160, 40), "shop" },
+		{ "💎", "STORE", Color3.fromRGB(200, 80, 220), "store" },
+	} do
+		navButton(nav, item[1], item[2], item[3], i, function()
+			Lobby.toggle(item[4])
+		end)
+	end
+	local playing = Theme.panel({ Size = UDim2.fromOffset(200, 44), Position = UDim2.new(0, 16, 0.5, 220) }, ui.root)
 	local tile, icon = Theme.icon({ Size = UDim2.fromOffset(32, 32), Position = UDim2.fromOffset(6, 6), ZIndex = 2 }, playing, "", Theme.ACCENT, 16)
 	ui.playingTile, ui.playingIcon = tile, icon
 	ui.crewName = Theme.text({ Size = UDim2.new(1, -54, 1, -14), Position = UDim2.fromOffset(46, 7), Font = Theme.BOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2, MaxSize = 16 }, playing)
 
+	ui.saveWarning = Theme.chip({
+		Size = UDim2.fromOffset(560, 32), Position = UDim2.new(0.5, -280, 0, 76), Visible = false, MaxSize = 14,
+		Text = "⚠️  Your save couldn't load, so progress won't save this visit. Rejoin to try again.",
+	}, ui.root, Theme.BAD)
 	ui.hint = Theme.panel({ Size = UDim2.fromOffset(560, 46), Position = UDim2.new(0.5, -280, 1, -66) }, ui.root)
 	Theme.text({ Size = UDim2.new(1, -28, 1, -16), Position = UDim2.fromOffset(14, 8), Text = "⛵  Step onto a voyage gate to choose your adventure", Font = Theme.BOLD, MaxSize = 17 }, ui.hint)
 
@@ -277,7 +512,10 @@ function Lobby.init(gui, cb)
 	ui.root = Theme.new("Frame", { Name = "Lobby", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }, gui)
 	buildHud()
 	buildCrew()
+	buildTrain()
+	buildGear()
 	buildShop()
+	buildStore()
 	buildVoyage()
 	Lobby.setMeta(meta)
 
@@ -320,15 +558,33 @@ function Lobby.toggle(name, open)
 				q.frame.Visible = false
 			end
 		end
-		local viewport = workspace.CurrentCamera.ViewportSize
-		local fit = math.min(1, (viewport.Y - 90) / p.height, (viewport.X - 40) / p.width)
-		p.scale.Scale = fit * 0.9
-		Theme.tween(p.scale, 0.25, { Scale = fit }, Enum.EasingStyle.Back)
+		p.scale.Scale = 0.9
+		Theme.tween(p.scale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
 		if name == "voyage" then
 			Lobby.refreshVoyage()
+		elseif name == "train" then
+			Lobby.refreshTrain()
+		elseif name == "gear" then
+			Lobby.refreshGear()
+		elseif name == "store" then
+			Lobby.refreshStore()
 		end
 	end
 	p.frame.Visible = open
+end
+
+-- Opens a menu from an NPC (tab: which tab of the training menu).
+function Lobby.open(name, tab)
+	if not panels[name] or not ui.root.Visible then
+		return
+	end
+	if name == "train" and tab then
+		trainTab = tab
+	end
+	Lobby.toggle(name, true)
+	if name == "train" then
+		Lobby.refreshTrain()
+	end
 end
 
 -- Lists a character's 6 skills under the character cards.
@@ -354,6 +610,7 @@ function Lobby.refreshVoyage()
 	for _, map in Config.Maps do
 		local card = mapCards[map.key]
 		card.lock.Visible = not Config.unlocked(progress, map, 1)
+		card.busy.Visible = portal ~= nil and portal.busy ~= nil and portal.busy[map.key] == true
 		for d, pip in card.pips do
 			local cleared = (progress[map.key] or 0) >= d
 			pip.BackgroundColor3 = cleared and Config.Difficulties[d].color or Theme.LINE
@@ -388,6 +645,9 @@ function Lobby.refreshVoyage()
 	if not Config.unlocked(progress, map, selectedDifficulty) then
 		ui.sail.Text = map.index > 1 and (progress[Config.Maps[map.index - 1].key] or 0) < 1
 			and "🔒  CLEAR " .. Config.Maps[map.index - 1].name:upper() .. " FIRST" or "🔒  LOCKED"
+		ui.sail.BackgroundColor3 = Theme.LOCKED
+	elseif portal and portal.busy and portal.busy[map.key] then
+		ui.sail.Text = "ANOTHER CREW IS HERE"
 		ui.sail.BackgroundColor3 = Theme.LOCKED
 	elseif isCaptain() then
 		ui.sail.Text = "⛵  SET SAIL"
@@ -431,7 +691,15 @@ function Lobby.setMeta(data)
 			row.buy.BackgroundColor3 = data.gold >= cost and Theme.GOOD or Color3.fromRGB(150, 60, 70)
 		end
 	end
+	ui.saveWarning.Visible = data.loadFailed == true
 	Lobby.refreshVoyage()
+	if panels.train.frame.Visible then
+		Lobby.refreshTrain()
+	end
+	if panels.gear.frame.Visible then
+		Lobby.refreshGear()
+	end
+	Lobby.refreshStore()
 end
 
 -- Called while standing on a voyage gate.
@@ -445,15 +713,18 @@ function Lobby.portal(info)
 	ui.bannerCaptain.Text = info.captain and "👑 You are the captain" or ("👑 Captain: " .. (info.captainName or "?"))
 	ui.bannerStatus.Text = info.text
 	ui.bannerPick.Visible = info.captain
-	panels.crew.frame.Visible = false
-	panels.shop.frame.Visible = false
+	for name, p in panels do
+		if name ~= "voyage" then
+			p.frame.Visible = false
+		end
+	end
 	-- the captain gets the map select once per boarding
 	if info.captain and not info.map and not pickerOpened then
 		pickerOpened = true
 		Lobby.toggle("voyage", true)
 	end
-	if wasCaptain ~= isCaptain() then
-		Lobby.refreshVoyage()
+	if wasCaptain ~= isCaptain() or panels.voyage.frame.Visible then
+		Lobby.refreshVoyage() -- keeps captain status and busy maps current
 	end
 end
 

@@ -24,10 +24,11 @@ end
 local function stats(s, name, level)
 	local w = Config.Weapons[name]
 	local up = level - 1
+	local mastery = s.mastery[w.from or name] or 0 -- Rayleigh's training (evolutions use their base skill)
 	return {
 		w = w,
-		damage = w.damage * (1 + 0.2 * up) * Progression.damageMult(s),
-		cooldown = w.cooldown * (1 - 0.04 * up) * Progression.cooldownMult(s),
+		damage = w.damage * (1 + 0.2 * up) * (1 + Config.MASTERY.damage * mastery) * Progression.damageMult(s),
+		cooldown = w.cooldown * (1 - 0.04 * up) * (1 - Config.MASTERY.cooldown * mastery) * Progression.cooldownMult(s),
 		range = w.range * Progression.areaMult(s),
 		radius = (w.radius or 0) * Progression.areaMult(s),
 		count = (w.count or 1) + math.floor(up / 3) + math.floor(Progression.bonus(s, "count")),

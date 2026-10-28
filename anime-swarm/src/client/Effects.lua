@@ -555,6 +555,23 @@ function handlers.hits(ev)
 	showHits(ev.hits, ev.c)
 end
 
+-- A dash: a burst of wind and fading afterimages left behind the player.
+function handlers.dash(ev)
+	local root = rootOf(ev.p)
+	if not root then
+		return
+	end
+	burst(root.Position, Color3.fromRGB(200, 230, 255), 10, { size = 1.2, speed = 10, life = 0.3 })
+	for i = 0, 3 do
+		task.delay(i * 0.04, function()
+			if root.Parent then
+				local ghost = part({ Color = Color3.fromRGB(150, 200, 255), Transparency = 0.45, Size = Vector3.new(2, 5, 1), CFrame = root.CFrame })
+				fadeOut(ghost, 0.3)
+			end
+		end)
+	end
+end
+
 -- An enemy goes down in a puff of smoke.
 function handlers.death(ev)
 	burst(ev.pos, Color3.fromRGB(200, 200, 200), math.floor(6 * ev.s) + 2, { texture = TEX_SMOKE, size = 2.5 * ev.s, speed = 6, life = 0.5, gravity = Vector3.new(0, 6, 0) })

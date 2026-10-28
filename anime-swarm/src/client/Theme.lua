@@ -186,6 +186,21 @@ function Theme.bar(props, parent, top, bottom)
 	return frame, fill, label
 end
 
+-- Scales a full-screen root frame so the whole UI fits any screen. Layouts are designed for
+-- 1280x720; smaller screens (phones) shrink everything evenly.
+function Theme.autoScale(root)
+	local scale = Theme.new("UIScale", {}, root)
+	local function update()
+		local view = workspace.CurrentCamera.ViewportSize
+		local s = math.clamp(math.min(view.X / 1280, view.Y / 720), 0.45, 1)
+		scale.Scale = s
+		root.Size = UDim2.fromScale(1 / s, 1 / s)
+	end
+	update()
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(update)
+	return scale
+end
+
 function Theme.comma(n)
 	local s = tostring(math.floor(n))
 	repeat

@@ -17,8 +17,12 @@ local NO_TARGETS = {}
 local BULLET_SPEED = 45
 local BLAST_COLOR = Color3.fromRGB(255, 80, 40)
 
--- Hurts a player target, after their Iron Body defense.
+-- Hurts a player target, after their Iron Body defense. Dashing and picking level-up cards
+-- make players briefly untouchable.
 local function hurt(t, amount)
+	if t.s and (t.s.invulnerableUntil or 0) > os.clock() then
+		return
+	end
 	t.hum:TakeDamage(amount * (1 - (t.armor or 0)))
 end
 

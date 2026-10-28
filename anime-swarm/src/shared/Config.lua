@@ -815,4 +815,117 @@ Config.Meta = {
 Config.META_ORDER = { "SkillSlot", "Might", "Toughness", "Greed", "Reach", "Reroll" }
 Config.META_GROWTH = 1.5
 
+-- Dash: Shift on keyboard, L2 on a gamepad, an on-screen button on phones.
+Config.DASH = { cooldown = 2.5, speed = 85, duration = 0.18, invulnerable = 0.35 }
+Config.LEVELUP_SHIELD = 2.5 -- seconds of safety while level-up cards are open
+Config.BOSS_TIME_LIMIT = 240 -- the final boss must fall in time, or the Marines win
+Config.BOSS_ENRAGE_AT = 180 -- ...and hits much harder after this long
+
+-- Island NPCs (built by server/Npcs.lua). Their prompt opens a menu (panel / tab).
+-- Keep positions clear of the island props in tools/build_place.py.
+Config.NPCS = {
+	{ name = "Silvers Rayleigh", role = "Skill Trainer", icon = "⚔️", panel = "train", tab = "skills", position = Vector3.new(-28, 0, 1414), color = Color3.fromRGB(235, 235, 240), accent = Color3.fromRGB(70, 70, 80) },
+	{ name = "Dr. Kureha", role = "Passive Trainer", icon = "💊", panel = "train", tab = "passives", position = Vector3.new(-30, 0, 1386), color = Color3.fromRGB(150, 80, 160), accent = Color3.fromRGB(235, 235, 245) },
+	{ name = "Tom the Shipwright", role = "Gear Smith", icon = "🔨", panel = "gear", position = Vector3.new(30, 0, 1384), color = Color3.fromRGB(60, 110, 160), accent = Color3.fromRGB(240, 200, 60) },
+	{ name = "Shakky", role = "Upgrades", icon = "🍸", panel = "shop", position = Vector3.new(36, 0, 1406), color = Color3.fromRGB(40, 40, 50), accent = Color3.fromRGB(200, 60, 90) },
+	{ name = "Buggy the Clown", role = "Robux Store", icon = "💎", panel = "store", position = Vector3.new(0, 0, 1370), color = Color3.fromRGB(220, 60, 60), accent = Color3.fromRGB(60, 130, 230) },
+}
+
+-- Island training, paid with gold and kept forever. Rayleigh trains skills, Dr. Kureha passives.
+Config.MASTERY = { max = 10, damage = 0.06, cooldown = 0.02, cost = 200, growth = 1.45 }
+Config.TRAINING = { max = 5, boost = 0.15, cost = 300, growth = 1.6 }
+
+function Config.trainCost(kind, level)
+	local t = kind == "skill" and Config.MASTERY or Config.TRAINING
+	return math.floor(t.cost * t.growth ^ level)
+end
+
+-- Gear: one item per slot. Buy with gold from Tom, or win Mythic/other drops from bosses.
+-- bonus uses the same stat names as passives (damage, cooldown, health, crit, xp, gold, ...).
+Config.RARITIES = {
+	Common = Color3.fromRGB(170, 175, 190), Rare = Color3.fromRGB(80, 160, 255), Epic = Color3.fromRGB(180, 100, 255),
+	Legendary = Color3.fromRGB(255, 190, 50), Mythic = Color3.fromRGB(255, 70, 90),
+}
+Config.GEAR_SLOTS = { "weapon", "outfit", "charm" }
+Config.GEAR_SLOT_NAMES = { weapon = "Weapon", outfit = "Outfit", charm = "Charm" }
+Config.GEAR_SLOT_ICONS = { weapon = "🗡️", outfit = "🧥", charm = "🧿" }
+Config.GEAR_ITEMS = {
+	{ id = "RustyCutlass", slot = "weapon", name = "Rusty Cutlass", icon = "🗡️", rarity = "Common", cost = 500, bonus = { damage = 0.05 } },
+	{ id = "MarineSaber", slot = "weapon", name = "Marine Saber", icon = "⚔️", rarity = "Rare", cost = 2500, bonus = { damage = 0.10, crit = 0.03 } },
+	{ id = "Kabuto", slot = "weapon", name = "Kabuto", icon = "🎯", rarity = "Epic", cost = 9000, bonus = { area = 0.12, cooldown = 0.06 } },
+	{ id = "WadoIchimonji", slot = "weapon", name = "Wado Ichimonji", icon = "🗡️", rarity = "Epic", cost = 9000, bonus = { damage = 0.15, crit = 0.05 } },
+	{ id = "Shusui", slot = "weapon", name = "Shusui", icon = "⚔️", rarity = "Legendary", cost = 30000, bonus = { damage = 0.22, critDamage = 0.30 } },
+	{ id = "Enma", slot = "weapon", name = "Enma", icon = "🔥", rarity = "Mythic", cost = 0, bonus = { damage = 0.30, crit = 0.08, critDamage = 0.40 } },
+	{ id = "SailorShirt", slot = "outfit", name = "Sailor Shirt", icon = "👕", rarity = "Common", cost = 500, bonus = { health = 20 } },
+	{ id = "MarineCoat", slot = "outfit", name = "Marine Coat", icon = "🧥", rarity = "Rare", cost = 2500, bonus = { health = 40, defense = 0.04 } },
+	{ id = "FrankySpeedo", slot = "outfit", name = "Super Speedo", icon = "🩳", rarity = "Epic", cost = 9000, bonus = { speed = 0.10, regen = 1 } },
+	{ id = "JinbeKimono", slot = "outfit", name = "Jinbe's Kimono", icon = "👘", rarity = "Epic", cost = 9000, bonus = { health = 60, defense = 0.08 } },
+	{ id = "SeastoneArmor", slot = "outfit", name = "Seastone Armor", icon = "🛡️", rarity = "Legendary", cost = 30000, bonus = { health = 100, defense = 0.12 } },
+	{ id = "EmperorCloak", slot = "outfit", name = "Emperor's Cloak", icon = "👑", rarity = "Mythic", cost = 0, bonus = { health = 150, defense = 0.15, regen = 2 } },
+	{ id = "LuckyCoin", slot = "charm", name = "Lucky Coin", icon = "🪙", rarity = "Common", cost = 500, bonus = { gold = 0.10 } },
+	{ id = "LogPose", slot = "charm", name = "Log Pose", icon = "🧭", rarity = "Rare", cost = 2500, bonus = { magnet = 0.30, xp = 0.10 } },
+	{ id = "DenDenMushi", slot = "charm", name = "Den Den Mushi", icon = "🐌", rarity = "Epic", cost = 9000, bonus = { cooldown = 0.08, area = 0.08 } },
+	{ id = "EternalPose", slot = "charm", name = "Eternal Pose", icon = "📍", rarity = "Epic", cost = 9000, bonus = { xp = 0.20, cooldown = 0.05 } },
+	{ id = "TreasureMap", slot = "charm", name = "Treasure Map", icon = "🗺️", rarity = "Legendary", cost = 30000, bonus = { gold = 0.30, magnet = 0.40 } },
+	{ id = "DevilFruit", slot = "charm", name = "Devil Fruit", icon = "🍇", rarity = "Mythic", cost = 0, bonus = { damage = 0.15, cooldown = 0.10, xp = 0.25 } },
+}
+Config.GearById = {}
+for _, item in Config.GEAR_ITEMS do
+	Config.GearById[item.id] = item
+end
+
+-- Free gear drops on victory: chance per difficulty and how rare the drop tends to be.
+-- Owning the item already turns the drop into gold.
+Config.DROPS = {
+	{ chance = 0.3, weights = { Common = 70, Rare = 25, Epic = 5 } },
+	{ chance = 0.35, weights = { Common = 45, Rare = 40, Epic = 14, Legendary = 1 } },
+	{ chance = 0.4, weights = { Common = 25, Rare = 45, Epic = 25, Legendary = 5 } },
+	{ chance = 0.5, weights = { Rare = 40, Epic = 40, Legendary = 17, Mythic = 3 } },
+	{ chance = 0.6, weights = { Epic = 50, Legendary = 38, Mythic = 12 } },
+}
+Config.DUPLICATE_GOLD = { Common = 250, Rare = 1200, Epic = 4000, Legendary = 12000, Mythic = 25000 }
+
+-- How each stat reads in menus, e.g. "+10% damage".
+local STAT_TEXT = {
+	damage = "+%d%% damage", cooldown = "-%d%% cooldowns", area = "+%d%% area", speed = "+%d%% speed",
+	magnet = "+%d%% pickup range", gold = "+%d%% gold", crit = "+%d%% crit chance", critDamage = "+%d%% crit damage",
+	defense = "-%d%% damage taken", xp = "+%d%% XP",
+}
+function Config.describeBonus(bonus)
+	local parts = {}
+	for _, stat in { "damage", "crit", "critDamage", "cooldown", "area", "health", "defense", "regen", "speed", "magnet", "xp", "gold" } do
+		local value = bonus[stat]
+		if value then
+			if stat == "health" then
+				table.insert(parts, "+" .. value .. " max HP")
+			elseif stat == "regen" then
+				table.insert(parts, "+" .. value .. " HP/s")
+			else
+				table.insert(parts, string.format(STAT_TEXT[stat], math.floor(value * 100 + 0.5)))
+			end
+		end
+	end
+	return table.concat(parts, ", ")
+end
+
+-- Robux purchases. Create these on the Roblox Creator Dashboard (your experience > Monetization)
+-- and paste their IDs here. Anything left at id = 0 shows as "not set up" and can't be bought.
+Config.GAME_PASSES = {
+	DoubleGold = { id = 0, icon = "💰", name = "2x Gold", desc = "Double gold from every adventure, forever." },
+	VIP = { id = 0, icon = "👑", name = "VIP", desc = "+25% XP, +10% damage and a VIP tag.", bonus = { xp = 0.25, damage = 0.10 } },
+	LuckyPirate = { id = 0, icon = "🎲", name = "Lucky Pirate", desc = "+2 rerolls in every run.", bonus = { reroll = 2 } },
+	SwiftDash = { id = 0, icon = "💨", name = "Swift Dash", desc = "Dash 40% more often." },
+}
+Config.PASS_ORDER = { "DoubleGold", "VIP", "LuckyPirate", "SwiftDash" }
+Config.SWIFT_DASH = 0.6 -- dash cooldown multiplier with Swift Dash
+Config.PRODUCTS = {
+	Gold5k = { id = 0, icon = "💰", name = "5,000 Gold", desc = "A pouch of gold.", gold = 5000 },
+	Gold25k = { id = 0, icon = "💰", name = "25,000 Gold", desc = "A chest of gold.", gold = 25000 },
+	Gold100k = { id = 0, icon = "💎", name = "100,000 Gold", desc = "A pirate king's treasure.", gold = 100000 },
+	XPBoost = { id = 0, icon = "⚡", name = "2x XP Boost", desc = "Double XP for 30 minutes.", boost = "xp", minutes = 30 },
+	GoldBoost = { id = 0, icon = "🪙", name = "2x Gold Boost", desc = "Double gold for 30 minutes.", boost = "gold", minutes = 30 },
+	Revive = { id = 0, icon = "💖", name = "Revive", desc = "Get back up with full HP when knocked out.", revive = true },
+}
+Config.PRODUCT_ORDER = { "Gold5k", "Gold25k", "Gold100k", "XPBoost", "GoldBoost", "Revive" }
+
 return Config

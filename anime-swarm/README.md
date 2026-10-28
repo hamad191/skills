@@ -4,7 +4,12 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
 
 ## How it plays
 
-1. **Spawn island:** pick a pirate in **CREW** and buy permanent upgrades in **SHOP**.
+1. **Spawn island:** pick a pirate in **CREW**, then visit the island NPCs (press **E** or tap):
+   - **Silvers Rayleigh** trains your skills (+6% damage, -2% cooldown per level, up to 10, forever).
+   - **Dr. Kureha** trains passives (+15% to that passive's effect per level, up to 5).
+   - **Tom the Shipwright** sells and equips **gear**: one weapon, one outfit and one charm.
+   - **Shakky** sells permanent upgrades; **Buggy** runs the Robux store.
+   The side menu (CREW, TRAIN, GEAR, SHOP, STORE) opens the same menus.
 2. **Voyage gates:** walk onto the glowing pad of one of the 3 gates. The first player on the pad is the
    **captain** and picks a map and difficulty (maps are only chosen at a gate); after a 10 second countdown
    everyone on the pad sets sail.
@@ -13,7 +18,8 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
      (and tougher, longer runs: 5 to 10 minutes).
    - Clear a map on Easy to unlock the next map. Later maps are tougher and pay more gold.
    - One crew per map at a time; different crews can be on different maps at once.
-4. **Adventure:** your skills fire on their own. Move to dodge the swarm.
+4. **Adventure:** your skills fire on their own. Move to dodge the swarm, and **dash** with **Shift**
+   (L2 on a gamepad, the DASH button on phones) to zip away untouchable for a moment.
    - Enemies drop **XP orbs** (blue, or purple for big ones). Walk near them to collect.
    - **Level up** and choose 1 of 3 cards: a new skill, a skill upgrade, or a passive.
      Press **1 / 2 / 3** or click. Press **R** to reroll.
@@ -23,9 +29,12 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
    - **Fusion:** once two skills are max level (or evolved), a FUSION card can merge them into one skill
      that fires both together with double damage, faster attacks and an extra hit, and frees a slot.
    - A **Vice Admiral** every 2 minutes, and the map's **named Marine boss** when the timer runs out.
-5. **Results:** gold from kills, time, bosses and victory, plus any new unlocks; then back to the island.
+   - The final boss must fall within 4 minutes (it enrages after 3), or the Marines win.
+5. **Results:** gold from kills, time, bosses and victory, new unlocks, and sometimes a free **gear drop**
+   (rarer on harder difficulties; Mythic gear only drops from bosses). Then back to the island.
 
-If you are knocked out, your crew fights on; you return to the island when the adventure ends.
+**LEAVE** (top left, tap twice) sails home early with the gold earned so far. If you are knocked out you
+can watch your crewmates, use a **Revive**, or leave. Picking level-up cards gives a moment of safety.
 
 ## Passives
 
@@ -44,6 +53,38 @@ If you are knocked out, your crew fights on; you return to the island when the a
 | Iron Body | -6% damage taken (up to 60%) |
 
 Critical hits show big red damage numbers.
+
+## Gear
+
+| Slot | Items (rarity) |
+| ---- | -------------- |
+| Weapon | Rusty Cutlass (Common), Marine Saber (Rare), Kabuto (Epic), Wado Ichimonji (Epic), Shusui (Legendary), Enma (Mythic, boss drop) |
+| Outfit | Sailor Shirt (Common), Marine Coat (Rare), Super Speedo (Epic), Jinbe's Kimono (Epic), Seastone Armor (Legendary), Emperor's Cloak (Mythic, boss drop) |
+| Charm | Lucky Coin (Common), Log Pose (Rare), Den Den Mushi (Epic), Eternal Pose (Epic), Treasure Map (Legendary), Devil Fruit (Mythic, boss drop) |
+
+## Robux store (setup needed)
+
+| Type | What | Effect |
+| ---- | ---- | ------ |
+| Game pass | 2x Gold | Double gold from every adventure |
+| Game pass | VIP | +25% XP, +10% damage, a VIP tag |
+| Game pass | Lucky Pirate | +2 rerolls every run |
+| Game pass | Swift Dash | Dash 40% more often |
+| Product | 5,000 / 25,000 / 100,000 Gold | Gold |
+| Product | 2x XP Boost, 2x Gold Boost | 30 minutes each |
+| Product | Revive | Get back up with full HP when knocked out |
+
+To turn them on: publish the game, then on the Creator Dashboard open your experience >
+**Monetization** and create the passes (Passes) and products (Developer Products), setting your own
+prices. Paste each ID into `Config.GAME_PASSES` / `Config.PRODUCTS` in `src/shared/Config.lua` and
+rebuild. Until then they show as "NOT SET UP". Products are only granted after the purchase saves.
+Free gear drops are never sold for Robux (no paid random rewards).
+
+## Saving
+
+Saves use a session lock (two servers can't overwrite each other), retry failed loads, autosave every
+2 minutes, and never save over a save that failed to load. In Studio, turn on Game Settings > Security
+> Enable Studio Access to API Services to test saving and purchases.
 
 ## Maps
 
@@ -175,16 +216,18 @@ The spawn island and all 20 arenas are already built (the voyage gates appear wh
 | `src/shared/Config.lua` | All balance: skills and icons, passives, characters, enemies, maps, difficulties, upgrades |
 | `src/server/Main.server.lua` | Gate boarding and captains, running each adventure, spawning, bosses, rewards, unlocks |
 | `src/server/Portals.lua` | Builds the voyage gates and tracks who is standing on their pads |
-| `src/server/Gear.lua` | Each character's hats, swords and other gear |
+| `src/server/Gear.lua` | Each character's hats, swords and other worn gear |
+| `src/server/Npcs.lua` | The island NPCs and their prompts |
+| `src/server/Monetization.lua` | Game passes, developer products, revives and boosts |
 | `src/server/Weapons.lua` | How each skill fires and hits |
 | `src/server/Enemies.lua` | Enemy bodies and gear, movement, rifle shots, telegraphed blasts, XP orbs |
 | `src/server/Progression.lua` | XP, level-up cards, evolutions |
-| `src/server/PlayerData.lua` | Saving gold, permanent upgrades and map progress |
+| `src/server/PlayerData.lua` | Safe saving: gold, upgrades, training, gear, progress, purchases |
 | `src/server/Fx.lua` | Sends effect events (what happened) to every client |
-| `src/client/SwarmClient.client.lua` | Connects the UI to the server |
-| `src/client/Theme.lua` | Colors, fonts and UI building blocks |
+| `src/client/SwarmClient.client.lua` | Connects the UI to the server; dash, NPC prompts, purchases, spectating |
+| `src/client/Theme.lua` | Colors, fonts, UI building blocks and screen-size scaling |
 | `src/client/Hud.lua` | In-run HUD, level-up cards, announcements, results screen |
-| `src/client/Lobby.lua` | Character select, upgrade shop, map select, gold, gate boarding banner |
+| `src/client/Lobby.lua` | Crew, training, gear, shop, store and map select menus, gate banner |
 | `src/client/Effects.lua` | Skill effects, hit sparks, damage numbers, portal swirls |
 | `src/client/Animate.lua` | Punch, slash, kick, throw and cast animations (R15) |
 | `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the spawn island, 20 themed arenas, lighting and all scripts |
