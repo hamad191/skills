@@ -1,20 +1,24 @@
--- Shared look for every menu: colors, fonts and small UI builders.
+-- Shared look for every menu: a modern dark glass style. Colors, fonts and small UI builders.
 local TweenService = game:GetService("TweenService")
 
 local Theme = {}
 
-Theme.BG = Color3.fromRGB(14, 18, 36)
-Theme.PANEL = Color3.fromRGB(26, 32, 60)
-Theme.CARD = Color3.fromRGB(38, 46, 84)
-Theme.STROKE = Color3.fromRGB(95, 115, 190)
-Theme.GOLD = Color3.fromRGB(255, 205, 60)
-Theme.TEXT = Color3.fromRGB(242, 245, 255)
-Theme.MUTED = Color3.fromRGB(160, 172, 210)
-Theme.GOOD = Color3.fromRGB(90, 220, 120)
-Theme.BAD = Color3.fromRGB(240, 70, 70)
-Theme.DARK_TEXT = Color3.fromRGB(20, 22, 35)
-Theme.TITLE_FONT = Enum.Font.LuckiestGuy
-Theme.FONT = Enum.Font.FredokaOne
+Theme.BG = Color3.fromRGB(11, 13, 22)
+Theme.PANEL = Color3.fromRGB(20, 24, 40)
+Theme.CARD = Color3.fromRGB(31, 36, 58)
+Theme.CARD_LIGHT = Color3.fromRGB(44, 51, 80)
+Theme.LINE = Color3.fromRGB(255, 255, 255)
+Theme.ACCENT = Color3.fromRGB(99, 132, 255)
+Theme.GOLD = Color3.fromRGB(255, 196, 64)
+Theme.TEXT = Color3.fromRGB(236, 240, 255)
+Theme.MUTED = Color3.fromRGB(138, 148, 184)
+Theme.GOOD = Color3.fromRGB(70, 214, 140)
+Theme.BAD = Color3.fromRGB(255, 84, 104)
+Theme.DARK_TEXT = Color3.fromRGB(14, 16, 26)
+Theme.LOCKED = Color3.fromRGB(52, 56, 76)
+Theme.TITLE_FONT = Enum.Font.GothamBlack
+Theme.BOLD = Enum.Font.GothamBold
+Theme.FONT = Enum.Font.GothamMedium
 
 function Theme.new(class, props, parent)
 	local obj = Instance.new(class)
@@ -38,7 +42,7 @@ end
 
 function Theme.stroke(parent, color, thickness, transparency)
 	return Theme.new("UIStroke", {
-		Color = color or Theme.STROKE, Thickness = thickness or 2, Transparency = transparency or 0,
+		Color = color or Theme.LINE, Thickness = thickness or 1, Transparency = transparency or 0.85,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 	}, parent)
 end
@@ -48,12 +52,29 @@ function Theme.gradient(parent, top, bottom, rotation)
 	return Theme.new("UIGradient", { Color = ColorSequence.new(top, bottom), Rotation = rotation or 90 }, parent)
 end
 
+function Theme.padding(parent, px)
+	return Theme.new("UIPadding", {
+		PaddingTop = UDim.new(0, px), PaddingBottom = UDim.new(0, px), PaddingLeft = UDim.new(0, px), PaddingRight = UDim.new(0, px),
+	}, parent)
+end
+
+-- Frosted dark panel with a hairline border.
 function Theme.panel(props, parent)
 	props.BackgroundColor3 = props.BackgroundColor3 or Theme.PANEL
+	props.BackgroundTransparency = props.BackgroundTransparency or 0.06
 	local frame = Theme.new("Frame", props, parent)
-	Theme.corner(frame, 16)
-	Theme.stroke(frame, Theme.STROKE, 2, 0.35)
-	Theme.gradient(frame, Color3.new(1, 1, 1), Color3.fromRGB(150, 160, 190))
+	Theme.corner(frame, 18)
+	Theme.stroke(frame, Theme.LINE, 1, 0.86)
+	Theme.gradient(frame, Color3.new(1, 1, 1), Color3.fromRGB(180, 186, 210))
+	return frame
+end
+
+-- Rounded card used inside panels.
+function Theme.card(props, parent)
+	props.BackgroundColor3 = props.BackgroundColor3 or Theme.CARD
+	local frame = Theme.new("Frame", props, parent)
+	Theme.corner(frame, 12)
+	Theme.stroke(frame, Theme.LINE, 1, 0.9)
 	return frame
 end
 
@@ -75,41 +96,73 @@ function Theme.text(props, parent)
 end
 
 function Theme.title(props, parent)
-	props.Font = Theme.TITLE_FONT
-	props.TextColor3 = props.TextColor3 or Theme.GOLD
-	props.TextStrokeTransparency = props.TextStrokeTransparency or 0
-	props.TextStrokeColor3 = props.TextStrokeColor3 or Color3.fromRGB(30, 15, 0)
+	props.Font = props.Font or Theme.TITLE_FONT
+	props.TextStrokeTransparency = props.TextStrokeTransparency or 1
 	return Theme.text(props, parent)
 end
 
--- Rounded button that grows on hover and squishes when pressed.
+-- Small rounded label ("chip"), e.g. tags and counters.
+function Theme.chip(props, parent, color)
+	color = color or Theme.ACCENT
+	props.BackgroundTransparency = props.BackgroundTransparency or 0.8
+	props.BackgroundColor3 = color
+	props.TextColor3 = props.TextColor3 or color:Lerp(Color3.new(1, 1, 1), 0.45)
+	props.Font = props.Font or Theme.BOLD
+	local chip = Theme.text(props, parent)
+	Theme.corner(chip, 8)
+	Theme.padding(chip, 4)
+	return chip
+end
+
+-- Rounded square with a colored gradient and an emoji icon in the middle.
+function Theme.icon(props, parent, icon, color, radius)
+	props.BackgroundColor3 = color or Theme.ACCENT
+	local tile = Theme.new("Frame", props, parent)
+	Theme.corner(tile, radius or 10)
+	Theme.gradient(tile, Color3.new(1, 1, 1), Color3.fromRGB(120, 120, 140), 135)
+	Theme.stroke(tile, Theme.LINE, 1, 0.75)
+	local label = Theme.text({
+		Size = UDim2.fromScale(0.72, 0.72), Position = UDim2.fromScale(0.14, 0.14), Text = icon or "",
+		ZIndex = (props.ZIndex or 1) + 1, Font = Theme.TITLE_FONT,
+	}, tile)
+	return tile, label
+end
+
+-- Button with a hover glow and a press squish. The glow is an overlay, so callers can
+-- recolor the button at any time.
 function Theme.button(props, parent, onClick)
 	props.AutoButtonColor = false
-	props.BackgroundColor3 = props.BackgroundColor3 or Theme.CARD
-	props.Font = props.Font or Theme.TITLE_FONT
+	props.BackgroundColor3 = props.BackgroundColor3 or Theme.ACCENT
+	props.Font = props.Font or Theme.BOLD
 	props.TextColor3 = props.TextColor3 or Theme.TEXT
 	if props.TextScaled == nil then
 		props.TextScaled = true
 	end
 	local button = Theme.new("TextButton", props, parent)
 	Theme.corner(button, 12)
-	local stroke = Theme.stroke(button, Color3.new(1, 1, 1), 2, 0.75)
-	Theme.gradient(button, Color3.new(1, 1, 1), Color3.fromRGB(170, 175, 200))
-	Theme.new("UITextSizeConstraint", { MaxTextSize = 26 }, button)
+	Theme.stroke(button, Theme.LINE, 1, 0.82)
+	Theme.gradient(button, Color3.new(1, 1, 1), Color3.fromRGB(200, 205, 225))
+	Theme.new("UITextSizeConstraint", { MaxTextSize = 22 }, button)
+	Theme.padding(button, 6)
+	local glow = Theme.new("Frame", {
+		Name = "Glow", Size = UDim2.new(1, 12, 1, 12), Position = UDim2.fromOffset(-6, -6),
+		BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 1, ZIndex = (props.ZIndex or 1) + 1,
+	}, button)
+	Theme.corner(glow, 12)
 	local scale = Theme.new("UIScale", {}, button)
 	button.MouseEnter:Connect(function()
-		Theme.tween(scale, 0.12, { Scale = 1.05 })
-		Theme.tween(stroke, 0.12, { Transparency = 0.2 })
+		Theme.tween(scale, 0.12, { Scale = 1.03 })
+		Theme.tween(glow, 0.12, { BackgroundTransparency = 0.88 })
 	end)
 	button.MouseLeave:Connect(function()
 		Theme.tween(scale, 0.12, { Scale = 1 })
-		Theme.tween(stroke, 0.12, { Transparency = 0.75 })
+		Theme.tween(glow, 0.12, { BackgroundTransparency = 1 })
 	end)
 	button.MouseButton1Down:Connect(function()
-		Theme.tween(scale, 0.06, { Scale = 0.95 })
+		Theme.tween(scale, 0.06, { Scale = 0.97 })
 	end)
 	button.MouseButton1Up:Connect(function()
-		Theme.tween(scale, 0.1, { Scale = 1.05 })
+		Theme.tween(scale, 0.1, { Scale = 1.03 })
 	end)
 	if onClick then
 		button.Activated:Connect(onClick)
@@ -117,17 +170,19 @@ function Theme.button(props, parent, onClick)
 	return button
 end
 
--- Rounded progress bar. Returns the frame, its fill and a centered label.
+-- Slim rounded progress bar. Returns the frame, its fill and a centered label.
 function Theme.bar(props, parent, top, bottom)
-	props.BackgroundColor3 = props.BackgroundColor3 or Theme.BG
-	props.BackgroundTransparency = props.BackgroundTransparency or 0.15
+	props.BackgroundColor3 = props.BackgroundColor3 or Color3.fromRGB(255, 255, 255)
+	props.BackgroundTransparency = props.BackgroundTransparency or 0.9
 	local frame = Theme.new("Frame", props, parent)
-	Theme.corner(frame, 10)
-	Theme.stroke(frame, Color3.new(0, 0, 0), 2, 0.4)
-	local fill = Theme.new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0 }, frame)
-	Theme.corner(fill, 10)
-	Theme.gradient(fill, top, bottom)
-	local label = Theme.text({ Size = UDim2.fromScale(1, 1), ZIndex = (props.ZIndex or 1) + 1, TextStrokeTransparency = 0.3, MaxSize = 18 }, frame)
+	Theme.corner(frame, 8)
+	local fill = Theme.new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = (props.ZIndex or 1) }, frame)
+	Theme.corner(fill, 8)
+	Theme.gradient(fill, top, bottom, 0)
+	local label = Theme.text({
+		Size = UDim2.fromScale(1, 1), ZIndex = (props.ZIndex or 1) + 1, Font = Theme.BOLD, MaxSize = 15,
+		TextStrokeTransparency = 0.6,
+	}, frame)
 	return frame, fill, label
 end
 

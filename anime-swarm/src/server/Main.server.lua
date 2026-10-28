@@ -181,7 +181,10 @@ local function runTargets(run)
 		local root = character and character:FindFirstChild("HumanoidRootPart")
 		local hum = character and character:FindFirstChildOfClass("Humanoid")
 		if s and not s.dead and root and hum and hum.Health > 0 then
-			table.insert(targets, { player = player, s = s, root = root, hum = hum, magnet = Progression.magnet(s) })
+			table.insert(targets, {
+				player = player, s = s, root = root, hum = hum, magnet = Progression.magnet(s),
+				armor = math.min(Config.MAX_DEFENSE, Progression.bonus(s, "defense")),
+			})
 		end
 	end
 	return targets
@@ -241,7 +244,14 @@ local function pickKind(minutes, mapIndex)
 	return "Grunt"
 end
 
+-- Once a second: Regeneration heals its owner, and healers (Chopper) heal everyone nearby.
 local function healers(targets)
+	for _, t in targets do
+		local regen = Progression.bonus(t.s, "regen")
+		if regen > 0 then
+			t.hum.Health = math.min(t.hum.MaxHealth, t.hum.Health + regen)
+		end
+	end
 	for _, healer in targets do
 		local amount = Progression.bonus(healer.s, "heal")
 		if amount > 0 then

@@ -786,6 +786,247 @@ def p_torii(n, x, z):
     ])
 
 
+def p_flower(n, x, z):
+    color = rng.choice([(255, 90, 120), (255, 220, 70), (250, 250, 250), (180, 120, 255), (255, 150, 60)])
+    return model(n, [
+        deco("Stem", (1.2, 0.2, 0.2), x, 0.6, z, (60, 140, 60), "grass", "cylinder", UPRIGHT, collide=False),
+        deco("Bloom", (0.9, 0.9, 0.9), x, 1.3, z, color, "smooth", "ball", collide=False),
+    ])
+
+
+# --- arena details: ground patches, paths, borders and landmarks -------------------
+
+def jitter(rgb, amount):
+    shift = rng.randint(-amount, amount)
+    return tuple(max(0, min(255, c + shift)) for c in rgb)
+
+
+def ground_patches(cx, cz, floor_rgb, material, count=50):
+    """Flat discs of slightly different color so the floor isn't one flat color."""
+    return [
+        deco(f"Patch{i}", (0.1, d, d), x, 0.03, z, jitter(floor_rgb, 18), material, "cylinder", UPRIGHT, collide=False)
+        for i, (x, z, d) in enumerate((x, z, rng.uniform(15, 60)) for x, z in scatter(cx, cz, count, 40))
+    ]
+
+
+def paths(cx, cz, rgb, material):
+    """A cross of paths through the middle (towns, bases, prisons, Wano)."""
+    return [
+        deco("PathNS", (24, 0.1, 1000), cx, 0.06, cz, rgb, material, collide=False),
+        deco("PathEW", (1000, 0.1, 24), cx, 0.07, cz, rgb, material, collide=False),
+    ]
+
+
+# Each theme's border pieces: (size, color, material, shape) lining the arena edge.
+BORDERS = {
+    "grass": ((30, 7, 5), (60, 120, 50), "grass", "block"),
+    "marine": ((30, 10, 3), (175, 178, 188), "concrete", "block"),
+    "town": ((30, 8, 3), (150, 80, 60), "brick", "block"),
+    "beach": ((24, 5, 8), (120, 118, 125), "slate", "block"),
+    "ship": ((30, 3, 1.5), (110, 75, 45), "wood", "block"),
+    "deepsea": ((18, 18, 18), (190, 90, 120), "slate", "ball"),
+    "snow": ((26, 12, 6), (180, 215, 245), "ice", "block"),
+    "desert": ((28, 14, 10), (205, 165, 105), "slate", "block"),
+    "jungle": ((20, 20, 20), (40, 105, 45), "grass", "ball"),
+    "sky": ((22, 22, 22), (250, 250, 255), "smooth", "ball"),
+    "spooky": ((30, 9, 1), (50, 45, 55), "metal", "block"),
+    "mangrove": ((20, 20, 20), (120, 95, 60), "wood", "ball"),
+    "prison": ((30, 16, 4), (80, 76, 90), "slate", "block"),
+    "volcano": ((26, 16, 12), (40, 34, 38), "slate", "block"),
+    "wano": ((30, 6, 2), (180, 40, 40), "wood", "block"),
+}
+
+
+def border(cx, cz, theme):
+    """Themed pieces along all four edges, plus invisible walls so nobody walks off the map."""
+    size, rgb, material, shape = BORDERS[theme]
+    step = size[0] * (0.75 if shape == "ball" else 1)
+    rough = theme in ("beach", "desert", "volcano", "snow", "deepsea", "jungle", "sky", "mangrove")
+    pieces = []
+    for side in range(4):
+        t = -500 + step / 2
+        while t < 500:
+            h = size[1] * (rng.uniform(0.7, 1.3) if rough else 1)
+            if side < 2:  # north / south edges run along X
+                x, z, yaw = cx + t, cz + (498 if side == 0 else -498), 0
+            else:
+                x, z, yaw = cx + (498 if side == 2 else -498), cz + t, 90
+            if rough:
+                yaw += rng.uniform(-15, 15)
+            piece_size = (size[0], h, size[2]) if shape == "block" else (h, h, h)
+            pieces.append(deco("Edge", piece_size, x, h * (0.3 if shape == "ball" else 0.5), z, jitter(rgb, 10), material, shape, rot_y(yaw)))
+            t += step
+    for name, size_, pos in (("WallN", (1000, 60, 4), (cx, 30, cz + 502)), ("WallS", (1000, 60, 4), (cx, 30, cz - 502)),
+                             ("WallE", (4, 60, 1000), (cx + 502, 30, cz)), ("WallW", (4, 60, 1000), (cx - 502, 30, cz))):
+        pieces.append(deco(name, size_, *pos, (255, 255, 255), transparency=1))
+    return model("Border", pieces)
+
+
+# Landmarks: big set pieces, two per arena. All collide but are skipped by spawn raycasts.
+def lm_windmill(x, z):
+    P = placer(x, z)
+    pieces = [
+        P("Tower", (22, 9, 9), (0, 11, 0), (235, 225, 205), "smooth", "cylinder", UPRIGHT),
+        P("Cap", (6, 10, 10), (0, 24, 0), (150, 60, 45), "slate", "ball"),
+        P("Hub", (2, 2, 2), (0, 20, -5), (90, 60, 35), "wood", "ball"),
+    ]
+    for i in range(4):
+        pieces.append(P(f"Blade{i}", (1.2, 14, 0.4), (0, 20, -5.4), (240, 240, 240), "fabric", rot=rot_z(i * 90 + 20)))
+    return pieces
+
+
+def lm_watchtower(x, z):
+    P = placer(x, z)
+    pieces = [P(f"Leg{i}", (1.2, 20, 1.2), (sx * 4, 10, sz * 4), (90, 90, 95), "metal") for i, (sx, sz) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1)))]
+    pieces += [
+        P("Deck", (11, 1, 11), (0, 20.5, 0), (120, 90, 60), "planks"),
+        P("Roof", (12, 1, 12), (0, 26, 0), (40, 70, 140), "slate"),
+        P("Post", (5, 0.6, 0.6), (5, 23.5, 5), (90, 90, 95), "metal"),
+        P("Pole", (8, 0.5, 0.5), (0, 30, 0), (170, 170, 175), "metal", "cylinder", UPRIGHT),
+        P("Flag", (5, 3, 0.2), (2.6, 32.5, 0), (245, 245, 250), "fabric"),
+    ]
+    return pieces
+
+
+def lm_fountain(x, z):
+    P = placer(x, z)
+    return [
+        P("Basin", (2, 20, 20), (0, 1, 0), (190, 190, 200), "concrete", "cylinder", UPRIGHT),
+        P("Water", (0.3, 18, 18), (0, 2, 0), (90, 170, 230), "glass", "cylinder", UPRIGHT, transparency=0.3, collide=False),
+        P("Pillar", (6, 2, 2), (0, 4, 0), (200, 200, 210), "concrete", "cylinder", UPRIGHT),
+        P("Bowl", (1, 7, 7), (0, 7.5, 0), (200, 200, 210), "concrete", "cylinder", UPRIGHT),
+        P("Spout", (1.6, 1.6, 1.6), (0, 8.6, 0), (120, 200, 255), "neon", "ball", collide=False),
+    ]
+
+
+def lm_shipwreck(x, z):
+    P = placer(x, z)
+    return [
+        P("Hull", (16, 8, 44), (0, 2, 0), (90, 60, 35), "wood", rot=rot_z(25)),
+        P("Deck", (14, 0.5, 40), (1.5, 6, 0), (140, 100, 60), "planks", rot=rot_z(25)),
+        P("Mast", (24, 1.4, 1.4), (-2, 14, -4), (110, 75, 45), "wood", "cylinder", mul(UPRIGHT, rot_x(20))),
+        P("Sail", (10, 8, 0.3), (-4, 16, -4), (210, 200, 180), "fabric", rot=rot_z(30)),
+    ]
+
+
+def lm_cabin(x, z):
+    return [hut("Cabin", x, z, 18, 14, 10, (150, 105, 65), (90, 40, 30), y=0, yaw=rng.uniform(0, 360), query=False),
+            deco("Mast", (34, 2, 2), x + 14, 17, z, (110, 75, 45), "wood", "cylinder", UPRIGHT),
+            deco("Sail", (16, 14, 0.4), x + 14, 22, z - 1.2, (245, 240, 225), "fabric")]
+
+
+def lm_dome(x, z):
+    P = placer(x, z)
+    pieces = [P("Dome", (34, 34, 34), (0, 4, 0), (150, 220, 255), "glass", "ball", transparency=0.55),
+              P("Base", (2, 36, 36), (0, 1, 0), (240, 220, 160), "smooth", "cylinder", UPRIGHT)]
+    for i in range(6):
+        a = math.radians(i * 60)
+        pieces.append(P(f"Pillar{i}", (14, 2, 2), (math.cos(a) * 15, 7, math.sin(a) * 15), (250, 240, 210), "smooth", "cylinder", UPRIGHT))
+    return pieces
+
+
+def lm_castle(x, z):
+    P = placer(x, z)
+    white = (235, 240, 250)
+    pieces = [P("Keep", (16, 20, 16), (0, 10, 0), white, "concrete")]
+    for i, (sx, sz) in enumerate(((1, 1), (1, -1), (-1, 1), (-1, -1))):
+        pieces.append(P(f"Tower{i}", (28, 7, 7), (sx * 11, 14, sz * 11), white, "concrete", "cylinder", UPRIGHT))
+        pieces.append(P(f"Roof{i}", (6, 6, 6), (sx * 11, 30, sz * 11), (60, 90, 170), "slate", "ball"))
+    return pieces
+
+
+def lm_pyramid(x, z):
+    P = placer(x, z)
+    return [P(f"Step{i}", (40 - i * 6, 5, 40 - i * 6), (0, 2.5 + i * 5, 0), (215, 180, 110), "slate") for i in range(6)]
+
+
+def lm_giant_tree(x, z):
+    P = placer(x, z)
+    pieces = [P("Trunk", (40, 8, 8), (0, 20, 0), (85, 55, 30), "wood", "cylinder", UPRIGHT)]
+    for i in range(5):
+        a = math.radians(i * 72)
+        pieces.append(P(f"Canopy{i}", (22, 22, 22), (math.cos(a) * 8, 40 + rng.uniform(-3, 3), math.sin(a) * 8), (35, 115, 45), "grass", "ball"))
+    return pieces
+
+
+def lm_bell(x, z):
+    P = placer(x, z)
+    gold = (235, 200, 80)
+    return [
+        P("PillarL", (20, 2.5, 2.5), (-7, 10, 0), gold, "metal", "cylinder", UPRIGHT),
+        P("PillarR", (20, 2.5, 2.5), (7, 10, 0), gold, "metal", "cylinder", UPRIGHT),
+        P("Beam", (17, 2, 2.5), (0, 20.5, 0), gold, "metal"),
+        P("Bell", (6, 6, 6), (0, 15, 0), (255, 215, 90), "metal", "ball"),
+        P("Rim", (1, 7.5, 7.5), (0, 13, 0), (255, 215, 90), "metal", "cylinder", UPRIGHT),
+    ]
+
+
+def lm_mansion(x, z):
+    yaw = rng.uniform(0, 360)
+    return [hut("Mansion", x, z, 26, 18, 14, (70, 60, 80), (40, 30, 45), y=0, yaw=yaw, query=False),
+            deco("Tower", (30, 8, 8), x + 15, 15, z + 6, (60, 50, 70), "slate", "cylinder", UPRIGHT),
+            deco("Spire", (7, 7, 7), x + 15, 31, z + 6, (40, 30, 45), "slate", "ball"),
+            deco("Glow", (2, 2, 2), x + 15, 24, z + 1.8, (120, 255, 150), "neon", "ball", collide=False)]
+
+
+def lm_bubble(x, z):
+    return [deco("GiantBubble", (30, 30, 30), x, 22, z, (210, 235, 255), "glass", "ball", transparency=0.6, collide=False),
+            p_root("Root", x, z)]
+
+
+def lm_prison_tower(x, z):
+    P = placer(x, z)
+    pieces = [P("Tower", (40, 16, 16), (0, 20, 0), (80, 76, 90), "slate", "cylinder", UPRIGHT),
+              P("Top", (3, 20, 20), (0, 41.5, 0), (60, 56, 70), "slate", "cylinder", UPRIGHT)]
+    for i in range(8):
+        a = math.radians(i * 45)
+        pieces.append(P(f"Window{i}", (2, 3, 0.4), (math.cos(a) * 8.1, 30, math.sin(a) * 8.1), (255, 150, 60), "neon", rot=rot_y(-i * 45 + 90), collide=False))
+    return pieces
+
+
+def lm_volcano(x, z):
+    P = placer(x, z)
+    pieces = [P(f"Slope{i}", (6, 60 - i * 10, 60 - i * 10), (0, 3 + i * 6, 0), (50 + i * 6, 40, 42), "slate", "cylinder", UPRIGHT) for i in range(5)]
+    pieces.append(P("Lava", (0.6, 12, 12), (0, 30.4, 0), (255, 100, 20), "neon", "cylinder", UPRIGHT, collide=False))
+    return pieces
+
+
+def lm_pagoda(x, z):
+    P = placer(x, z)
+    pieces = []
+    for i in range(4):
+        w = 18 - i * 3.5
+        y = i * 7
+        pieces.append(P(f"Floor{i}", (w - 4, 5, w - 4), (0, y + 2.5, 0), (190, 60, 50), "wood"))
+        pieces.append(P(f"Roof{i}", (w + 3, 1.2, w + 3), (0, y + 5.6, 0), (40, 40, 45), "slate"))
+    pieces.append(P("Spire", (6, 0.8, 0.8), (0, 31, 0), (230, 190, 70), "metal", "cylinder", UPRIGHT))
+    return pieces
+
+
+LANDMARKS = {
+    "grass": lm_windmill, "marine": lm_watchtower, "town": lm_fountain, "beach": lm_shipwreck, "ship": lm_cabin,
+    "deepsea": lm_dome, "snow": lm_castle, "desert": lm_pyramid, "jungle": lm_giant_tree, "sky": lm_bell,
+    "spooky": lm_mansion, "mangrove": lm_bubble, "prison": lm_prison_tower, "volcano": lm_volcano, "wano": lm_pagoda,
+}
+PATH_THEMES = {"town": ((200, 185, 160), "cobble"), "marine": ((185, 188, 196), "concrete"),
+               "prison": ((90, 85, 100), "slate"), "wano": ((200, 175, 130), "sand")}
+FLOWER_THEMES = ("grass", "mangrove", "wano")
+
+
+def details(cx, cz, theme, floor_rgb, floor_material):
+    items = ground_patches(cx, cz, floor_rgb, floor_material)
+    if theme in PATH_THEMES:
+        items += paths(cx, cz, *PATH_THEMES[theme])
+    if theme in FLOWER_THEMES:
+        items += [p_flower(f"Flower{i}", x, z) for i, (x, z) in enumerate(scatter(cx, cz, 60, 40))]
+    items.append(border(cx, cz, theme))
+    for i in range(2):
+        a = rng.uniform(0, 2 * math.pi) + i * math.pi
+        r = rng.uniform(250, 360)
+        items.append(model(f"Landmark{i}", LANDMARKS[theme](cx + math.cos(a) * r, cz + math.sin(a) * r)))
+    return items
+
+
 # theme: floor color, floor material, [(builder, count, keep-clear radius around the arena center)]
 THEMES = {
     "grass": ((85, 150, 70), "grass", [(p_palm, 20, 200), (p_rock, 30, 80), (p_bush, 30, 60)]),
@@ -810,6 +1051,7 @@ def arena(index, key, name, theme):
     cx, cz = map_center(index)
     floor_rgb, floor_material, decorations = THEMES[theme]
     items = [part("Floor", (1000, 2, 1000), (cx, -1, cz), floor_rgb, floor_material)]
+    items += details(cx, cz, theme, floor_rgb, floor_material)
     for builder, count, clear in decorations:
         for i, (x, z) in enumerate(scatter(cx, cz, int(count * DENSITY), clear)):
             items.append(builder(f"{builder.__name__[2:].title()}{i}", x, z))

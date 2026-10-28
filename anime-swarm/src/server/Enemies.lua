@@ -17,6 +17,11 @@ local NO_TARGETS = {}
 local BULLET_SPEED = 45
 local BLAST_COLOR = Color3.fromRGB(255, 80, 40)
 
+-- Hurts a player target, after their Iron Body defense.
+local function hurt(t, amount)
+	t.hum:TakeDamage(amount * (1 - (t.armor or 0)))
+end
+
 local folder = Instance.new("Folder")
 folder.Name = "Enemies"
 folder.Parent = workspace
@@ -225,7 +230,7 @@ local function blast(e, pos, radius, damage, delay)
 	task.delay(delay, function()
 		for _, t in lastTargets[runKey] or NO_TARGETS do
 			if t.hum.Health > 0 and flat(t.root.Position - pos).Magnitude <= radius then
-				t.hum:TakeDamage(damage)
+				hurt(t, damage)
 			end
 		end
 		Fx.emit("slam", { pos = pos, r = radius, c = BLAST_COLOR })
@@ -320,7 +325,7 @@ function Enemies.step(dt, targetsByRun)
 			end
 			if bestDist <= reach and now - e.lastHit >= 1 then
 				e.lastHit = now
-				best.hum:TakeDamage(e.damage)
+				hurt(best, e.damage)
 			end
 			specialAttacks(e, best, bestDist, targetsByRun[e.run], now)
 		end
@@ -339,7 +344,7 @@ function Enemies.step(dt, targetsByRun)
 			end
 		end
 		if hit then
-			hit.hum:TakeDamage(b.damage)
+			hurt(hit, b.damage)
 		end
 		if hit or b.left <= 0 then
 			Fx.emit("eshotEnd", { id = b.id })

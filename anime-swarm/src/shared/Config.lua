@@ -74,7 +74,10 @@ end
 
 Config.WEAPON_SLOTS_START = 3 -- buy more with the "Skill Slot" upgrade
 Config.WEAPON_SLOTS_MAX = 8
-Config.PASSIVE_SLOTS = 4
+Config.PASSIVE_SLOTS = 5
+Config.BASE_CRIT_CHANCE = 0.05 -- every hit can crit
+Config.BASE_CRIT_DAMAGE = 1.5 -- crits deal x1.5 before Critical Power
+Config.MAX_DEFENSE = 0.6 -- damage taken can be cut by at most 60%
 Config.WEAPON_MAX = 10
 Config.PASSIVE_MAX = 5
 Config.CHOICES = 3
@@ -636,84 +639,89 @@ Config.Passives = {
 	Swiftness = { icon = "👟", name = "Swift Feet", desc = "+8% move speed", stat = "speed", per = 0.08 },
 	Vitality = { icon = "❤️", name = "Vitality", desc = "+20 max HP", stat = "health", per = 20 },
 	Magnet = { icon = "🧲", name = "Treasure Magnet", desc = "+25% pickup range", stat = "magnet", per = 0.25 },
+	Multiply = { icon = "✳️", name = "Multiply", desc = "+1 extra hit every 2 levels", stat = "count", per = 0.5 },
+	Critical = { icon = "🎯", name = "Critical Eye", desc = "+5% critical hit chance", stat = "crit", per = 0.05 },
+	CritDamage = { icon = "💢", name = "Critical Power", desc = "+25% critical hit damage", stat = "critDamage", per = 0.25 },
+	Regen = { icon = "💚", name = "Regeneration", desc = "+0.6 HP every second", stat = "regen", per = 0.6 },
+	Armor = { icon = "🛡️", name = "Iron Body", desc = "-6% damage taken", stat = "defense", per = 0.06 },
 }
 
 Config.DEFAULT_CLASS = "Luffy"
 Config.Classes = {
 	Luffy = {
-		title = "Straw Hat", perk = "+30 max HP", color = Color3.fromRGB(220, 50, 50),
+		icon = "👒", title = "Straw Hat", perk = "+30 max HP", color = Color3.fromRGB(220, 50, 50),
 		weapon = "GumGumPistol",
 		skills = { "GumGumPistol", "GumGumBazooka", "GumGumWhip", "GumGumBalloon", "GumGumElephantGun", "RedHawk" },
 		bonus = { health = 30 },
 	},
 	Zoro = {
-		title = "Pirate Hunter", perk = "+10% damage", color = Color3.fromRGB(60, 190, 90),
+		icon = "⚔️", title = "Pirate Hunter", perk = "+10% damage", color = Color3.fromRGB(60, 190, 90),
 		weapon = "ThreeSwordStyle",
 		skills = { "ThreeSwordStyle", "PoundCannon", "OniGiri", "Tatsumaki", "ShishiSonson", "BlackRopeDragon" },
 		bonus = { damage = 0.10 },
 	},
 	Nami = {
-		title = "Cat Burglar", perk = "+25% gold", color = Color3.fromRGB(255, 150, 40),
+		icon = "🍊", title = "Cat Burglar", perk = "+25% gold", color = Color3.fromRGB(255, 150, 40),
 		weapon = "ThunderTempo",
 		skills = { "ThunderTempo", "CycloneTempo", "MirageTempo", "ThunderLance", "WeatherEgg", "BlackBall" },
 		bonus = { gold = 0.25 },
 	},
 	Sanji = {
-		title = "Black Leg", perk = "+15% move speed", color = Color3.fromRGB(240, 200, 60),
+		icon = "🦵", title = "Black Leg", perk = "+15% move speed", color = Color3.fromRGB(240, 200, 60),
 		weapon = "DiableJambe",
 		skills = { "DiableJambe", "Concasse", "PartyTable", "MoutonShot", "PoeleAFrire", "FlambageShot" },
 		bonus = { speed = 0.15 },
 	},
 	Ace = {
-		title = "Fire Fist", perk = "+15% area", color = Color3.fromRGB(255, 100, 30),
+		icon = "🔥", title = "Fire Fist", perk = "+15% area", color = Color3.fromRGB(255, 100, 30),
 		weapon = "FireFist",
 		skills = { "FireFist", "FireGun", "Firefly", "FirePillar", "FireFence", "CrossFire" },
 		bonus = { area = 0.15 },
 	},
 	Robin = {
-		title = "Devil Child", perk = "-10% cooldowns", color = Color3.fromRGB(150, 90, 220),
+		icon = "🌸", title = "Devil Child", perk = "-10% cooldowns", color = Color3.fromRGB(150, 90, 220),
 		weapon = "CienFleur",
 		skills = { "CienFleur", "SeisFleur", "MilFleur", "FlowerStorm", "GiganteFleur", "PetalGuard" },
 		bonus = { cooldown = 0.10 },
 	},
 	Chopper = {
-		title = "Cotton Candy Lover", perk = "Heals nearby allies", color = Color3.fromRGB(255, 130, 180),
+		icon = "🦌", title = "Cotton Candy Lover", perk = "Heals nearby allies", color = Color3.fromRGB(255, 130, 180),
 		weapon = "KungFuPoint",
 		skills = { "KungFuPoint", "HeavyGong", "HornPoint", "RumbleBall", "CherryBlossom", "MedicineBomb" },
 		bonus = { heal = 2 },
 	},
 	Usopp = {
-		title = "King of Snipers", perk = "+1 reroll each run", color = Color3.fromRGB(200, 160, 70),
+		icon = "🎯", title = "King of Snipers", perk = "+1 reroll each run", color = Color3.fromRGB(200, 160, 70),
 		weapon = "FireBirdStar",
 		skills = { "FireBirdStar", "LeadStar", "ExplosiveStar", "TabascoStar", "PopGreen", "ImpactDial" },
 		bonus = { reroll = 1 },
 	},
 	Franky = {
-		title = "Cyborg", perk = "+8% damage, +20 max HP", color = Color3.fromRGB(70, 170, 240),
+		icon = "🤖", title = "Cyborg", perk = "+8% damage, +20 max HP", color = Color3.fromRGB(70, 170, 240),
 		weapon = "CoupDeVent",
 		skills = { "CoupDeVent", "WeaponsLeft", "StrongRight", "FrankyFireball", "GeneralCannon", "FrankyCenter" },
 		bonus = { damage = 0.08, health = 20 },
 	},
 	Brook = {
-		title = "Soul King", perk = "+30% pickup range", color = Color3.fromRGB(150, 130, 200),
+		icon = "💀", title = "Soul King", perk = "+30% pickup range", color = Color3.fromRGB(150, 130, 200),
 		weapon = "YahazuGiri",
 		skills = { "YahazuGiri", "FrostBite", "AubadeCoup", "GhostParade", "SoulParade", "IceBurn" },
 		bonus = { magnet = 0.3 },
 	},
 	Jinbe = {
-		title = "Knight of the Sea", perk = "+50 max HP", color = Color3.fromRGB(60, 120, 210),
+		icon = "🦈", title = "Knight of the Sea", perk = "+50 max HP", color = Color3.fromRGB(60, 120, 210),
 		weapon = "FishmanKarate",
 		skills = { "FishmanKarate", "SharkBrick", "WaterHeart", "FiveThousandTiles", "SharkArrows", "OceanCurrent" },
 		bonus = { health = 50 },
 	},
 	Law = {
-		title = "Surgeon of Death", perk = "-8% cooldowns, +8% area", color = Color3.fromRGB(240, 210, 80),
+		icon = "🩺", title = "Surgeon of Death", perk = "-8% cooldowns, +8% area", color = Color3.fromRGB(240, 210, 80),
 		weapon = "RoomAmputate",
 		skills = { "RoomAmputate", "CounterShock", "Injection", "Shambles", "Mes", "RoomDome" },
 		bonus = { cooldown = 0.08, area = 0.08 },
 	},
 	Hancock = {
-		title = "Pirate Empress", perk = "+15% damage", color = Color3.fromRGB(240, 90, 150),
+		icon = "🐍", title = "Pirate Empress", perk = "+15% damage", color = Color3.fromRGB(240, 90, 150),
 		weapon = "PerfumeFemur",
 		skills = { "PerfumeFemur", "SlaveArrow", "PistolKiss", "MeroMellow", "Salome", "LoveHearts" },
 		bonus = { damage = 0.15 },
@@ -796,13 +804,13 @@ Config.SPAWN_TABLE = {
 -- Permanent upgrades bought with gold between runs. Cost = cost * (growth or META_GROWTH) ^ level.
 Config.Meta = {
 	SkillSlot = {
-		name = "Skill Slot", desc = "+1 skill slot", stat = "slots", per = 1, max = 5, cost = 300, growth = 1.7,
+		icon = "🧩", name = "Skill Slot", desc = "+1 skill slot", stat = "slots", per = 1, max = 5, cost = 300, growth = 1.7,
 	},
-	Might = { name = "Might", desc = "+5% damage", stat = "damage", per = 0.05, max = 10, cost = 100 },
-	Toughness = { name = "Toughness", desc = "+10 max HP", stat = "health", per = 10, max = 10, cost = 100 },
-	Greed = { name = "Greed", desc = "+10% gold", stat = "gold", per = 0.10, max = 10, cost = 150 },
-	Reach = { name = "Reach", desc = "+10% pickup range", stat = "magnet", per = 0.10, max = 5, cost = 120 },
-	Reroll = { name = "Reroll", desc = "+1 reroll per run", stat = "reroll", per = 1, max = 5, cost = 300 },
+	Might = { icon = "⚔️", name = "Might", desc = "+5% damage", stat = "damage", per = 0.05, max = 10, cost = 100 },
+	Toughness = { icon = "❤️", name = "Toughness", desc = "+10 max HP", stat = "health", per = 10, max = 10, cost = 100 },
+	Greed = { icon = "💰", name = "Greed", desc = "+10% gold", stat = "gold", per = 0.10, max = 10, cost = 150 },
+	Reach = { icon = "🧲", name = "Reach", desc = "+10% pickup range", stat = "magnet", per = 0.10, max = 5, cost = 120 },
+	Reroll = { icon = "🎲", name = "Reroll", desc = "+1 reroll per run", stat = "reroll", per = 1, max = 5, cost = 300 },
 }
 Config.META_ORDER = { "SkillSlot", "Might", "Toughness", "Greed", "Reach", "Reroll" }
 Config.META_GROWTH = 1.5

@@ -161,7 +161,7 @@ end
 
 local numbersShown = 0
 
-local function damageNumber(pos, amount)
+local function damageNumber(pos, amount, crit)
 	if numbersShown >= 40 then
 		return
 	end
@@ -171,19 +171,26 @@ local function damageNumber(pos, amount)
 		Position = pos + Vector3.new(math.random() * 2 - 1, 2, math.random() * 2 - 1),
 	})
 	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.fromOffset(70, 32)
+	gui.Size = crit and UDim2.fromOffset(110, 46) or UDim2.fromOffset(70, 32)
 	gui.AlwaysOnTop = true
 	gui.MaxDistance = 120
 	gui.Parent = holder
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundTransparency = 1
-	label.Text = tostring(amount)
+	label.Text = crit and amount .. "!" or tostring(amount)
 	label.TextScaled = true
 	label.Font = Enum.Font.GothamBlack
-	label.TextColor3 = amount >= 100 and Color3.fromRGB(255, 200, 40) or WHITE
+	label.TextColor3 = crit and Color3.fromRGB(255, 80, 70) or amount >= 100 and Color3.fromRGB(255, 200, 40) or WHITE
 	label.TextStrokeTransparency = 0
 	label.Parent = gui
+	if crit then
+		-- critical hits pop in big
+		local pop = Instance.new("UIScale")
+		pop.Scale = 1.8
+		pop.Parent = label
+		tween(pop, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+	end
 	tween(gui, 0.7, { StudsOffset = Vector3.new(0, 3, 0) })
 	tween(label, 0.7, { TextTransparency = 1, TextStrokeTransparency = 1 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 	task.delay(0.75, function()
@@ -197,7 +204,7 @@ local function showHits(hits, color)
 		if i <= 6 then
 			burst(hit[1], color, 6, { size = 0.9, speed = 14, life = 0.25 })
 		end
-		damageNumber(hit[1], hit[2])
+		damageNumber(hit[1], hit[2], hit[3])
 	end
 end
 
@@ -603,6 +610,114 @@ function handlers.eshotEnd(ev)
 	end
 end
 
+-- Skill emblems ------------------------------------------------------------------
+-- Every skill a player owns floats around them as a little charm whose shape follows the skill:
+-- blades for sword and wave skills, a fist for punches, rings for bursts, petals for Robin...
+
+local loadouts = {} -- [player] = { emblems = { { part, color, fx, size } } }
+
+local function makeEmblem(item)
+	local fx, color = item.fx, item.c
+	local p
+	if fx == "slash" or fx == "wave" then
+		p = part({ Color = color, Size = Vector3.new(0.25, 0.5, 1.8) })
+	elseif fx == "nova" then
+		p = part({ Shape = Enum.PartType.Cylinder, Color = color, Transparency = 0.15, Size = Vector3.new(0.15, 1.4, 1.4) })
+	elseif fx == "strike" then
+		p = part({ Color = color, Size = Vector3.one * 0.8 })
+	elseif fx == "punch" then
+		p = part({ Shape = Enum.PartType.Ball, Material = SMOOTH, Color = SKIN, Size = Vector3.one * 1.1 })
+	elseif fx == "hands" or fx == "grab" then
+		p = part({ Shape = Enum.PartType.Ball, Color = PETALS, Size = Vector3.one * 0.8 })
+	else
+		p = part({ Shape = Enum.PartType.Ball, Color = color, Size = Vector3.one * 0.9 })
+	end
+	if item.fire then
+		local flames = Instance.new("Fire")
+		flames.Color, flames.SecondaryColor = color, Color3.fromRGB(255, 220, 90)
+		flames.Size, flames.Heat = 1.5, 0
+		flames.Parent = p
+	end
+	if fx == "lightning" then
+		local glow = Instance.new("PointLight")
+		glow.Color, glow.Range, glow.Brightness = color, 6, 2
+		glow.Parent = p
+	end
+	addTrail(p, color, 0.35, 0.25)
+	local gui = Instance.new("BillboardGui")
+	gui.Size = UDim2.fromOffset(26, 26)
+	gui.StudsOffset = Vector3.new(0, 1.1, 0)
+	gui.MaxDistance = 70
+	gui.Parent = p
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.TextScaled = true
+	label.Text = item.icon or ""
+	label.Parent = gui
+	return { part = p, color = color, fx = fx, size = p.Size }
+end
+
+local function clearLoadout(player)
+	local loadout = loadouts[player]
+	if loadout then
+		for _, emblem in loadout.emblems do
+			emblem.part:Destroy()
+		end
+	end
+	loadouts[player] = nil
+end
+
+function handlers.loadout(ev)
+	clearLoadout(ev.p)
+	if #ev.items > 0 then
+		local emblems = {}
+		for _, item in ev.items do
+			table.insert(emblems, makeEmblem(item))
+		end
+		loadouts[ev.p] = { emblems = emblems }
+	end
+end
+
+-- The emblem of the skill that just fired swells for a moment.
+local function pulseEmblem(player, color)
+	local loadout = loadouts[player]
+	for _, emblem in loadout and loadout.emblems or {} do
+		if emblem.color == color and not emblem.pulsing then
+			emblem.pulsing = true
+			tween(emblem.part, 0.08, { Size = emblem.size * 1.8 })
+			task.delay(0.1, function()
+				tween(emblem.part, 0.15, { Size = emblem.size })
+				emblem.pulsing = false
+			end)
+		end
+	end
+end
+
+local function moveEmblems(now)
+	for player, loadout in loadouts do
+		local root = rootOf(player)
+		if not root or not player.Parent then
+			clearLoadout(player)
+			continue
+		end
+		local count = #loadout.emblems
+		for i, emblem in loadout.emblems do
+			local a = now * 1.4 + i * 2 * math.pi / count
+			local pos = root.Position + Vector3.new(math.cos(a) * 3.4, 1.6 + math.sin(now * 3 + i) * 0.35, math.sin(a) * 3.4)
+			local fx = emblem.fx
+			if fx == "slash" or fx == "wave" then
+				local ahead = pos + Vector3.new(-math.sin(a), 0, math.cos(a))
+				emblem.part.CFrame = CFrame.lookAt(pos, ahead) * CFrame.Angles(0, 0, now * 6)
+			elseif fx == "nova" or fx == "strike" then
+				emblem.part.CFrame = CFrame.new(pos) * CFrame.Angles(now * 2, now * 3, now)
+			else
+				emblem.part.CFrame = CFrame.new(pos)
+			end
+		end
+	end
+end
+
 -- Per-frame updates -------------------------------------------------------------
 
 local function moveShots(list, dt)
@@ -638,6 +753,8 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 
+	moveEmblems(now)
+
 	-- spin the swirl blades inside the island's portals
 	for _, blade in CollectionService:GetTagged("PortalSwirl") do
 		local center = blade:GetAttribute("Center")
@@ -653,6 +770,9 @@ function Effects.play(ev)
 	if ev.p and ev.anim then
 		Animate.play(ev.p, ev.anim)
 	end
+	if ev.p and ev.c then
+		pulseEmblem(ev.p, ev.c)
+	end
 	local handler = handlers[ev.k]
 	if handler then
 		local ok, err = pcall(handler, ev)
@@ -663,6 +783,9 @@ function Effects.play(ev)
 end
 
 function Effects.clear()
+	for player in loadouts do
+		clearLoadout(player)
+	end
 	for player in orbits do
 		clearOrbits(player)
 	end

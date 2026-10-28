@@ -4,9 +4,10 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
 
 ## How it plays
 
-1. **Spawn island:** pick a pirate in **CREW**, buy permanent upgrades in **SHOP**, browse adventures in **MAPS**.
+1. **Spawn island:** pick a pirate in **CREW** and buy permanent upgrades in **SHOP**.
 2. **Voyage gates:** walk onto the glowing pad of one of the 3 gates. The first player on the pad is the
-   **captain** and picks a map and difficulty; after a 10 second countdown everyone on the pad sets sail.
+   **captain** and picks a map and difficulty (maps are only chosen at a gate); after a 10 second countdown
+   everyone on the pad sets sail.
 3. **20 maps x 5 difficulties:** Easy, Normal, Hard, Very Hard, Extreme.
    - Clear a difficulty to unlock the next one on that map. Each step up gives **+10% gold**
      (and tougher, longer runs: 5 to 10 minutes).
@@ -16,7 +17,9 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
    - Enemies drop **XP orbs** (blue, or purple for big ones). Walk near them to collect.
    - **Level up** and choose 1 of 3 cards: a new skill, a skill upgrade, or a passive.
      Press **1 / 2 / 3** or click. Press **R** to reroll.
-   - **3 skill slots** to start (buy up to **8**) and **4 passive** slots. Skills level up to **10**, passives to 5.
+   - **3 skill slots** to start (buy up to **8**) and **5 passive** slots. Skills level up to **10**, passives to 5.
+   - Every skill you own floats around your character as a little emblem (a blade, fist, ring, spark, petal...)
+     that swells each time the skill fires.
    - **Fusion:** once two skills are max level (or evolved), a FUSION card can merge them into one skill
      that fires both together with double damage, faster attacks and an extra hit, and frees a slot.
    - A **Vice Admiral** every 2 minutes, and the map's **named Marine boss** when the timer runs out.
@@ -24,7 +27,29 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
 
 If you are knocked out, your crew fights on; you return to the island when the adventure ends.
 
+## Passives
+
+| Passive | Per level |
+| ------- | --------- |
+| Haki | +10% damage |
+| Haste | -8% cooldowns |
+| Expansion | +10% area |
+| Swift Feet | +8% move speed |
+| Vitality | +20 max HP |
+| Treasure Magnet | +25% pickup range |
+| Multiply | +1 extra hit every 2 levels |
+| Critical Eye | +5% critical hit chance (5% base) |
+| Critical Power | +25% critical damage (x1.5 base) |
+| Regeneration | +0.6 HP every second |
+| Iron Body | -6% damage taken (up to 60%) |
+
+Critical hits show big red damage numbers.
+
 ## Maps
+
+Every arena has its own props, ground detail, a themed border wall and two big landmarks
+(windmill, watchtower, fountain, shipwreck, sea dome, snow castle, pyramid, giant tree, golden bell,
+haunted mansion, giant bubble, prison tower, volcano, pagoda...).
 
 | # | Map | Theme | Boss |
 | - | --- | ----- | ---- |

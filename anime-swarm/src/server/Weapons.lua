@@ -10,6 +10,7 @@ local Fx = require(script.Parent.Fx)
 local Weapons = {}
 local projectiles = {}
 local orbitSent = {} -- [player] = { [weaponName] = signature last sent to clients }
+local loadoutSent = {} -- [player] = signature of the skill emblems last sent to clients
 local nextShotId = 0
 local nextOrbitResync = 0
 
@@ -29,7 +30,7 @@ local function stats(s, name, level)
 		cooldown = w.cooldown * (1 - 0.04 * up) * Progression.cooldownMult(s),
 		range = w.range * Progression.areaMult(s),
 		radius = (w.radius or 0) * Progression.areaMult(s),
-		count = (w.count or 1) + math.floor(up / 3),
+		count = (w.count or 1) + math.floor(up / 3) + math.floor(Progression.bonus(s, "count")),
 	}
 end
 
@@ -56,13 +57,18 @@ local function orbitPositions(root, st)
 	return out
 end
 
--- Damages an enemy and records the hit so clients can show sparks and numbers.
-local function strike(player, e, damage, hits)
+-- Damages an enemy (rolling for a critical hit) and records the hit so clients can show
+-- sparks and damage numbers.
+local function strike(s, player, e, damage, hits)
 	if e.dead then
 		return
 	end
+	local crit = math.random() < Config.BASE_CRIT_CHANCE + Progression.bonus(s, "crit")
+	if crit then
+		damage *= Config.BASE_CRIT_DAMAGE + Progression.bonus(s, "critDamage")
+	end
 	if #hits < MAX_HITS_SHOWN then
-		table.insert(hits, { e.root.Position, math.floor(damage + 0.5) })
+		table.insert(hits, { e.root.Position, math.floor(damage + 0.5), crit })
 	end
 	Enemies.damage(e, damage, player)
 end
@@ -70,7 +76,7 @@ end
 -- Each returns true if it fired, false if there was nothing to hit.
 local fire = {}
 
-function fire.cone(player, _s, root, st)
+function fire.cone(player, s, root, st)
 	local target = Enemies.nearest(root.Position, st.range * 2.5)
 	if not target then
 		return false
@@ -84,7 +90,7 @@ function fire.cone(player, _s, root, st)
 		for _, e in nearby do
 			local d = flat(e.root.Position - root.Position)
 			if d.Magnitude < 0.1 or d.Unit:Dot(dir) >= cosHalf then
-				strike(player, e, st.damage, hits)
+				strike(s, player, e, st.damage, hits)
 			end
 		end
 		Fx.emit(st.w.fx, {
@@ -95,7 +101,7 @@ function fire.cone(player, _s, root, st)
 	return true
 end
 
-function fire.chain(player, _s, root, st)
+function fire.chain(player, s, root, st)
 	local current = Enemies.nearest(root.Position, st.range)
 	if not current then
 		return false
@@ -104,7 +110,7 @@ function fire.chain(player, _s, root, st)
 	for _ = 1, st.count do
 		visited[current] = true
 		table.insert(points, current.root.Position)
-		strike(player, current, st.damage, hits)
+		strike(s, player, current, st.damage, hits)
 		current = Enemies.nearest(points[#points], 15, visited)
 		if not current then
 			break
@@ -114,7 +120,7 @@ function fire.chain(player, _s, root, st)
 	return true
 end
 
-function fire.projectile(player, _s, root, st)
+function fire.projectile(player, s, root, st)
 	local targets = Enemies.closest(root.Position, st.range, st.count)
 	if #targets == 0 then
 		return false
@@ -123,7 +129,7 @@ function fire.projectile(player, _s, root, st)
 		local target = targets[(i - 1) % #targets + 1]
 		nextShotId += 1
 		local shot = {
-			id = nextShotId, player = player, pos = root.Position, dir = directionTo(root, target),
+			id = nextShotId, player = player, s = s, pos = root.Position, dir = directionTo(root, target),
 			left = st.range, damage = st.damage, radius = st.radius, color = st.w.color, fire = st.w.fire,
 		}
 		table.insert(projectiles, shot)
@@ -135,7 +141,7 @@ function fire.projectile(player, _s, root, st)
 	return true
 end
 
-function fire.clones(player, _s, root, st)
+function fire.clones(player, s, root, st)
 	if not Enemies.nearest(root.Position, 40) then
 		return false
 	end
@@ -151,7 +157,7 @@ function fire.clones(player, _s, root, st)
 			pos = Vector3.new(pos.X, root.Position.Y, pos.Z)
 			local hits = {}
 			for _, e in Enemies.inRadius(pos, st.range) do
-				strike(player, e, st.damage, hits)
+				strike(s, player, e, st.damage, hits)
 			end
 			Fx.emit(st.w.fx, { c = st.w.color, pos = pos, r = st.range, hits = hits })
 		end)
@@ -159,11 +165,11 @@ function fire.clones(player, _s, root, st)
 	return true
 end
 
-function fire.orbit(player, _s, root, st)
+function fire.orbit(player, s, root, st)
 	local hits = {}
 	for _, pos in orbitPositions(root, st) do
 		for _, e in Enemies.inRadius(pos, 2.5) do
-			strike(player, e, st.damage, hits)
+			strike(s, player, e, st.damage, hits)
 		end
 	end
 	if #hits > 0 then
@@ -172,7 +178,7 @@ function fire.orbit(player, _s, root, st)
 	return true
 end
 
-function fire.line(player, _s, root, st)
+function fire.line(player, s, root, st)
 	local target = Enemies.nearest(root.Position, st.range)
 	if not target then
 		return false
@@ -187,7 +193,7 @@ function fire.line(player, _s, root, st)
 			local rel = flat(e.root.Position - origin)
 			local along = rel:Dot(dir)
 			if along > 0 and (rel - dir * along).Magnitude <= st.w.width + e.radius then
-				strike(player, e, st.damage, hits)
+				strike(s, player, e, st.damage, hits)
 			end
 		end
 		Fx.emit(st.w.fx, {
@@ -198,14 +204,14 @@ function fire.line(player, _s, root, st)
 	return true
 end
 
-function fire.aura(player, _s, root, st)
+function fire.aura(player, s, root, st)
 	local nearby = Enemies.inRadius(root.Position, st.range)
 	if #nearby == 0 then
 		return false
 	end
 	local hits = {}
 	for _, e in nearby do
-		strike(player, e, st.damage, hits)
+		strike(s, player, e, st.damage, hits)
 	end
 	Fx.emit(st.w.fx, {
 		p = player, anim = st.w.anim, c = st.w.color, fire = st.w.fire,
@@ -223,7 +229,7 @@ local function stepProjectiles(dt)
 		if p.left <= 0 or Enemies.nearest(p.pos, 1.5) then
 			local hits = {}
 			for _, e in Enemies.inRadius(p.pos, p.radius) do
-				strike(p.player, e, p.damage, hits)
+				strike(p.s, p.player, e, p.damage, hits)
 			end
 			Fx.emit("boom", { id = p.id, pos = p.pos, r = p.radius, c = p.color, fire = p.fire, hits = hits })
 			table.remove(projectiles, i)
@@ -244,11 +250,38 @@ local function syncOrbit(player, name, st)
 	end
 end
 
--- Stops drawing a player's orbiting weapons and drops their projectiles in flight.
+-- Tells clients which skill emblems to float around a player (one per owned skill).
+local function syncLoadout(player, s)
+	local names = {}
+	for name in s.weapons do
+		table.insert(names, name)
+	end
+	table.sort(names)
+	local signature = table.concat(names, ",")
+	if loadoutSent[player] == signature then
+		return
+	end
+	loadoutSent[player] = signature
+	local items = {}
+	for _, name in names do
+		local def = Progression.def(name)
+		local look = def.fused and Config.Weapons[def.parts[1]] or def
+		if look.kind ~= "orbit" then -- orbiting skills already circle the player
+			table.insert(items, { icon = def.icon, c = def.color, fx = look.fx, fire = look.fire })
+		end
+	end
+	Fx.emit("loadout", { p = player, items = items })
+end
+
+-- Stops drawing a player's orbiting weapons and emblems and drops their projectiles in flight.
 function Weapons.cleanup(player)
 	if orbitSent[player] then
 		Fx.emit("orbit", { p = player, all = true, n = 0 })
 		orbitSent[player] = nil
+	end
+	if loadoutSent[player] then
+		Fx.emit("loadout", { p = player, items = {} })
+		loadoutSent[player] = nil
 	end
 	for i = #projectiles, 1, -1 do
 		if projectiles[i].player == player then
@@ -279,6 +312,7 @@ function Weapons.step(dt)
 				orbitSent[player] = nil
 			end
 		end
+		table.clear(loadoutSent)
 	end
 	stepProjectiles(dt)
 	for player, s in Progression.all() do
@@ -287,6 +321,7 @@ function Weapons.step(dt)
 			Weapons.cleanup(player)
 			continue
 		end
+		syncLoadout(player, s)
 		for key in orbitSent[player] or {} do
 			local owner = key:match("^(.-)#%d+$") or key -- fused parts are "<fusion>#1" and "<fusion>#2"
 			if not s.weapons[owner] then
