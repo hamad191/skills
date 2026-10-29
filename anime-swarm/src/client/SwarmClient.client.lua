@@ -23,6 +23,7 @@ local Sounds = require(script.Parent:WaitForChild("Sounds"))
 local Settings = require(script.Parent:WaitForChild("Settings"))
 local Tutorial = require(script.Parent:WaitForChild("Tutorial"))
 local Ambience = require(script.Parent:WaitForChild("Ambience"))
+local Wildlife = require(script.Parent:WaitForChild("Wildlife"))
 
 -- our own health bar replaces the default one
 pcall(function()
@@ -285,9 +286,12 @@ remotes.State.OnClientEvent:Connect(function(state)
 	if running then
 		Hud.setCrew(state.crew)
 		Ambience.set(state.theme or "island")
+		local map = state.map == Config.RAID.map.key and Config.RAID.map or Config.MapByKey[state.map or ""]
+		Wildlife.set(state.theme or "island", map and map.center)
 		Sounds.music(state.boss and "Boss" or "Battle")
 	elseif state.phase == "Lobby" then
 		Ambience.set("island")
+		Wildlife.set("island")
 		Sounds.music("Lobby")
 	end
 	Tutorial.phase(state.phase)

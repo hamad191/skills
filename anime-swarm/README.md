@@ -138,6 +138,21 @@ Every friend in your crew gives **+10% gold** (up to +30%). If you have a Roblox
 in `Config.SOCIAL.groupId` and members get **+10% gold** too. The REWARDS menu has an **INVITE
 FRIENDS** button.
 
+## World and details
+
+- **Real terrain** (built when the server starts, `src/server/World.lua`): the island has textured
+  grass with animated blades, a sand beach that slopes into a **waving ocean**, and every arena has a
+  textured ground in its theme (grass, concrete, cobblestone, sand, wood planks, snow, basalt with
+  glowing cracked lava, mud, slate...) broken up by patches of other materials. Sea-themed arenas sit
+  in open water. Clouds drift across the sky and change with each map.
+- **The island:** stepping-stone paths from the spawn to every NPC, the raid gate and the
+  leaderboards, a signpost with an arrow toward each one, and flower beds.
+- **Wildlife** (on your screen only, off in low graphics): seagulls circling overhead, butterflies over
+  the island, fish leaping out of the sea, fireflies on dark maps.
+- **Materials:** enemy uniforms are cloth, boots and belts leather, the Iron Sentinel metal.
+
+Studio's edit view still shows the old flat floors; the terrain appears when you press Play.
+
 ## The look
 
 A "High Seas" pirate style: deep-sea panels with gold rope trim and rivets, glossy buttons, cartoon
@@ -380,6 +395,7 @@ The spawn island and all 20 arenas are already built (the voyage gates appear wh
 | `src/server/Leaderboards.lua` | Island leaderboards, player list stats, bounty titles |
 | `src/server/Guard.lua` | Speed check and request rate limits |
 | `src/server/Raid.lua` | The island's raid gate and its timer |
+| `src/server/World.lua` | Terrain for the island and every arena, water, clouds |
 | `src/server/Fx.lua` | Sends effect events (what happened) to the players near them |
 | `src/client/SwarmClient.client.lua` | Connects the UI to the server; dash, NPC prompts, purchases, spectating |
 | `src/client/Theme.lua` | Colors, fonts, UI building blocks and screen-size scaling |
@@ -391,5 +407,6 @@ The spawn island and all 20 arenas are already built (the voyage gates appear wh
 | `src/client/Sounds.lua` | Sound effects (3D, with spam limits) and music crossfades |
 | `src/client/Settings.lua` | The settings menu |
 | `src/client/Tutorial.lua` | The first-time guide |
-| `src/client/Ambience.lua` | Per-map lighting, haze, tint and weather |
+| `src/client/Ambience.lua` | Per-map lighting, haze, tint, clouds and weather |
+| `src/client/Wildlife.lua` | Seagulls, butterflies, jumping fish and fireflies |
 | `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the spawn island, 20 themed arenas, lighting and all scripts |

@@ -794,6 +794,7 @@ for className, class in Config.Classes do
 end
 
 -- color = clothes, accent = trousers and collar, skin = head and hands, eyes = glowing eye color
+-- metal = a metal body instead of cloth.
 -- hat: cap | officer | beret | medic | bear | tophat | fin | clown. gear: what they carry
 -- (sword | rifle | longrifle | cannon | coat | bomb | net). ai: how they move and fight:
 --   melee (walk up and hit), ranged (keep distance and shoot), artillery (shell an area),
@@ -850,7 +851,7 @@ Config.Enemies = {
 	Brute = {
 		name = "Iron Sentinel", hp = 110, speed = 8, damage = 14, xp = 6, scale = 1.7,
 		color = Color3.fromRGB(55, 55, 65), accent = Color3.fromRGB(30, 30, 35), skin = Color3.fromRGB(200, 170, 140),
-		eyes = Color3.fromRGB(255, 220, 60), hat = "bear", skills = { laser = 7 }, range = 46,
+		eyes = Color3.fromRGB(255, 220, 60), hat = "bear", skills = { laser = 7 }, range = 46, metal = true,
 	},
 	Captain = {
 		name = "Marine Captain", hp = 220, speed = 11, damage = 16, xp = 10, scale = 1.4,

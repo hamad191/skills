@@ -14,6 +14,13 @@ local SKIN = Color3.fromRGB(255, 205, 160)
 local UPRIGHT = CFrame.Angles(0, 0, math.pi / 2) -- a cylinder standing upright
 local FORWARD = CFrame.Angles(0, math.pi / 2, 0) -- a cylinder pointing forward
 local CYL, BALL, WEDGE = Enum.PartType.Cylinder, Enum.PartType.Ball, Enum.PartType.Wedge
+-- Leather is one of Roblox's newer materials; fall back to fabric where it doesn't exist
+local LEATHER = select(2, pcall(function()
+	return Enum.Material.Leather
+end))
+if typeof(LEATHER) ~= "EnumItem" then
+	LEATHER = Enum.Material.Fabric
+end
 local WOOD, PLANKS, METAL, NEON, FABRIC, SLATE, GLASS =
 	Enum.Material.Wood, Enum.Material.WoodPlanks, Enum.Material.Metal, Enum.Material.Neon, Enum.Material.Fabric, Enum.Material.Slate, Enum.Material.Glass
 
@@ -124,8 +131,8 @@ local LOOKS = {
 		colors = bodyColors(rgb(95, 150, 190), rgb(225, 200, 150), rgb(225, 200, 150), rgb(95, 150, 190), rgb(120, 80, 45), rgb(50, 70, 120), rgb(110, 70, 40)),
 		pieces = {
 			-- leather apron and tool pouches
-			{ "UpperTorso", Vector3.new(1.7, 1.5, 0.08), Vector3.new(0, -0.05, -0.53), rgb(120, 80, 45), nil, Enum.Material.Leather },
-			{ "LowerTorso", Vector3.new(1.7, 1.4, 0.08), Vector3.new(0, -0.5, -0.53), rgb(120, 80, 45), nil, Enum.Material.Leather },
+			{ "UpperTorso", Vector3.new(1.7, 1.5, 0.08), Vector3.new(0, -0.05, -0.53), rgb(120, 80, 45), nil, LEATHER },
+			{ "LowerTorso", Vector3.new(1.7, 1.4, 0.08), Vector3.new(0, -0.5, -0.53), rgb(120, 80, 45), nil, LEATHER },
 			{ "LowerTorso", Vector3.new(0.4, 0.5, 0.4), Vector3.new(-0.85, -0.1, -0.2), rgb(90, 60, 35) },
 			{ "LowerTorso", Vector3.new(0.4, 0.5, 0.4), Vector3.new(0.85, -0.1, -0.2), rgb(90, 60, 35) },
 			-- headband, fin and big grin

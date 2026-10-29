@@ -25,6 +25,7 @@ local Rewards = require(script.Parent.Rewards)
 local Leaderboards = require(script.Parent.Leaderboards)
 local Guard = require(script.Parent.Guard)
 local Raid = require(script.Parent.Raid)
+local World = require(script.Parent.World)
 
 Players.CharacterAutoLoads = false
 
@@ -45,6 +46,7 @@ remoteFolder.Parent = RS
 Progression.init(remotes)
 Fx.init(remotes.Fx)
 Portals.build()
+task.spawn(World.build) -- the island's terrain is ready before anyone spawns; arenas follow
 task.spawn(Npcs.build) -- building R15 characters can take a moment
 Leaderboards.build()
 Raid.build()

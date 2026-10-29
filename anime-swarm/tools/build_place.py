@@ -163,7 +163,7 @@ def light(rgb, brightness=1.5, rng_=20):
     )
 
 
-def sign_text(text, rgb=(255, 217, 51)):
+def sign_text(text, rgb=(255, 217, 51), face=5):
     r, g, b = (c / 255 for c in rgb)
     label = item(
         "TextLabel",
@@ -175,7 +175,7 @@ def sign_text(text, rgb=(255, 217, 51)):
         '<token name="Font">4</token>'
         '<UDim2 name="Size"><XS>1</XS><XO>0</XO><YS>1</YS><YO>0</YO></UDim2>',
     )
-    return item("SurfaceGui", "SurfaceGui", '<token name="Face">5</token>', [label])  # Front (-Z) face
+    return item("SurfaceGui", "SurfaceGui", f'<token name="Face">{face}</token>', [label])  # 5 = Front (-Z), 2 = Back
 
 
 # --- props ------------------------------------------------------------------
@@ -375,6 +375,77 @@ def raid_gate():
     return float(x), float(z)
 
 
+def npc_list():
+    """(icon, role, x, z) of every island NPC, from Config.NPCS."""
+    with open(os.path.join(ROOT, "src/shared/Config.lua"), encoding="utf-8") as f:
+        text = f.read()
+    block = text[text.index("Config.NPCS = {"):text.index("Config.MASTERY")]
+    out = []
+    for entry in re.findall(r"\{ name = .*?position = Vector3\.new\([^)]*\)", block, re.S):
+        role = re.search(r'role = "([^"]+)"', entry).group(1)
+        icon = re.search(r'icon = "([^"]+)"', entry).group(1)
+        x, z = re.search(r"position = Vector3\.new\((-?[\d.]+), 0, (-?[\d.]+)\)", entry).groups()
+        out.append((icon, role, float(x), float(z)))
+    return out
+
+
+def island_details(cz):
+    """Stepping-stone paths, a signpost pointing everywhere, and flower beds."""
+    parts = []
+    # stepping stones from the spawn to every NPC, the raid gate and the leaderboards
+    targets = [(x, z) for _, _, x, z in npc_list()] + [raid_gate(), leaderboard_spots()[0]]
+    stones = []
+    for t, (tx, tz) in enumerate(targets):
+        dx, dz = tx, tz - cz
+        dist = math.hypot(dx, dz)
+        ux, uz = dx / dist, dz / dist
+        d = 16.0
+        while d < dist - 7:
+            x, z = ux * d + rng.uniform(-0.5, 0.5), cz + uz * d + rng.uniform(-0.5, 0.5)
+            size = rng.uniform(2.2, 3.0)
+            stones.append(deco(f"Stone{t}_{len(stones)}", (0.3, size, size * rng.uniform(0.8, 1)), x, GRASS_TOP + 0.08, z,
+                               jitter(STONE, 14), "slate", "cylinder", UPRIGHT, collide=False))
+            BLOCKED.append((x, z, 3))
+            d += 3.6
+    parts.append(model("StonePaths", stones))
+
+    # a signpost with an arrow board toward every spot
+    sx, sz = -10, cz - 16
+    post = [part("Post", (0.7, 11, 0.7), (sx, GRASS_TOP + 5.5, sz), DARK_WOOD, "wood"),
+            part("Cap", (1.2, 0.5, 1.2), (sx, GRASS_TOP + 11.2, sz), (200, 160, 60), "metal")]
+    spots = [(f"{icon} {role}", x, z) for icon, role, x, z in npc_list()]
+    spots += [("⛵ Voyage Gates", PLAZA[0], PLAZA[1]), ("🐙 Raid Gate", *raid_gate()), ("🏆 Leaderboards", *leaderboard_spots()[2])]
+    for i, (text, tx, tz) in enumerate(spots):
+        yaw = math.degrees(math.atan2(-(tz - sz), tx - sx))
+        rot = rot_y(yaw)
+        local = apply(rot, (2.9, 0, 0))
+        y = GRASS_TOP + 10.2 - i * 0.95
+        post.append(part(f"Arrow{i}", (5.4, 0.8, 0.16), (sx + local[0], y, sz + local[2]), (150, 105, 60), "planks", rot=rot,
+                         children=[sign_text(text, (255, 240, 200)), sign_text(text, (255, 240, 200), 2)]))
+    parts.append(model("Signpost", post))
+    BLOCKED.append((sx, sz, 5))
+
+    # flower beds on open grass
+    flowers = []
+    colors = [(255, 90, 120), (255, 220, 70), (250, 250, 250), (180, 120, 255), (255, 150, 60), (120, 200, 255)]
+    beds = 0
+    while beds < 30:
+        a, r = rng.uniform(0, 2 * math.pi), rng.uniform(22, 120)
+        bx, bz = math.cos(a) * r, cz + math.sin(a) * r
+        if not free(bx, bz):
+            continue
+        beds += 1
+        color = rng.choice(colors)
+        for k in range(rng.randint(4, 7)):
+            x, z = bx + rng.uniform(-2.5, 2.5), bz + rng.uniform(-2.5, 2.5)
+            h = rng.uniform(0.8, 1.4)
+            flowers.append(deco("Stem", (h, 0.15, 0.15), x, GRASS_TOP + h / 2, z, (60, 140, 60), "grass", "cylinder", UPRIGHT, collide=False))
+            flowers.append(deco("Bloom", (0.7, 0.7, 0.7), x, GRASS_TOP + h + 0.2, z, jitter(color, 20), "smooth", "ball", collide=False))
+        BLOCKED.append((bx, bz, 4))
+    parts.append(model("Flowers", flowers))
+    return parts
+
+
 def free(x, z):
     if abs(x) < 9 and ISLAND_Z < z < ISLAND_Z + 40:  # the path
         return False
@@ -484,6 +555,8 @@ def spawn_island():
                           (rng.uniform(3, 7), rng.uniform(2, 5), rng.uniform(3, 6))))
     parts.append(model("Palms", palms))
     parts.append(model("Rocks", rocks))
+
+    parts += island_details(cz)
 
     # a few palms inland, then bushes scattered over the grass
     inland = []

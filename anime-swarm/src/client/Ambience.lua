@@ -32,6 +32,13 @@ local MOODS = {
 	wano = { clock = 16, brightness = 2.4, density = 0.3, haze = 1.5, air = Color3.fromRGB(240, 200, 215), tint = Color3.fromRGB(255, 240, 245), saturation = 0.15, weather = "petals" },
 }
 
+-- cloud cover and color per theme (the rest get light white clouds)
+local CLOUDS = {
+	spooky = { 0.85, Color3.fromRGB(90, 80, 110) }, volcano = { 0.75, Color3.fromRGB(95, 80, 80) },
+	prison = { 0.8, Color3.fromRGB(85, 75, 80) }, snow = { 0.85, Color3.fromRGB(235, 240, 250) },
+	desert = { 0.15, Color3.new(1, 1, 1) }, sky = { 0.9, Color3.new(1, 1, 1) }, deepsea = { 0.7, Color3.fromRGB(200, 220, 235) },
+}
+
 local WEATHER = {
 	snow = { texture = SPARK, color = Color3.fromRGB(255, 255, 255), size = 0.5, rate = 120, speed = { 6, 10 }, accel = Vector3.new(2, -2, 0), down = true },
 	ash = { texture = SMOKE, color = Color3.fromRGB(90, 80, 80), size = 0.6, rate = 70, speed = { 4, 7 }, accel = Vector3.new(1, -1, 0), down = true, embers = true },
@@ -93,6 +100,11 @@ function Ambience.set(theme)
 	TweenService:Create(Lighting, info, { ClockTime = mood.clock, Brightness = mood.brightness }):Play()
 	TweenService:Create(atmosphere, info, { Density = mood.density, Haze = mood.haze, Color = mood.air }):Play()
 	TweenService:Create(tint, info, { TintColor = mood.tint, Saturation = mood.saturation }):Play()
+	local clouds = workspace.Terrain:FindFirstChildOfClass("Clouds")
+	if clouds then
+		local look = CLOUDS[theme] or { 0.55, Color3.new(1, 1, 1) }
+		TweenService:Create(clouds, info, { Cover = look[1], Color = look[2] }):Play()
+	end
 	setWeather(mood.weather)
 end
 

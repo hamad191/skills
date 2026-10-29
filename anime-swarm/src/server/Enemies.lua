@@ -210,6 +210,13 @@ local DARK = Color3.fromRGB(25, 25, 30)
 local GOLD = Color3.fromRGB(235, 190, 60)
 local BOOTS = Color3.fromRGB(30, 30, 35)
 local BELT = Color3.fromRGB(60, 40, 25)
+-- Leather is one of Roblox's newer materials; fall back to fabric where it doesn't exist
+local LEATHER = select(2, pcall(function()
+	return Enum.Material.Leather
+end))
+if typeof(LEATHER) ~= "EnumItem" then
+	LEATHER = Enum.Material.Fabric
+end
 local WHITE = Color3.fromRGB(245, 245, 248)
 
 -- Jointed limbs: name, size, joint on the torso, joint on the limb, color key.
@@ -230,9 +237,9 @@ end
 local BASE = {
 	piece("LeftArm", Vector3.new(0.65, 0.65, 0.65), Vector3.new(0, -0.95, 0), "skin", BALL),
 	piece("RightArm", Vector3.new(0.65, 0.65, 0.65), Vector3.new(0, -0.95, 0), "skin", BALL),
-	piece("LeftLeg", Vector3.new(0.95, 0.4, 1.15), Vector3.new(0, -0.62, -0.08), BOOTS),
-	piece("RightLeg", Vector3.new(0.95, 0.4, 1.15), Vector3.new(0, -0.62, -0.08), BOOTS),
-	piece("Torso", Vector3.new(2.04, 0.28, 1.04), Vector3.new(0, -0.82, 0), BELT),
+	piece("LeftLeg", Vector3.new(0.95, 0.4, 1.15), Vector3.new(0, -0.62, -0.08), BOOTS, nil, LEATHER),
+	piece("RightLeg", Vector3.new(0.95, 0.4, 1.15), Vector3.new(0, -0.62, -0.08), BOOTS, nil, LEATHER),
+	piece("Torso", Vector3.new(2.04, 0.28, 1.04), Vector3.new(0, -0.82, 0), BELT, nil, LEATHER),
 	piece("Torso", Vector3.new(0.42, 0.3, 0.06), Vector3.new(0, -0.82, -0.54), GOLD, nil, Enum.Material.Metal),
 	-- face: eyes, angry brows, mouth
 	piece("Head", Vector3.new(0.32, 0.32, 0.32), Vector3.new(-0.33, 0.12, -0.72), "eyes", BALL),
@@ -353,7 +360,12 @@ local function buildBody(def, colors, name, x, y, z)
 	local s = def.scale
 	local model = Instance.new("Model")
 	model.Name = name
-	local torso = makePart({ Name = "Torso", Size = Vector3.new(2, 2, 1) * s, Color = colors.color }, model)
+	-- cloth uniforms (metal for the Iron Sentinel); skin and eyes stay smooth
+	local cloth = def.metal and Enum.Material.DiamondPlate or Enum.Material.Fabric
+	local function materialFor(colorKey)
+		return (colorKey == "skin" or colorKey == "eyes") and Enum.Material.SmoothPlastic or cloth
+	end
+	local torso = makePart({ Name = "Torso", Size = Vector3.new(2, 2, 1) * s, Color = colors.color, Material = cloth }, model)
 	torso.CFrame = CFrame.new(x, y + LEG_DEPTH * s, z)
 	local parts = { Torso = torso }
 
@@ -366,7 +378,7 @@ local function buildBody(def, colors, name, x, y, z)
 		return p
 	end
 	for _, limb in LIMBS do
-		local p = newPart(limb[1], limb[2], colors[limb[5]], limb[7])
+		local p = newPart(limb[1], limb[2], colors[limb[5]], limb[7], materialFor(limb[5]))
 		local joint = Instance.new("Motor6D")
 		joint.Name = limb[6]
 		joint.Part0, joint.Part1 = torso, p
@@ -380,7 +392,8 @@ local function buildBody(def, colors, name, x, y, z)
 		for _, pc in list do
 			local on = parts[pc[1]]
 			local color = typeof(pc[4]) == "Color3" and pc[4] or colors[pc[4]] or DARK
-			local p = newPart(pc[1] .. "Detail", pc[2], color, pc[5], pc[6])
+			local material = pc[6] or (typeof(pc[4]) == "string" and materialFor(pc[4])) or Enum.Material.SmoothPlastic
+			local p = newPart(pc[1] .. "Detail", pc[2], color, pc[5], material)
 			local offset = typeof(pc[3]) == "CFrame" and pc[3] or CFrame.new(pc[3])
 			p.CFrame = on.CFrame * (offset - offset.Position + offset.Position * s)
 			if pc[4] == "eyes" and def.eyes then
