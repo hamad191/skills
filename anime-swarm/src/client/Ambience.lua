@@ -1,5 +1,5 @@
--- Each map has its own mood: time of day, haze, color tint and weather (snow on Drum Island, ash
--- on Punk Hazard, cherry blossoms in Wano, bubbles at Sabaody...). Back on the island it all
+-- Each map has its own mood: time of day, haze, color tint and weather (snow on Snowcap Island, ash
+-- on Burning Isle, cherry blossoms in Blossom Land, bubbles at Bubble Grove...). Back on the island it all
 -- fades back to a sunny afternoon. Purely visual and local to this player.
 local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")

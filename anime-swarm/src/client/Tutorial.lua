@@ -85,7 +85,7 @@ end
 local function setStep(n)
 	step = n
 	if n == 1 then
-		showTip("👋 Welcome aboard, recruit! Talk to Silvers Rayleigh (follow the golden trail, press E).")
+		showTip("👋 Welcome aboard, recruit! Talk to " .. Config.NPCS[1].name .. " (follow the golden trail, press E).")
 		pointTo(npcSpot(1))
 	elseif n == 2 then
 		showTip("⛵ Now step onto a voyage gate to start your first adventure!")

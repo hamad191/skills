@@ -1,5 +1,5 @@
 -- Island NPCs: trainers, the gear smith, the upgrades bar and the store. Each one is a real R15
--- character in their own outfit, standing at their own stall (training dummies, a clinic, a
+-- character in their own outfit (look = the outfit key), standing at their own stall (training dummies, a clinic, a
 -- shipyard forge, a bar, a circus tent). Clients animate them (client/Rigs.lua). Each has a
 -- prompt ("E" on keyboard, tap on phones) that opens its menu on the client.
 local Players = game:GetService("Players")
@@ -177,6 +177,26 @@ local LOOKS = {
 	},
 }
 
+LOOKS.Sage = {
+	scale = 1.05,
+	colors = bodyColors(rgb(225, 185, 150), rgb(240, 150, 40), rgb(240, 150, 40), rgb(225, 185, 150), rgb(200, 110, 30), rgb(240, 150, 40), rgb(120, 80, 50)),
+	pieces = {
+		-- long white beard and bushy brows on a bald head
+		{ "Head", Vector3.new(0.95, 1.3, 0.35), Vector3.new(0, -0.75, -0.45), rgb(245, 245, 245) },
+		{ "Head", Vector3.new(0.75, 0.14, 0.12), Vector3.new(0, -0.18, -0.62), rgb(245, 245, 245) },
+		{ "Head", Vector3.new(0.4, 0.14, 0.1), CFrame.new(-0.27, 0.27, -0.6) * CFrame.Angles(0, 0, -0.2), rgb(245, 245, 245) },
+		{ "Head", Vector3.new(0.4, 0.14, 0.1), CFrame.new(0.27, 0.27, -0.6) * CFrame.Angles(0, 0, 0.2), rgb(245, 245, 245) },
+		-- a robe over one shoulder, prayer beads, a staff with a ring
+		{ "UpperTorso", Vector3.new(2.1, 0.45, 1.1), CFrame.new(0, 0.2, 0) * CFrame.Angles(0, 0, 0.6), rgb(200, 110, 30), nil, FABRIC },
+		{ "LowerTorso", Vector3.new(2.2, 1.6, 1.15), Vector3.new(0, -0.6, 0), rgb(240, 150, 40), nil, FABRIC },
+		{ "UpperTorso", Vector3.new(0.22, 0.22, 0.22), Vector3.new(-0.35, 0.55, -0.55), rgb(110, 60, 30), BALL, WOOD },
+		{ "UpperTorso", Vector3.new(0.22, 0.22, 0.22), Vector3.new(0, 0.45, -0.58), rgb(110, 60, 30), BALL, WOOD },
+		{ "UpperTorso", Vector3.new(0.22, 0.22, 0.22), Vector3.new(0.35, 0.55, -0.55), rgb(110, 60, 30), BALL, WOOD },
+		{ "RightHand", Vector3.new(5.2, 0.2, 0.2), CFrame.new(0, 0.9, 0) * UPRIGHT, rgb(130, 90, 50), CYL, WOOD },
+		{ "RightHand", Vector3.new(0.12, 0.9, 0.9), CFrame.new(0, 3.6, 0) * FORWARD, rgb(240, 200, 60), CYL, METAL },
+	},
+}
+
 -- Dresses an R15 body: recolors it and welds on the outfit pieces.
 local function dress(model, look)
 	local bodyColorsObj = model:FindFirstChildOfClass("BodyColors")
@@ -309,7 +329,7 @@ function STALLS.Rayleigh(add)
 	for i = -1, 1 do
 		add("RackSword", Vector3.new(0.15, 3.2, 0.3), CFrame.new(i * 1.2, 1.7, 3.4) * CFrame.Angles(math.rad(-12), 0, 0), rgb(205, 210, 220), nil, METAL)
 	end
-	signBoard(add, "⚔️ HAKI TRAINING", rgb(220, 220, 230))
+	signBoard(add, "⚔️ SWORD DOJO", rgb(220, 220, 230))
 end
 
 function STALLS.Kureha(add)
@@ -335,7 +355,7 @@ function STALLS.Kureha(add)
 	bubbles.Rate = 6
 	bubbles.EmissionDirection = Enum.NormalId.Right
 	bubbles.Parent = brew
-	signBoard(add, "💊 KUREHA'S CLINIC", rgb(220, 60, 90))
+	signBoard(add, "💊 GRANNY'S CLINIC", rgb(220, 60, 90))
 end
 
 function STALLS.Tom(add)
@@ -372,7 +392,7 @@ function STALLS.Tom(add)
 		add("RibL", Vector3.new(0.4, 4, 0.4), CFrame.new(x, 2, 6.5) * CFrame.new(0, 0, -1.6) * CFrame.Angles(math.rad(-20), 0, 0), rgb(150, 105, 60), nil, WOOD)
 		add("RibR", Vector3.new(0.4, 4, 0.4), CFrame.new(x, 2, 6.5) * CFrame.new(0, 0, 1.6) * CFrame.Angles(math.rad(20), 0, 0), rgb(150, 105, 60), nil, WOOD)
 	end
-	signBoard(add, "🔨 GALLEY-LA GEAR", rgb(240, 200, 60))
+	signBoard(add, "🔨 HAMMOND'S FORGE", rgb(240, 200, 60))
 end
 
 function STALLS.Shakky(add)
@@ -398,7 +418,7 @@ function STALLS.Shakky(add)
 	light.Parent = lamp
 	add("LampCord", Vector3.new(0.08, 1.6, 0.08), CFrame.new(0, 7.2, 0), rgb(30, 30, 30))
 	add("LampBeam", Vector3.new(7, 0.4, 0.4), CFrame.new(0, 8, 0), rgb(100, 65, 35), nil, WOOD)
-	signBoard(add, "🍸 SHAKKY'S RIP-OFF BAR", rgb(200, 60, 90))
+	signBoard(add, "🍸 ROXIE'S BAR", rgb(200, 60, 90))
 end
 
 function STALLS.Buggy(add)
@@ -412,7 +432,7 @@ function STALLS.Buggy(add)
 		local x = -4.4 + i * 1.26
 		add("Awning", Vector3.new(1.26, 0.25, 6.4), CFrame.new(x + 0.63, 7.2, 0.2) * CFrame.Angles(math.rad(-10), 0, 0), i % 2 == 0 and rgb(220, 40, 50) or rgb(250, 250, 250), nil, FABRIC)
 	end
-	-- a treasure pile and a stack of Buggy Balls
+	-- a treasure pile and a stack of Bingo Balls
 	add("Chest", Vector3.new(2.6, 1.6, 1.8), CFrame.new(3, 0.8, 2), rgb(120, 75, 35), nil, WOOD)
 	add("ChestBand", Vector3.new(2.7, 0.25, 1.9), CFrame.new(3, 1.2, 2), rgb(240, 200, 60), nil, METAL)
 	for i = 0, 5 do
@@ -425,9 +445,41 @@ function STALLS.Buggy(add)
 	add("Cannon", Vector3.new(2.6, 1, 1), CFrame.new(-3.4, 1.2, 2) * CFrame.Angles(0, math.rad(60), math.rad(20)), rgb(40, 40, 45), CYL, METAL)
 	add("CannonWheelL", Vector3.new(0.3, 1.2, 1.2), CFrame.new(-3.4, 0.6, 1.4) * CFrame.Angles(0, math.rad(60), 0), rgb(110, 70, 40), CYL, WOOD)
 	for i, pos in { Vector3.new(-1.6, 0.5, 2.6), Vector3.new(-0.7, 0.5, 2.6), Vector3.new(-1.15, 1.3, 2.6) } do
-		add("BuggyBall" .. i, Vector3.new(0.9, 0.9, 0.9), CFrame.new(pos), rgb(30, 30, 35), BALL)
+		add("CannonBall" .. i, Vector3.new(0.9, 0.9, 0.9), CFrame.new(pos), rgb(30, 30, 35), BALL)
 	end
-	signBoard(add, "💎 BUGGY'S TREASURES", rgb(60, 130, 230))
+	signBoard(add, "💎 BINGO'S TREASURES", rgb(60, 130, 230))
+end
+
+function STALLS.Sage(add)
+	-- a small shrine: stone steps, a red gate and a glowing star on an altar
+	add("Step", Vector3.new(10, 0.3, 9), CFrame.new(0, 0.12, 2.2), rgb(150, 150, 155), nil, SLATE)
+	for _, x in { -3.6, 3.6 } do
+		add("GatePillar", Vector3.new(0.7, 8, 0.7), CFrame.new(x, 4, 6.4), rgb(200, 40, 40))
+	end
+	add("GateBeam", Vector3.new(9.6, 0.6, 0.9), CFrame.new(0, 8.1, 6.4), rgb(40, 30, 30))
+	add("GateBeam2", Vector3.new(8.4, 0.4, 0.6), CFrame.new(0, 7.2, 6.4), rgb(200, 40, 40))
+	add("Altar", Vector3.new(2.4, 2.4, 1.6), CFrame.new(0, 1.7, 3), rgb(120, 120, 130), nil, SLATE)
+	local star = add("Star", Vector3.new(1.4, 1.4, 1.4), CFrame.new(0, 4, 3), rgb(255, 225, 90), BALL, NEON)
+	star.CanCollide = false
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness = rgb(255, 220, 120), 16, 2
+	light.Parent = star
+	local sparkle = Instance.new("Sparkles")
+	sparkle.SparkleColor = rgb(255, 230, 150)
+	sparkle.Parent = star
+	for _, x in { -2.6, 2.6 } do
+		local stick = add("Incense", Vector3.new(0.1, 1.2, 0.1), CFrame.new(x, 1.1, 2.6), rgb(150, 90, 50))
+		local smoke = Instance.new("ParticleEmitter")
+		smoke.Texture = "rbxasset://textures/particles/smoke_main.dds"
+		smoke.Color = ColorSequence.new(rgb(220, 220, 225))
+		smoke.Size = NumberSequence.new(0.2, 0.8)
+		smoke.Transparency = NumberSequence.new(0.6, 1)
+		smoke.Lifetime = NumberRange.new(2, 3)
+		smoke.Speed = NumberRange.new(0.5, 1)
+		smoke.Rate = 3
+		smoke.Parent = stick
+	end
+	signBoard(add, "⭐ SHRINE OF REBIRTH", rgb(255, 220, 90))
 end
 
 -- One NPC ---------------------------------------------------------------------------------

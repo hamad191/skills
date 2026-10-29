@@ -19,7 +19,7 @@ local function count(t)
 	return n
 end
 
--- Sum of class bonus, passives (boosted by Dr. Kureha's training), permanent upgrades,
+-- Sum of class bonus, passives (boosted by Granny Doc's training), permanent upgrades,
 -- gear, game passes and boosts for one stat.
 function Progression.bonus(s, stat)
 	local total = (s.classBonus[stat] or 0) + (s.extra[stat] or 0)
@@ -135,7 +135,7 @@ function Progression.applyStats(player)
 	hum.WalkSpeed = Config.BASE_SPEED * (1 + Progression.bonus(s, "speed")) * slowed
 end
 
--- Seastone nets: slows the player to `factor` of their speed for a few seconds.
+-- Chain nets: slows the player to `factor` of their speed for a few seconds.
 function Progression.slow(player, factor, seconds)
 	local s = states[player]
 	if not s then
@@ -269,7 +269,7 @@ local function describe(s, c)
 		return {
 			title = w.name, color = w.color, icon = w.icon, level = level, max = Config.WEAPON_MAX,
 			tag = crew and "CREW SKILL" or level == 1 and "NEW SKILL" or "UPGRADE",
-			text = crew and owner .. "'s skill: " .. w.desc or level == 1 and w.desc or "More damage, faster attacks, more hits.",
+			text = crew and Config.Classes[owner].name .. "'s skill: " .. w.desc or level == 1 and w.desc or "More damage, faster attacks, more hits.",
 		}
 	elseif c.type == "passive" then
 		local p = Config.Passives[c.key]

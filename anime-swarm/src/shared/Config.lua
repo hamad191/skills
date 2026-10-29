@@ -36,26 +36,26 @@ local function rgb(r, g, b)
 	return Color3.fromRGB(r, g, b)
 end
 Config.Maps = {
-	{ key = "Foosha", name = "Foosha Village", theme = "grass", boss = "Captain Nezumi", bossColor = rgb(240, 240, 245), bossAccent = rgb(60, 90, 160) },
-	{ key = "ShellsTown", name = "Shells Town", theme = "marine", boss = "Captain Morgan", bossColor = rgb(150, 150, 165), bossAccent = rgb(40, 50, 90) },
-	{ key = "OrangeTown", name = "Orange Town", theme = "town", boss = "Lieutenant Fullbody", bossColor = rgb(250, 250, 250), bossAccent = rgb(200, 120, 40) },
-	{ key = "SyrupVillage", name = "Syrup Village", theme = "beach", boss = "Jango", bossColor = rgb(90, 160, 90), bossAccent = rgb(40, 40, 60) },
-	{ key = "Baratie", name = "Baratie", theme = "ship", boss = "Captain T-Bone", bossColor = rgb(235, 235, 240), bossAccent = rgb(90, 60, 40) },
-	{ key = "ArlongPark", name = "Arlong Park", theme = "deepsea", boss = "Captain Hina", bossColor = rgb(250, 200, 220), bossAccent = rgb(130, 30, 80) },
-	{ key = "Loguetown", name = "Loguetown", theme = "town", boss = "Captain Smoker", bossColor = rgb(245, 245, 245), bossAccent = rgb(70, 110, 80) },
-	{ key = "DrumIsland", name = "Drum Island", theme = "snow", boss = "Tashigi", bossColor = rgb(80, 120, 200), bossAccent = rgb(30, 40, 80) },
-	{ key = "Alabasta", name = "Alabasta", theme = "desert", boss = "Vice Admiral Doberman", bossColor = rgb(240, 230, 200), bossAccent = rgb(140, 90, 40) },
-	{ key = "Jaya", name = "Jaya", theme = "jungle", boss = "Vice Admiral Onigumo", bossColor = rgb(60, 60, 70), bossAccent = rgb(150, 40, 40) },
-	{ key = "Skypiea", name = "Skypiea", theme = "sky", boss = "Vice Admiral Momonga", bossColor = rgb(250, 250, 255), bossAccent = rgb(230, 190, 60) },
-	{ key = "Water7", name = "Water 7", theme = "town", boss = "Kaku of CP9", bossColor = rgb(30, 30, 35), bossAccent = rgb(230, 230, 230) },
-	{ key = "EniesLobby", name = "Enies Lobby", theme = "marine", boss = "Rob Lucci of CP9", bossColor = rgb(20, 20, 25), bossAccent = rgb(240, 240, 240) },
-	{ key = "ThrillerBark", name = "Thriller Bark", theme = "spooky", boss = "Vice Admiral Strawberry", bossColor = rgb(200, 60, 80), bossAccent = rgb(50, 20, 40) },
-	{ key = "Sabaody", name = "Sabaody Archipelago", theme = "mangrove", boss = "Admiral Kizaru", bossColor = rgb(255, 220, 60), bossAccent = rgb(250, 250, 250) },
-	{ key = "ImpelDown", name = "Impel Down", theme = "prison", boss = "Chief Warden Magellan", bossColor = rgb(90, 30, 110), bossAccent = rgb(30, 10, 40) },
-	{ key = "Marineford", name = "Marineford", theme = "marine", boss = "Admiral Akainu", bossColor = rgb(200, 30, 30), bossAccent = rgb(250, 250, 250) },
-	{ key = "FishmanIsland", name = "Fishman Island", theme = "deepsea", boss = "Admiral Aokiji", bossColor = rgb(80, 140, 230), bossAccent = rgb(250, 250, 250) },
-	{ key = "PunkHazard", name = "Punk Hazard", theme = "volcano", boss = "Vice Admiral Vergo", bossColor = rgb(40, 40, 45), bossAccent = rgb(230, 230, 230) },
-	{ key = "Wano", name = "Wano Country", theme = "wano", boss = "Fleet Admiral Sengoku", bossColor = rgb(240, 200, 60), bossAccent = rgb(250, 250, 250) },
+	{ key = "Foosha", name = "Windmill Village", theme = "grass", boss = "Captain Whiskers", bossColor = rgb(240, 240, 245), bossAccent = rgb(60, 90, 160) },
+	{ key = "ShellsTown", name = "Fort Harbor", theme = "marine", boss = "Captain Ironjaw", bossColor = rgb(150, 150, 165), bossAccent = rgb(40, 50, 90) },
+	{ key = "OrangeTown", name = "Citrus Town", theme = "town", boss = "Lieutenant Peacock", bossColor = rgb(250, 250, 250), bossAccent = rgb(200, 120, 40) },
+	{ key = "SyrupVillage", name = "Palm Cape", theme = "beach", boss = "Hypno Jack", bossColor = rgb(90, 160, 90), bossAccent = rgb(40, 40, 60) },
+	{ key = "Baratie", name = "Sea Restaurant", theme = "ship", boss = "Captain Ribcage", bossColor = rgb(235, 235, 240), bossAccent = rgb(90, 60, 40) },
+	{ key = "ArlongPark", name = "Shark Reef", theme = "deepsea", boss = "Captain Shackles", bossColor = rgb(250, 200, 220), bossAccent = rgb(130, 30, 80) },
+	{ key = "Loguetown", name = "Gallows Town", theme = "town", boss = "Captain Haze", bossColor = rgb(245, 245, 245), bossAccent = rgb(70, 110, 80) },
+	{ key = "DrumIsland", name = "Snowcap Island", theme = "snow", boss = "Swordswoman Kiri", bossColor = rgb(80, 120, 200), bossAccent = rgb(30, 40, 80) },
+	{ key = "Alabasta", name = "Dune Kingdom", theme = "desert", boss = "Vice Admiral Hound", bossColor = rgb(240, 230, 200), bossAccent = rgb(140, 90, 40) },
+	{ key = "Jaya", name = "Vine Island", theme = "jungle", boss = "Vice Admiral Arachne", bossColor = rgb(60, 60, 70), bossAccent = rgb(150, 40, 40) },
+	{ key = "Skypiea", name = "Cloud Isle", theme = "sky", boss = "Vice Admiral Glider", bossColor = rgb(250, 250, 255), bossAccent = rgb(230, 190, 60) },
+	{ key = "Water7", name = "Canal City", theme = "town", boss = "Agent Longneck", bossColor = rgb(30, 30, 35), bossAccent = rgb(230, 230, 230) },
+	{ key = "EniesLobby", name = "Court Island", theme = "marine", boss = "Agent Panthera", bossColor = rgb(20, 20, 25), bossAccent = rgb(240, 240, 240) },
+	{ key = "ThrillerBark", name = "Haunted Isle", theme = "spooky", boss = "Vice Admiral Thornberry", bossColor = rgb(200, 60, 80), bossAccent = rgb(50, 20, 40) },
+	{ key = "Sabaody", name = "Bubble Grove", theme = "mangrove", boss = "Admiral Flash", bossColor = rgb(255, 220, 60), bossAccent = rgb(250, 250, 250) },
+	{ key = "ImpelDown", name = "Abyss Prison", theme = "prison", boss = "Warden Toxus", bossColor = rgb(90, 30, 110), bossAccent = rgb(30, 10, 40) },
+	{ key = "Marineford", name = "Navy Fortress", theme = "marine", boss = "Admiral Magmus", bossColor = rgb(200, 30, 30), bossAccent = rgb(250, 250, 250) },
+	{ key = "FishmanIsland", name = "Coral Kingdom", theme = "deepsea", boss = "Admiral Glacius", bossColor = rgb(80, 140, 230), bossAccent = rgb(250, 250, 250) },
+	{ key = "PunkHazard", name = "Burning Isle", theme = "volcano", boss = "Vice Admiral Steelfist", bossColor = rgb(40, 40, 45), bossAccent = rgb(230, 230, 230) },
+	{ key = "Wano", name = "Blossom Land", theme = "wano", boss = "Fleet Admiral Goldbeam", bossColor = rgb(240, 200, 60), bossAccent = rgb(250, 250, 250) },
 }
 Config.MapByKey = {}
 for i, map in Config.Maps do
@@ -102,152 +102,152 @@ Config.BASE_MAGNET = 10
 -- anim: the character's attack animation (punch | slash | kick | throw | cast | cross)
 -- Optional look tweaks: arcs (slash lines), arm (punch arm color), cloud (lightning from a cloud), fire (flames)
 Config.Weapons = {
-	-- Luffy -------------------------------------------------------------------------
+	-- Rocco -------------------------------------------------------------------------
 	GumGumPistol = {
-		name = "Gum-Gum Pistol", desc = "Stretchy punches that pierce through enemies.",
+		name = "Rubber Pistol", desc = "Stretchy punches that pierce through enemies.",
 		fx = "punch", anim = "punch",
 		kind = "line", damage = 16, cooldown = 1.4, range = 35, width = 3, count = 1,
 		color = rgb(230, 60, 60), evolveWith = "Vitality", evolvesInto = "GumGumGatling",
 	},
 	GumGumBazooka = {
-		name = "Gum-Gum Bazooka", desc = "A two-palm blast that smashes a straight line.",
+		name = "Rubber Bazooka", desc = "A two-palm blast that smashes a straight line.",
 		fx = "punch", anim = "punch",
 		kind = "line", damage = 42, cooldown = 3.2, range = 22, width = 5, count = 1, color = rgb(230, 60, 60),
 	},
 	GumGumWhip = {
-		name = "Gum-Gum Whip", desc = "A stretching leg sweeps everything in front.",
+		name = "Rubber Whip", desc = "A stretching leg sweeps everything in front.",
 		fx = "slash", anim = "kick", arcs = 1,
 		kind = "cone", damage = 24, cooldown = 1.8, range = 18, angle = 160, color = rgb(255, 120, 90),
 	},
 	GumGumBalloon = {
-		name = "Gum-Gum Balloon", desc = "Puff up and bounce enemies away.",
+		name = "Rubber Balloon", desc = "Puff up and bounce enemies away.",
 		fx = "nova", anim = "cast",
 		kind = "aura", damage = 16, cooldown = 2.4, range = 10, color = rgb(255, 170, 120),
 	},
 	GumGumElephantGun = {
-		name = "Gum-Gum Elephant Gun", desc = "A giant fist crashes down on a crowd.",
+		name = "Giant Rubber Fist", desc = "A giant fist crashes down on a crowd.",
 		fx = "strike", anim = "punch",
 		kind = "clones", damage = 65, cooldown = 5, range = 9, count = 1, color = rgb(220, 40, 40),
 	},
 	RedHawk = {
-		name = "Red Hawk", desc = "A blazing punch that explodes on impact.",
+		name = "Blazing Fist", desc = "A blazing punch that explodes on impact.",
 		fx = "shot", anim = "punch", fire = true,
 		kind = "projectile", damage = 45, cooldown = 3, range = 45, radius = 6, color = rgb(255, 90, 40),
 	},
 
-	-- Zoro --------------------------------------------------------------------------
+	-- Kenji --------------------------------------------------------------------------
 	ThreeSwordStyle = {
-		name = "Three Sword Style", desc = "Slashes the nearest enemies with three swords.",
+		name = "Triple Blade", desc = "Slashes the nearest enemies with three swords.",
 		fx = "slash", anim = "slash", arcs = 3,
 		kind = "cone", damage = 20, cooldown = 1.3, range = 14, angle = 110,
 		color = rgb(80, 220, 120), evolveWith = "Power", evolvesInto = "NineSwordStyle",
 	},
 	PoundCannon = {
-		name = "360 Pound Cannon", desc = "A flying slash wave cuts down a line.",
+		name = "Air Cannon Slash", desc = "A flying slash wave cuts down a line.",
 		fx = "wave", anim = "slash",
 		kind = "line", damage = 28, cooldown = 2.2, range = 45, width = 3, count = 1, color = rgb(120, 255, 160),
 	},
 	OniGiri = {
-		name = "Oni Giri", desc = "Demon Slash: three blades thrust forward.",
+		name = "Demon Cut", desc = "Three blades thrust forward at once.",
 		fx = "slash", anim = "slash", arcs = 3,
 		kind = "cone", damage = 34, cooldown = 2.6, range = 22, angle = 45, color = rgb(60, 200, 90),
 	},
 	Tatsumaki = {
-		name = "Tatsumaki", desc = "Dragon Twister: a cyclone of blades around you.",
+		name = "Blade Tornado", desc = "A cyclone of blades around you.",
 		fx = "nova", anim = "slash",
 		kind = "aura", damage = 18, cooldown = 2.2, range = 12, color = rgb(160, 255, 190),
 	},
 	ShishiSonson = {
-		name = "Shishi Sonson", desc = "Lion's Song: a lightning-fast cut that leaps between foes.",
+		name = "Lion Strike", desc = "A lightning-fast cut that leaps between foes.",
 		fx = "lightning", anim = "slash",
 		kind = "chain", damage = 24, cooldown = 2, range = 28, count = 4, color = rgb(200, 255, 210),
 	},
 	BlackRopeDragon = {
-		name = "Black Rope Dragon", desc = "Black tornadoes of blades crash down.",
+		name = "Dragon Twister", desc = "Black tornadoes of blades crash down.",
 		fx = "strike", anim = "slash",
 		kind = "clones", damage = 38, cooldown = 4.2, range = 8, count = 2, color = rgb(30, 110, 60),
 	},
 
-	-- Nami --------------------------------------------------------------------------
+	-- Skye --------------------------------------------------------------------------
 	ThunderTempo = {
-		name = "Thunderbolt Tempo", desc = "Clima-Tact lightning jumps between enemies.",
+		name = "Thunder Bolt", desc = "Lightning from a storm staff jumps between enemies.",
 		fx = "lightning", anim = "cast", cloud = true,
 		kind = "chain", damage = 14, cooldown = 1.6, range = 30, count = 3,
 		color = rgb(255, 240, 90), evolveWith = "Magnet", evolvesInto = "ZeusTempo",
 	},
 	CycloneTempo = {
-		name = "Cyclone Tempo", desc = "Gusts of wind blast through the swarm.",
+		name = "Cyclone", desc = "Gusts of wind blast through the swarm.",
 		fx = "wave", anim = "cast",
 		kind = "line", damage = 18, cooldown = 2, range = 35, width = 3, count = 2, color = rgb(200, 240, 255),
 	},
 	MirageTempo = {
-		name = "Mirage Tempo", desc = "Mirage copies of Nami burst with light.",
+		name = "Mirage", desc = "Mirage copies of the navigator burst with light.",
 		fx = "nova", anim = "cast",
 		kind = "aura", damage = 14, cooldown = 1.6, range = 9, color = rgb(255, 190, 90),
 	},
 	ThunderLance = {
-		name = "Thunder Lance Tempo", desc = "Bolts of lightning strike from above.",
+		name = "Thunder Lance", desc = "Bolts of lightning strike from above.",
 		fx = "strike", anim = "cast",
 		kind = "clones", damage = 40, cooldown = 3.6, range = 6, count = 2, color = rgb(255, 240, 90),
 	},
 	WeatherEgg = {
-		name = "Weather Egg", desc = "A weather bubble that bursts into a storm.",
+		name = "Weather Orb", desc = "A weather bubble that bursts into a storm.",
 		fx = "shot", anim = "throw",
 		kind = "projectile", damage = 30, cooldown = 2.6, range = 50, radius = 8, color = rgb(120, 200, 255),
 	},
 	BlackBall = {
-		name = "Black Ball", desc = "Thunderclouds circle you, shocking anyone close.",
+		name = "Storm Cloud", desc = "Thunderclouds circle you, shocking anyone close.",
 		fx = "orbit",
 		kind = "orbit", damage = 9, cooldown = 0.5, range = 9, count = 2, color = rgb(90, 90, 140),
 	},
 
-	-- Sanji -------------------------------------------------------------------------
+	-- Blaze -------------------------------------------------------------------------
 	DiableJambe = {
-		name = "Diable Jambe", desc = "Burning kicks hit everything around you.",
+		name = "Flame Kick", desc = "Burning kicks hit everything around you.",
 		fx = "kick", anim = "kick", fire = true,
 		kind = "aura", damage = 12, cooldown = 0.8, range = 8,
 		color = rgb(255, 90, 40), evolveWith = "Swiftness", evolvesInto = "IfritJambe",
 	},
 	Concasse = {
-		name = "Concasse", desc = "A crushing heel drop from the sky.",
+		name = "Crushing Heel", desc = "A crushing heel drop from the sky.",
 		fx = "strike", anim = "kick",
 		kind = "clones", damage = 46, cooldown = 3.6, range = 8, count = 1, color = rgb(255, 200, 80),
 	},
 	PartyTable = {
-		name = "Party Table Kick", desc = "A whirlwind of kicks while standing on your hands.",
+		name = "Handstand Spin", desc = "A whirlwind of kicks while standing on your hands.",
 		fx = "kick", anim = "kick",
 		kind = "aura", damage = 10, cooldown = 1.2, range = 7, color = rgb(255, 250, 225),
 	},
 	MoutonShot = {
-		name = "Mouton Shot", desc = "A kick so fast it fires a shockwave.",
+		name = "Ram Shot", desc = "A kick so fast it fires a shockwave.",
 		fx = "wave", anim = "kick",
 		kind = "line", damage = 30, cooldown = 2.5, range = 28, width = 4, count = 1, color = rgb(255, 230, 150),
 	},
 	PoeleAFrire = {
-		name = "Poele a Frire", desc = "Burning kicks rake a wide arc.",
+		name = "Searing Sweep", desc = "Burning kicks rake a wide arc.",
 		fx = "slash", anim = "kick", arcs = 2,
 		kind = "cone", damage = 22, cooldown = 1.6, range = 13, angle = 140, color = rgb(255, 120, 40),
 	},
 	FlambageShot = {
-		name = "Flambage Shot", desc = "A flaming kick that launches a fireball.",
+		name = "Blaze Shot", desc = "A flaming kick that launches a fireball.",
 		fx = "shot", anim = "kick", fire = true,
 		kind = "projectile", damage = 34, cooldown = 2.6, range = 50, radius = 7, color = rgb(255, 110, 30),
 	},
 
-	-- Ace ---------------------------------------------------------------------------
+	-- Ignis ---------------------------------------------------------------------------
 	FireFist = {
-		name = "Fire Fist", desc = "Launches a fireball that explodes.",
+		name = "Flame Fist", desc = "Launches a fireball that explodes.",
 		fx = "shot", anim = "throw", fire = true,
 		kind = "projectile", damage = 30, cooldown = 2.2, range = 60, radius = 7,
 		color = rgb(255, 140, 30), evolveWith = "Area", evolvesInto = "FlameEmperor",
 	},
 	FireGun = {
-		name = "Fire Gun", desc = "Bullets of flame fly from his fingertips.",
+		name = "Fire Bullets", desc = "Bullets of flame fly from his fingertips.",
 		fx = "wave", anim = "throw",
 		kind = "line", damage = 14, cooldown = 1.5, range = 40, width = 2, count = 3, color = rgb(255, 150, 50),
 	},
 	Firefly = {
-		name = "Firefly", desc = "Glowing fireflies circle you and burn enemies.",
+		name = "Ember Swarm", desc = "Glowing fireflies circle you and burn enemies.",
 		fx = "orbit",
 		kind = "orbit", damage = 8, cooldown = 0.45, range = 8, count = 3, color = rgb(220, 255, 120),
 	},
@@ -257,40 +257,40 @@ Config.Weapons = {
 		kind = "clones", damage = 32, cooldown = 3, range = 7, count = 2, color = rgb(255, 90, 20),
 	},
 	FireFence = {
-		name = "Fire Fence", desc = "A ring of flame bursts around you.",
+		name = "Flame Wall", desc = "A ring of flame bursts around you.",
 		fx = "nova", anim = "cast",
 		kind = "aura", damage = 16, cooldown = 2, range = 11, color = rgb(255, 140, 40),
 	},
 	CrossFire = {
-		name = "Cross Fire", desc = "Blasts of flame forward and back.",
+		name = "Cross Flame", desc = "Blasts of flame forward and back.",
 		fx = "slash", anim = "throw", arcs = 1,
 		kind = "cone", damage = 26, cooldown = 2, range = 20, angle = 50, count = 2, color = rgb(255, 170, 60),
 	},
 
-	-- Robin -------------------------------------------------------------------------
+	-- Flora -------------------------------------------------------------------------
 	CienFleur = {
-		name = "Cien Fleur", desc = "Arms sprout from the ground and crush enemies.",
+		name = "Hundred Hands", desc = "Arms sprout from the ground and crush enemies.",
 		fx = "hands", anim = "cross",
 		kind = "clones", damage = 22, cooldown = 3, range = 7, count = 2,
 		color = rgb(200, 120, 255), evolveWith = "Haste", evolvesInto = "GigantescoMano",
 	},
 	SeisFleur = {
-		name = "Seis Fleur", desc = "Arms grab enemy after enemy.",
+		name = "Grasping Hands", desc = "Arms grab enemy after enemy.",
 		fx = "grab", anim = "cross",
 		kind = "chain", damage = 22, cooldown = 2, range = 28, count = 4, color = rgb(200, 120, 255),
 	},
 	MilFleur = {
-		name = "Mil Fleur", desc = "A field of arms sprouts all around you.",
+		name = "Thousand Hands", desc = "A field of arms sprouts all around you.",
 		fx = "hands", anim = "cross",
 		kind = "aura", damage = 18, cooldown = 2.4, range = 10, color = rgb(170, 90, 230),
 	},
 	FlowerStorm = {
-		name = "Flower Storm", desc = "A storm of petals cuts through the swarm.",
+		name = "Petal Storm", desc = "A storm of petals cuts through the swarm.",
 		fx = "wave", anim = "cross",
 		kind = "line", damage = 18, cooldown = 2, range = 35, width = 3, count = 2, color = rgb(255, 150, 210),
 	},
 	GiganteFleur = {
-		name = "Gigante Fleur", desc = "A giant hand slams down on a crowd.",
+		name = "Giant Hand", desc = "A giant hand slams down on a crowd.",
 		fx = "strike", anim = "cross",
 		kind = "clones", damage = 50, cooldown = 4.4, range = 10, count = 1, color = rgb(160, 80, 220),
 	},
@@ -300,30 +300,30 @@ Config.Weapons = {
 		kind = "orbit", damage = 8, cooldown = 0.5, range = 7, count = 3, color = rgb(255, 160, 220),
 	},
 
-	-- Chopper -----------------------------------------------------------------------
+	-- Tuck -----------------------------------------------------------------------
 	KungFuPoint = {
-		name = "Kung Fu Point", desc = "Fists circle you and hit enemies.",
+		name = "Martial Form", desc = "Fists circle you and hit enemies.",
 		fx = "orbit",
 		kind = "orbit", damage = 10, cooldown = 0.5, range = 7, count = 2,
 		color = rgb(255, 150, 190), evolveWith = "Vitality", evolvesInto = "MonsterPoint",
 	},
 	HeavyGong = {
-		name = "Heavy Gong", desc = "Heavy Point: one huge furry punch.",
+		name = "Heavy Punch", desc = "One huge, furry punch.",
 		fx = "punch", anim = "punch", arm = rgb(150, 100, 60),
 		kind = "line", damage = 36, cooldown = 3, range = 16, width = 4, count = 1, color = rgb(255, 130, 180),
 	},
 	HornPoint = {
-		name = "Horn Point", desc = "Charge with giant antlers.",
+		name = "Horn Charge", desc = "Charge with giant antlers.",
 		fx = "slash", anim = "punch", arcs = 1,
 		kind = "cone", damage = 20, cooldown = 1.5, range = 10, angle = 90, color = rgb(220, 170, 120),
 	},
 	RumbleBall = {
-		name = "Rumble Ball", desc = "A burst of monster energy.",
+		name = "Power Pill", desc = "A burst of monster energy.",
 		fx = "nova", anim = "cast",
 		kind = "aura", damage = 12, cooldown = 2, range = 9, color = rgb(255, 150, 200),
 	},
 	CherryBlossom = {
-		name = "Cherry Blossom Hoof", desc = "Hoof strikes that bloom from foe to foe.",
+		name = "Blossom Hoof", desc = "Hoof strikes that bloom from foe to foe.",
 		fx = "lightning", anim = "punch",
 		kind = "chain", damage = 18, cooldown = 1.8, range = 26, count = 4, color = rgb(255, 180, 220),
 	},
@@ -351,101 +351,101 @@ Config.Weapons = {
 		kind = "projectile", damage = 26, cooldown = 2.6, range = 50, radius = 6, color = rgb(90, 90, 100),
 	},
 	Rankyaku = {
-		name = "Rankyaku", desc = "A kick that launches a cutting blade of air.",
+		name = "Air Kick", desc = "A kick that launches a cutting blade of air.",
 		fx = "wave", anim = "kick",
 		kind = "line", damage = 24, cooldown = 2.2, range = 40, width = 3, count = 1, color = rgb(200, 240, 255),
 	},
 	Shigan = {
-		name = "Shigan", desc = "Finger Pistol strikes that hop between enemies.",
+		name = "Finger Strike", desc = "Lightning-fast finger strikes that hop between enemies.",
 		fx = "lightning", anim = "punch",
 		kind = "chain", damage = 16, cooldown = 1.8, range = 26, count = 3, color = rgb(240, 240, 255),
 	},
 	BusterCall = {
-		name = "Buster Call", desc = "Warship cannons shell the battlefield.",
+		name = "Cannon Salvo", desc = "Warship cannons shell the battlefield.",
 		fx = "strike", anim = "cast",
 		kind = "clones", damage = 34, cooldown = 4, range = 7, count = 2, color = rgb(70, 110, 200),
 	},
 
-	-- Usopp ------------------------------------------------------------------------
+	-- Pip ------------------------------------------------------------------------
 	FireBirdStar = {
-		name = "Fire Bird Star", desc = "A flaming bird shot from Kabuto that explodes.",
+		name = "Firebird Shot", desc = "A flaming bird fired from a slingshot that explodes.",
 		fx = "shot", anim = "throw", fire = true,
 		kind = "projectile", damage = 26, cooldown = 2, range = 60, radius = 6,
 		color = rgb(255, 120, 40), evolveWith = "Area", evolvesInto = "FirebirdBarrage",
 	},
 	LeadStar = {
-		name = "Lead Star", desc = "Rapid lead pellets fly straight and true.",
+		name = "Lead Shot", desc = "Rapid lead pellets fly straight and true.",
 		fx = "wave", anim = "throw",
 		kind = "line", damage = 14, cooldown = 1.3, range = 45, width = 1.5, count = 2, color = rgb(200, 200, 210),
 	},
 	ExplosiveStar = {
-		name = "Explosive Star", desc = "Gunpowder pellets blow up the crowd.",
+		name = "Bomb Shot", desc = "Gunpowder pellets blow up the crowd.",
 		fx = "strike", anim = "throw",
 		kind = "clones", damage = 30, cooldown = 3, range = 6, count = 2, color = rgb(255, 150, 40),
 	},
 	TabascoStar = {
-		name = "Tabasco Star", desc = "A burst of spicy sauce burns everyone nearby.",
+		name = "Hot Sauce Shot", desc = "A burst of spicy sauce burns everyone nearby.",
 		fx = "nova", anim = "cast",
 		kind = "aura", damage = 12, cooldown = 1.8, range = 8, color = rgb(230, 40, 30),
 	},
 	PopGreen = {
-		name = "Pop Green", desc = "Monster plants burst out of the ground.",
+		name = "Sprout Seeds", desc = "Monster plants burst out of the ground.",
 		fx = "strike", anim = "throw",
 		kind = "clones", damage = 34, cooldown = 3.4, range = 7, count = 2, color = rgb(80, 200, 70),
 	},
 	ImpactDial = {
-		name = "Impact Dial", desc = "Releases a crushing blast straight ahead.",
+		name = "Impact Shell", desc = "Releases a crushing blast straight ahead.",
 		fx = "slash", anim = "punch", arcs = 1,
 		kind = "cone", damage = 34, cooldown = 2.4, range = 9, angle = 100, color = rgb(240, 220, 180),
 	},
 
-	-- Franky -----------------------------------------------------------------------
+	-- Bolt -----------------------------------------------------------------------
 	CoupDeVent = {
-		name = "Coup de Vent", desc = "A blast of compressed air from his arms.",
+		name = "Air Blast", desc = "A blast of compressed air from his arms.",
 		fx = "wave", anim = "punch",
 		kind = "line", damage = 30, cooldown = 2.2, range = 40, width = 4, count = 1,
 		color = rgb(140, 220, 255), evolveWith = "Vitality", evolvesInto = "RadicalBeam",
 	},
 	WeaponsLeft = {
-		name = "Weapons Left", desc = "Fires a cannon shell from his left arm.",
+		name = "Arm Cannon", desc = "Fires a cannon shell from his left arm.",
 		fx = "shot", anim = "punch",
 		kind = "projectile", damage = 22, cooldown = 1.8, range = 50, radius = 5, color = rgb(120, 140, 170),
 	},
 	StrongRight = {
-		name = "Strong Right", desc = "A rocket punch on a chain.",
+		name = "Rocket Punch", desc = "A rocket punch on a chain.",
 		fx = "punch", anim = "punch", arm = rgb(90, 140, 200),
 		kind = "line", damage = 34, cooldown = 2.6, range = 20, width = 4, count = 1, color = rgb(60, 110, 200),
 	},
 	FrankyFireball = {
-		name = "Franky Fireball", desc = "Breathes a cone of fire.",
+		name = "Fire Breath", desc = "Breathes a cone of fire.",
 		fx = "slash", anim = "cast", arcs = 2,
 		kind = "cone", damage = 18, cooldown = 1.4, range = 12, angle = 70, color = rgb(255, 130, 40),
 	},
 	GeneralCannon = {
-		name = "General Cannon", desc = "Shells rain down from Franky General.",
+		name = "Mech Cannon", desc = "Shells rain down from a giant robot.",
 		fx = "strike", anim = "cast",
 		kind = "clones", damage = 36, cooldown = 3.4, range = 7, count = 2, color = rgb(70, 140, 230),
 	},
 	FrankyCenter = {
-		name = "Franky Center", desc = "A SUPER shockwave all around.",
+		name = "Super Shockwave", desc = "A super shockwave all around.",
 		fx = "nova", anim = "cast",
 		kind = "aura", damage = 14, cooldown = 2, range = 9, color = rgb(80, 200, 255),
 	},
 
-	-- Brook ------------------------------------------------------------------------
+	-- Bones ------------------------------------------------------------------------
 	YahazuGiri = {
-		name = "Yahazu Giri", desc = "A cane-sword cut faster than sound.",
+		name = "Arrow Cut", desc = "A cane-sword cut faster than sound.",
 		fx = "slash", anim = "slash", arcs = 1,
 		kind = "cone", damage = 22, cooldown = 1.2, range = 16, angle = 60,
 		color = rgb(180, 220, 255), evolveWith = "Haste", evolvesInto = "SoulRequiem",
 	},
 	FrostBite = {
-		name = "Soul Solid", desc = "A freezing cut that leaps from foe to foe.",
+		name = "Soul Chill", desc = "A freezing cut that leaps from foe to foe.",
 		fx = "lightning", anim = "slash",
 		kind = "chain", damage = 18, cooldown = 1.8, range = 26, count = 4, color = rgb(150, 220, 255),
 	},
 	AubadeCoup = {
-		name = "Aubade Coup Droit", desc = "A thrust of air that pierces a line.",
+		name = "Rapier Thrust", desc = "A thrust of air that pierces a line.",
 		fx = "wave", anim = "slash",
 		kind = "line", damage = 26, cooldown = 2, range = 40, width = 2, count = 1, color = rgb(210, 230, 255),
 	},
@@ -455,40 +455,40 @@ Config.Weapons = {
 		kind = "orbit", damage = 8, cooldown = 0.5, range = 8, count = 3, color = rgb(200, 220, 255),
 	},
 	SoulParade = {
-		name = "Soul Parade", desc = "A chilling wave of soul power.",
+		name = "Spirit Parade", desc = "A chilling wave of soul power.",
 		fx = "nova", anim = "cast",
 		kind = "aura", damage = 14, cooldown = 1.8, range = 10, color = rgb(140, 200, 255),
 	},
 	IceBurn = {
-		name = "Ice Burn", desc = "Ice pillars freeze enemies in place.",
+		name = "Frost Burn", desc = "Ice pillars freeze enemies in place.",
 		fx = "strike", anim = "slash",
 		kind = "clones", damage = 30, cooldown = 3, range = 6, count = 2, color = rgb(170, 230, 255),
 	},
 
-	-- Jinbe ------------------------------------------------------------------------
+	-- Kai ------------------------------------------------------------------------
 	FishmanKarate = {
-		name = "Fishman Karate", desc = "A punch that sends shockwaves through the water in the air.",
+		name = "Tide Karate", desc = "A punch that sends shockwaves through the water in the air.",
 		fx = "punch", anim = "punch", arm = rgb(70, 120, 200),
 		kind = "line", damage = 20, cooldown = 1.5, range = 25, width = 4, count = 1,
 		color = rgb(240, 140, 40), evolveWith = "Power", evolvesInto = "VagabondDrill",
 	},
 	SharkBrick = {
-		name = "Shark Brick Fist", desc = "A sweeping strike in front.",
+		name = "Shark Fist", desc = "A sweeping strike in front.",
 		fx = "slash", anim = "punch", arcs = 1,
 		kind = "cone", damage = 24, cooldown = 1.7, range = 12, angle = 120, color = rgb(80, 140, 230),
 	},
 	WaterHeart = {
-		name = "Water Heart", desc = "Throws a heavy ball of water that bursts.",
+		name = "Water Pulse", desc = "Throws a heavy ball of water that bursts.",
 		fx = "shot", anim = "throw",
 		kind = "projectile", damage = 30, cooldown = 2.6, range = 50, radius = 8, color = rgb(70, 170, 255),
 	},
 	FiveThousandTiles = {
-		name = "5000 Brick Fist", desc = "A punch that crashes down like a tidal wave.",
+		name = "Tidal Fist", desc = "A punch that crashes down like a tidal wave.",
 		fx = "strike", anim = "punch",
 		kind = "clones", damage = 55, cooldown = 4.4, range = 9, count = 1, color = rgb(60, 120, 220),
 	},
 	SharkArrows = {
-		name = "Shark Arrows", desc = "Arrows of water shoot through the swarm.",
+		name = "Water Arrows", desc = "Arrows of water shoot through the swarm.",
 		fx = "wave", anim = "throw",
 		kind = "line", damage = 14, cooldown = 1.6, range = 40, width = 2, count = 3, color = rgb(120, 200, 255),
 	},
@@ -498,68 +498,68 @@ Config.Weapons = {
 		kind = "aura", damage = 16, cooldown = 2, range = 10, color = rgb(60, 160, 230),
 	},
 
-	-- Law --------------------------------------------------------------------------
+	-- Rook --------------------------------------------------------------------------
 	RoomAmputate = {
-		name = "Room: Amputate", desc = "Slices everything inside a wide arc.",
+		name = "Room Slice", desc = "Slices everything inside a wide arc.",
 		fx = "slash", anim = "slash", arcs = 1,
 		kind = "cone", damage = 24, cooldown = 1.6, range = 18, angle = 140,
 		color = rgb(100, 220, 255), evolveWith = "Haste", evolvesInto = "GammaKnife",
 	},
 	CounterShock = {
-		name = "Counter Shock", desc = "An electric shock that jumps between enemies.",
+		name = "Shock Palm", desc = "An electric shock that jumps between enemies.",
 		fx = "lightning", anim = "cast",
 		kind = "chain", damage = 20, cooldown = 1.8, range = 28, count = 4, color = rgb(255, 240, 100),
 	},
 	Injection = {
-		name = "Injection Shot", desc = "A piercing lunge with Kikoku.",
+		name = "Needle Thrust", desc = "A piercing lunge with a long blade.",
 		fx = "wave", anim = "slash",
 		kind = "line", damage = 30, cooldown = 2, range = 50, width = 1.5, count = 1, color = rgb(220, 240, 255),
 	},
 	Shambles = {
-		name = "Shambles", desc = "Swaps the ground beneath enemies for a blast.",
+		name = "Swap Blast", desc = "Swaps the ground beneath enemies for a blast.",
 		fx = "strike", anim = "cast",
 		kind = "clones", damage = 32, cooldown = 3, range = 6, count = 2, color = rgb(80, 200, 255),
 	},
 	Mes = {
-		name = "Mes", desc = "Floating cubes circle you and cut enemies.",
+		name = "Heart Cubes", desc = "Floating cubes circle you and cut enemies.",
 		fx = "orbit",
 		kind = "orbit", damage = 10, cooldown = 0.5, range = 8, count = 2, color = rgb(120, 230, 255),
 	},
 	RoomDome = {
-		name = "Room Dome", desc = "A blue dome pulses around you.",
+		name = "Operating Dome", desc = "A blue dome pulses around you.",
 		fx = "nova", anim = "cast",
 		kind = "aura", damage = 14, cooldown = 2.2, range = 12, color = rgb(90, 190, 255),
 	},
 
-	-- Boa Hancock ------------------------------------------------------------------
+	-- Serena ------------------------------------------------------------------
 	PerfumeFemur = {
-		name = "Perfume Femur", desc = "A kick that turns enemies to stone.",
+		name = "Charm Kick", desc = "A kick that turns enemies to stone.",
 		fx = "slash", anim = "kick", arcs = 1,
 		kind = "cone", damage = 22, cooldown = 1.4, range = 14, angle = 100,
 		color = rgb(255, 120, 180), evolveWith = "Power", evolvesInto = "LoveParadise",
 	},
 	SlaveArrow = {
-		name = "Slave Arrow", desc = "Heart arrows pierce through the crowd.",
+		name = "Love Arrow", desc = "Heart arrows pierce through the crowd.",
 		fx = "wave", anim = "cast",
 		kind = "line", damage = 16, cooldown = 1.6, range = 40, width = 2, count = 3, color = rgb(255, 110, 170),
 	},
 	PistolKiss = {
-		name = "Pistol Kiss", desc = "Blows a kiss that bursts on impact.",
+		name = "Kiss Shot", desc = "Blows a kiss that bursts on impact.",
 		fx = "shot", anim = "throw",
 		kind = "projectile", damage = 26, cooldown = 2, range = 50, radius = 5, color = rgb(255, 90, 150),
 	},
 	MeroMellow = {
-		name = "Mero Mero Mellow", desc = "A wave of love petrifies everyone close.",
+		name = "Petrify Beam", desc = "A wave of love petrifies everyone close.",
 		fx = "nova", anim = "cross",
 		kind = "aura", damage = 14, cooldown = 1.8, range = 10, color = rgb(255, 140, 200),
 	},
 	Salome = {
-		name = "Salome Strike", desc = "Her giant snake crashes down.",
+		name = "Serpent Strike", desc = "Her giant snake crashes down.",
 		fx = "strike", anim = "cross",
 		kind = "clones", damage = 50, cooldown = 4, range = 9, count = 1, color = rgb(160, 90, 200),
 	},
 	LoveHearts = {
-		name = "Love Hearts", desc = "Hearts orbit you and strike anything close.",
+		name = "Heart Storm", desc = "Hearts orbit you and strike anything close.",
 		fx = "orbit",
 		kind = "orbit", damage = 8, cooldown = 0.5, range = 7, count = 3, color = rgb(255, 120, 190),
 	},
@@ -572,43 +572,43 @@ Config.Weapons = {
 		color = rgb(255, 240, 170), evolved = true, from = "MarineRifle",
 	},
 	GumGumGatling = {
-		name = "Gum-Gum Gatling", desc = "A storm of rubber punches in every direction.",
+		name = "Rubber Gatling", desc = "A storm of rubber punches in every direction.",
 		fx = "punch", anim = "punch",
 		kind = "line", damage = 50, cooldown = 0.8, range = 45, width = 4, count = 10,
 		color = rgb(255, 40, 40), evolved = true, from = "GumGumPistol",
 	},
 	NineSwordStyle = {
-		name = "Asura: Nine Sword Style", desc = "Nine blades slash in every direction.",
+		name = "Nine Blade Phantom", desc = "Nine blades slash in every direction.",
 		fx = "slash", anim = "slash", arcs = 3,
 		kind = "cone", damage = 90, cooldown = 1, range = 22, angle = 120, count = 4,
 		color = rgb(40, 200, 90), evolved = true, from = "ThreeSwordStyle",
 	},
 	ZeusTempo = {
-		name = "Zeus Thunderstorm", desc = "Lightning chains through the whole swarm.",
+		name = "Thunder God Storm", desc = "Lightning chains through the whole swarm.",
 		fx = "lightning", anim = "cast", cloud = true,
 		kind = "chain", damage = 70, cooldown = 0.9, range = 45, count = 10,
 		color = rgb(255, 255, 160), evolved = true, from = "ThunderTempo",
 	},
 	IfritJambe = {
-		name = "Ifrit Jambe", desc = "Blue-hot kicks scorch a huge area around you.",
+		name = "Inferno Leg", desc = "Blue-hot kicks scorch a huge area around you.",
 		fx = "kick", anim = "kick", fire = true,
 		kind = "aura", damage = 45, cooldown = 0.5, range = 14,
 		color = rgb(80, 160, 255), evolved = true, from = "DiableJambe",
 	},
 	FlameEmperor = {
-		name = "Flame Emperor", desc = "Giant fireballs that wipe out crowds.",
+		name = "Sun Flare", desc = "Giant fireballs that wipe out crowds.",
 		fx = "shot", anim = "throw", fire = true,
 		kind = "projectile", damage = 160, cooldown = 1.8, range = 70, radius = 16, count = 3,
 		color = rgb(255, 80, 0), evolved = true, from = "FireFist",
 	},
 	GigantescoMano = {
-		name = "Gigantesco Mano", desc = "Giant arms smash the battlefield.",
+		name = "Colossal Hands", desc = "Giant arms smash the battlefield.",
 		fx = "hands", anim = "cross",
 		kind = "clones", damage = 80, cooldown = 2.2, range = 9, count = 8,
 		color = rgb(170, 80, 255), evolved = true, from = "CienFleur",
 	},
 	MonsterPoint = {
-		name = "Monster Point", desc = "A huge ring of fists shreds anything close.",
+		name = "Monster Form", desc = "A huge ring of fists shreds anything close.",
 		fx = "orbit",
 		kind = "orbit", damage = 35, cooldown = 0.35, range = 10, count = 8,
 		color = rgb(255, 100, 160), evolved = true, from = "KungFuPoint",
@@ -620,31 +620,31 @@ Config.Weapons = {
 		color = rgb(255, 90, 20), evolved = true, from = "FireBirdStar",
 	},
 	RadicalBeam = {
-		name = "Radical Beam", desc = "SUPER beams blast everything in their path.",
+		name = "Super Beam", desc = "Huge beams blast everything in their path.",
 		fx = "wave", anim = "punch",
 		kind = "line", damage = 140, cooldown = 1.2, range = 60, width = 6, count = 3,
 		color = rgb(90, 230, 255), evolved = true, from = "CoupDeVent",
 	},
 	SoulRequiem = {
-		name = "Soul King's Requiem", desc = "Icy cuts in every direction.",
+		name = "Requiem of Souls", desc = "Icy cuts in every direction.",
 		fx = "slash", anim = "slash", arcs = 2,
 		kind = "cone", damage = 95, cooldown = 0.9, range = 22, angle = 100, count = 4,
 		color = rgb(160, 230, 255), evolved = true, from = "YahazuGiri",
 	},
 	VagabondDrill = {
-		name = "Vagabond Drill", desc = "Spiraling water punches drill through the swarm.",
+		name = "Tidal Drill", desc = "Spiraling water punches drill through the swarm.",
 		fx = "punch", anim = "punch", arm = rgb(70, 120, 200),
 		kind = "line", damage = 70, cooldown = 1, range = 40, width = 5, count = 6,
 		color = rgb(40, 140, 255), evolved = true, from = "FishmanKarate",
 	},
 	GammaKnife = {
-		name = "Gamma Knife", desc = "Destroys enemies from the inside, one after another.",
+		name = "Gamma Blade", desc = "Destroys enemies from the inside, one after another.",
 		fx = "lightning", anim = "slash",
 		kind = "chain", damage = 75, cooldown = 0.9, range = 40, count = 8,
 		color = rgb(120, 240, 255), evolved = true, from = "RoomAmputate",
 	},
 	LoveParadise = {
-		name = "Love-Love Paradise", desc = "Petrifying kicks in every direction.",
+		name = "Heart Paradise", desc = "Petrifying kicks in every direction.",
 		fx = "slash", anim = "kick", arcs = 2,
 		kind = "cone", damage = 95, cooldown = 0.9, range = 20, angle = 110, count = 4,
 		color = rgb(255, 90, 170), evolved = true, from = "PerfumeFemur",
@@ -678,7 +678,7 @@ end
 
 -- `per` is added once per passive level to the named stat.
 Config.Passives = {
-	Power = { icon = "💪", name = "Haki", desc = "+10% damage", stat = "damage", per = 0.10 },
+	Power = { icon = "💪", name = "Fighting Spirit", desc = "+10% damage", stat = "damage", per = 0.10 },
 	Haste = { icon = "⏩", name = "Haste", desc = "-8% cooldowns", stat = "cooldown", per = 0.08 },
 	Area = { icon = "⭕", name = "Expansion", desc = "+10% area", stat = "area", per = 0.10 },
 	Swiftness = { icon = "👟", name = "Swift Feet", desc = "+8% move speed", stat = "speed", per = 0.08 },
@@ -692,94 +692,95 @@ Config.Passives = {
 }
 
 -- Everyone starts as a Marine. Pirates are unlocked with gold in CREW (cost).
+-- name = what players see (the table keys are internal ids used by saves).
 Config.DEFAULT_CLASS = "Marine"
 Config.Classes = {
 	Marine = {
-		icon = "⚓", title = "Marine Recruit", perk = "+10 max HP", color = Color3.fromRGB(50, 90, 170),
+		name = "Marine", icon = "⚓", title = "Marine Recruit", perk = "+10 max HP", color = Color3.fromRGB(50, 90, 170),
 		weapon = "MarineRifle", cost = 0,
 		skills = { "MarineRifle", "CutlassSlash", "Cannonball", "Rankyaku", "Shigan", "BusterCall" },
 		bonus = { health = 10 },
 	},
 	Luffy = {
-		icon = "👒", title = "Straw Hat", perk = "+30 max HP", color = Color3.fromRGB(220, 50, 50),
+		name = "Rocco", icon = "👒", title = "Rubber Captain", perk = "+30 max HP", color = Color3.fromRGB(220, 50, 50),
 		weapon = "GumGumPistol", cost = 150000,
 		skills = { "GumGumPistol", "GumGumBazooka", "GumGumWhip", "GumGumBalloon", "GumGumElephantGun", "RedHawk" },
 		bonus = { health = 30 },
 	},
 	Zoro = {
-		icon = "⚔️", title = "Pirate Hunter", perk = "+10% damage", color = Color3.fromRGB(60, 190, 90),
+		name = "Kenji", icon = "⚔️", title = "Three-Blade Hunter", perk = "+10% damage", color = Color3.fromRGB(60, 190, 90),
 		weapon = "ThreeSwordStyle", cost = 12000,
 		skills = { "ThreeSwordStyle", "PoundCannon", "OniGiri", "Tatsumaki", "ShishiSonson", "BlackRopeDragon" },
 		bonus = { damage = 0.10 },
 	},
 	Nami = {
-		icon = "🍊", title = "Cat Burglar", perk = "+25% gold", color = Color3.fromRGB(255, 150, 40),
+		name = "Skye", icon = "🍊", title = "Storm Navigator", perk = "+25% gold", color = Color3.fromRGB(255, 150, 40),
 		weapon = "ThunderTempo", cost = 6000,
 		skills = { "ThunderTempo", "CycloneTempo", "MirageTempo", "ThunderLance", "WeatherEgg", "BlackBall" },
 		bonus = { gold = 0.25 },
 	},
 	Sanji = {
-		icon = "🦵", title = "Black Leg", perk = "+15% move speed", color = Color3.fromRGB(240, 200, 60),
+		name = "Blaze", icon = "🦵", title = "Flame-Kick Chef", perk = "+15% move speed", color = Color3.fromRGB(240, 200, 60),
 		weapon = "DiableJambe", cost = 12000,
-		skills = { "DiableJambe", "Concasse", "PartyTable", "MoutonShot", "PoeleAFrire", "FlambageShot" },
+		skills = { "DiableJambe", "Crushing Heel", "PartyTable", "MoutonShot", "PoeleAFrire", "FlambageShot" },
 		bonus = { speed = 0.15 },
 	},
 	Ace = {
-		icon = "🔥", title = "Fire Fist", perk = "+15% area", color = Color3.fromRGB(255, 100, 30),
+		name = "Ignis", icon = "🔥", title = "Fire Commander", perk = "+15% area", color = Color3.fromRGB(255, 100, 30),
 		weapon = "FireFist", cost = 60000,
-		skills = { "FireFist", "FireGun", "Firefly", "FirePillar", "FireFence", "CrossFire" },
+		skills = { "FireFist", "FireGun", "Ember Swarm", "FirePillar", "FireFence", "CrossFire" },
 		bonus = { area = 0.15 },
 	},
 	Robin = {
-		icon = "🌸", title = "Devil Child", perk = "-10% cooldowns", color = Color3.fromRGB(150, 90, 220),
+		name = "Flora", icon = "🌸", title = "Thousand-Hand Scholar", perk = "-10% cooldowns", color = Color3.fromRGB(150, 90, 220),
 		weapon = "CienFleur", cost = 18000,
 		skills = { "CienFleur", "SeisFleur", "MilFleur", "FlowerStorm", "GiganteFleur", "PetalGuard" },
 		bonus = { cooldown = 0.10 },
 	},
 	Chopper = {
-		icon = "🦌", title = "Cotton Candy Lover", perk = "Heals nearby allies", color = Color3.fromRGB(255, 130, 180),
+		name = "Tuck", icon = "🦌", title = "Reindeer Doctor", perk = "Heals nearby allies", color = Color3.fromRGB(255, 130, 180),
 		weapon = "KungFuPoint", cost = 8000,
 		skills = { "KungFuPoint", "HeavyGong", "HornPoint", "RumbleBall", "CherryBlossom", "MedicineBomb" },
 		bonus = { heal = 2 },
 	},
 	Usopp = {
-		icon = "🎯", title = "King of Snipers", perk = "+1 reroll each run", color = Color3.fromRGB(200, 160, 70),
+		name = "Pip", icon = "🎯", title = "King of Slingshots", perk = "+1 reroll each run", color = Color3.fromRGB(200, 160, 70),
 		weapon = "FireBirdStar", cost = 4000,
 		skills = { "FireBirdStar", "LeadStar", "ExplosiveStar", "TabascoStar", "PopGreen", "ImpactDial" },
 		bonus = { reroll = 1 },
 	},
 	Franky = {
-		icon = "🤖", title = "Cyborg", perk = "+8% damage, +20 max HP", color = Color3.fromRGB(70, 170, 240),
+		name = "Bolt", icon = "🤖", title = "Cyborg Shipwright", perk = "+8% damage, +20 max HP", color = Color3.fromRGB(70, 170, 240),
 		weapon = "CoupDeVent", cost = 25000,
 		skills = { "CoupDeVent", "WeaponsLeft", "StrongRight", "FrankyFireball", "GeneralCannon", "FrankyCenter" },
 		bonus = { damage = 0.08, health = 20 },
 	},
 	Brook = {
-		icon = "💀", title = "Soul King", perk = "+30% pickup range", color = Color3.fromRGB(150, 130, 200),
+		name = "Bones", icon = "💀", title = "Skeleton Musician", perk = "+30% pickup range", color = Color3.fromRGB(150, 130, 200),
 		weapon = "YahazuGiri", cost = 30000,
 		skills = { "YahazuGiri", "FrostBite", "AubadeCoup", "GhostParade", "SoulParade", "IceBurn" },
 		bonus = { magnet = 0.3 },
 	},
 	Jinbe = {
-		icon = "🦈", title = "Knight of the Sea", perk = "+50 max HP", color = Color3.fromRGB(60, 120, 210),
+		name = "Kai", icon = "🦈", title = "Tide Master", perk = "+50 max HP", color = Color3.fromRGB(60, 120, 210),
 		weapon = "FishmanKarate", cost = 40000,
 		skills = { "FishmanKarate", "SharkBrick", "WaterHeart", "FiveThousandTiles", "SharkArrows", "OceanCurrent" },
 		bonus = { health = 50 },
 	},
 	Law = {
-		icon = "🩺", title = "Surgeon of Death", perk = "-8% cooldowns, +8% area", color = Color3.fromRGB(240, 210, 80),
+		name = "Rook", icon = "🩺", title = "Room Surgeon", perk = "-8% cooldowns, +8% area", color = Color3.fromRGB(240, 210, 80),
 		weapon = "RoomAmputate", cost = 80000,
-		skills = { "RoomAmputate", "CounterShock", "Injection", "Shambles", "Mes", "RoomDome" },
+		skills = { "RoomAmputate", "CounterShock", "Injection", "Swap Blast", "Mes", "RoomDome" },
 		bonus = { cooldown = 0.08, area = 0.08 },
 	},
 	Hancock = {
-		icon = "🐍", title = "Pirate Empress", perk = "+15% damage", color = Color3.fromRGB(240, 90, 150),
+		name = "Serena", icon = "🐍", title = "Snake Empress", perk = "+15% damage", color = Color3.fromRGB(240, 90, 150),
 		weapon = "PerfumeFemur", cost = 100000,
 		skills = { "PerfumeFemur", "SlaveArrow", "PistolKiss", "MeroMellow", "Salome", "LoveHearts" },
 		bonus = { damage = 0.15 },
 	},
 }
--- Cheapest first, so CREW reads as a path from Marine recruit to Straw Hat captain.
+-- Cheapest first, so CREW reads as a path from Marine recruit to rubber captain.
 Config.CLASS_ORDER = {
 	"Marine", "Usopp", "Nami", "Chopper", "Zoro", "Sanji", "Robin", "Franky", "Brook", "Jinbe", "Ace", "Law", "Hancock", "Luffy",
 }
@@ -799,8 +800,8 @@ end
 --   support (stay back), boss (melee plus telegraphed slams; the final boss also calls down a
 --   ring of strikes). keepAway = stop at 80% of range.
 -- skills = { name = cooldown } (see server/Enemies.lua):
---   dash (lunging slash), laser (Pacifista beam), snipe (long aimed shot), heal (heals nearby
---   Marines), bomb (runs up and explodes), net (slows you), blink (Soru next to you),
+--   dash (lunging slash), laser (Iron Sentinel beam), snipe (long aimed shot), heal (heals nearby
+--   Marines), bomb (runs up and explodes), net (slows you), blink (shadow-step next to you),
 --   rankyaku (flying air blade), call (summons recruits)
 local SKIN = Color3.fromRGB(255, 205, 160)
 local WHITE = Color3.fromRGB(240, 240, 245)
@@ -818,7 +819,7 @@ Config.Enemies = {
 		ai = "ranged", keepAway = true, range = 32, fireRate = 2.6,
 	},
 	Runner = {
-		name = "Fishman", hp = 12, speed = 15, damage = 4, xp = 1, scale = 0.85,
+		name = "Shark Raider", hp = 12, speed = 15, damage = 4, xp = 1, scale = 0.85,
 		color = Color3.fromRGB(230, 120, 50), accent = Color3.fromRGB(30, 50, 90), skin = Color3.fromRGB(70, 150, 210), hat = "fin",
 	},
 	Bomber = {
@@ -832,7 +833,7 @@ Config.Enemies = {
 		ai = "support", keepAway = true, range = 26, skills = { heal = 5 }, healRadius = 22, heal = 0.25,
 	},
 	Netter = {
-		name = "Seastone Netter", hp = 26, speed = 10, damage = 4, xp = 3, scale = 1.05,
+		name = "Chain Netter", hp = 26, speed = 10, damage = 4, xp = 3, scale = 1.05,
 		color = WHITE, accent = Color3.fromRGB(70, 60, 50), skin = SKIN, gear = "net", hat = "cap",
 		ai = "support", keepAway = true, range = 30, skills = { net = 4.5 }, slow = 0.5, slowTime = 2,
 	},
@@ -847,7 +848,7 @@ Config.Enemies = {
 		ai = "support", keepAway = true, range = 62, skills = { snipe = 5 },
 	},
 	Brute = {
-		name = "Pacifista", hp = 110, speed = 8, damage = 14, xp = 6, scale = 1.7,
+		name = "Iron Sentinel", hp = 110, speed = 8, damage = 14, xp = 6, scale = 1.7,
 		color = Color3.fromRGB(55, 55, 65), accent = Color3.fromRGB(30, 30, 35), skin = Color3.fromRGB(200, 170, 140),
 		eyes = Color3.fromRGB(255, 220, 60), hat = "bear", skills = { laser = 7 }, range = 46,
 	},
@@ -857,7 +858,7 @@ Config.Enemies = {
 		skills = { call = 14 },
 	},
 	Agent = {
-		name = "CP9 Agent", hp = 140, speed = 17, damage = 14, xp = 8, scale = 1.1,
+		name = "Shadow Agent", hp = 140, speed = 17, damage = 14, xp = 8, scale = 1.1,
 		color = Color3.fromRGB(25, 25, 30), accent = Color3.fromRGB(15, 15, 20), skin = SKIN, hat = "tophat",
 		range = 34, skills = { blink = 6, rankyaku = 4 },
 	},
@@ -900,9 +901,9 @@ Config.WAVE_EVENTS = {
 	{ title = "BOMB CLOWNS", sub = "Don't let them reach you!", kind = "Bomber", count = 7, shape = "pack", fromWave = 3, fromMap = 1, weight = 2, color = rgb(255, 80, 80) },
 	{ title = "SWORD SQUAD", sub = "Swordsmen lunge at you", kind = "Swordsman", count = 8, shape = "ring", fromWave = 4, fromMap = 1, weight = 1.5, color = rgb(200, 220, 255) },
 	{ title = "SNIPER NEST", sub = "Step out of the red lines!", kind = "Sniper", count = 4, shape = "line", fromWave = 4, fromMap = 2, weight = 1.5, color = rgb(120, 230, 120) },
-	{ title = "PACIFISTA SQUAD", sub = "Dodge their lasers!", kind = "Brute", count = 3, shape = "pack", fromWave = 5, fromMap = 3, weight = 1.5, color = rgb(255, 220, 60) },
-	{ title = "SEASTONE NETS", sub = "Nets slow you down", kind = "Netter", count = 5, shape = "line", fromWave = 5, fromMap = 4, weight = 1.2, color = rgb(160, 140, 110) },
-	{ title = "CP9 RUSH", sub = "Assassins blink right next to you", kind = "Agent", count = 3, shape = "ring", fromWave = 6, fromMap = 6, weight = 1.2, color = rgb(190, 120, 255) },
+	{ title = "SENTINEL SQUAD", sub = "Dodge their lasers!", kind = "Brute", count = 3, shape = "pack", fromWave = 5, fromMap = 3, weight = 1.5, color = rgb(255, 220, 60) },
+	{ title = "CHAIN NETS", sub = "Nets slow you down", kind = "Netter", count = 5, shape = "line", fromWave = 5, fromMap = 4, weight = 1.2, color = rgb(160, 140, 110) },
+	{ title = "SHADOW RUSH", sub = "Assassins blink right next to you", kind = "Agent", count = 3, shape = "ring", fromWave = 6, fromMap = 6, weight = 1.2, color = rgb(190, 120, 255) },
 }
 
 -- Permanent upgrades bought with gold between runs. Cost = cost * (growth or META_GROWTH) ^ level.
@@ -929,19 +930,21 @@ Config.BOSS_ENRAGE_AT = 180 -- ...and hits much harder after this long
 -- Keep positions clear of the island props in tools/build_place.py.
 -- look: the outfit built in server/Npcs.lua. style: their idle animation (client/Rigs.lua).
 Config.NPCS = {
-	{ name = "Silvers Rayleigh", role = "Skill Trainer", icon = "⚔️", panel = "train", tab = "skills", look = "Rayleigh", style = "swordsman",
-		line = "Haki is everything. Show me your skills!", position = Vector3.new(-28, 0, 1414), color = Color3.fromRGB(235, 235, 240), accent = Color3.fromRGB(70, 70, 80) },
-	{ name = "Dr. Kureha", role = "Passive Trainer", icon = "💊", panel = "train", tab = "passives", look = "Kureha", style = "sip",
-		line = "Hee-hee! Want the secret of youth?", position = Vector3.new(-30, 0, 1386), color = Color3.fromRGB(150, 80, 160), accent = Color3.fromRGB(235, 235, 245) },
-	{ name = "Tom the Shipwright", role = "Gear Smith", icon = "🔨", panel = "gear", look = "Tom", style = "hammer",
-		line = "A man's work is to make things with pride! Ta-ha-ha!", position = Vector3.new(30, 0, 1384), color = Color3.fromRGB(60, 110, 160), accent = Color3.fromRGB(240, 200, 60) },
-	{ name = "Shakky", role = "Upgrades", icon = "🍸", panel = "shop", look = "Shakky", style = "smoke",
-		line = "Welcome to my rip-off bar, cutie.", position = Vector3.new(36, 0, 1406), color = Color3.fromRGB(40, 40, 50), accent = Color3.fromRGB(200, 60, 90) },
-	{ name = "Buggy the Clown", role = "Robux Store", icon = "💎", panel = "store", look = "Buggy", style = "laugh",
-		line = "Gya-ha-ha! Treasure for flashy pirates!", position = Vector3.new(0, 0, 1370), color = Color3.fromRGB(220, 60, 60), accent = Color3.fromRGB(60, 130, 230) },
+	{ name = "Old Captain Grey", role = "Skill Trainer", icon = "⚔️", panel = "train", tab = "skills", look = "Rayleigh", style = "swordsman",
+		line = "Willpower beats everything. Show me your skills!", position = Vector3.new(-28, 0, 1414), color = Color3.fromRGB(235, 235, 240), accent = Color3.fromRGB(70, 70, 80) },
+	{ name = "Granny Doc", role = "Passive Trainer", icon = "💊", panel = "train", tab = "passives", look = "Kureha", style = "sip",
+		line = "Heh-heh! One spoonful of my medicine and you'll feel twenty again!", position = Vector3.new(-30, 0, 1386), color = Color3.fromRGB(150, 80, 160), accent = Color3.fromRGB(235, 235, 245) },
+	{ name = "Hammond the Shipwright", role = "Gear Smith", icon = "🔨", panel = "gear", look = "Tom", style = "hammer",
+		line = "Every ship and every blade, built with pride! Ha-ha!", position = Vector3.new(30, 0, 1384), color = Color3.fromRGB(60, 110, 160), accent = Color3.fromRGB(240, 200, 60) },
+	{ name = "Madam Roxie", role = "Upgrades", icon = "🍸", panel = "shop", look = "Shakky", style = "smoke",
+		line = "Welcome to my bar, sweetie. Upgrades aren't free, you know.", position = Vector3.new(36, 0, 1406), color = Color3.fromRGB(40, 40, 50), accent = Color3.fromRGB(200, 60, 90) },
+	{ name = "Bingo the Clown", role = "Robux Store", icon = "💎", panel = "store", look = "Buggy", style = "laugh",
+		line = "Ha-ha-haa! Treasure for flashy pirates!", position = Vector3.new(0, 0, 1370), color = Color3.fromRGB(220, 60, 60), accent = Color3.fromRGB(60, 130, 230) },
+	{ name = "The Sea Sage", role = "Rebirth", icon = "⭐", panel = "rebirth", look = "Sage", style = "pray",
+		line = "To be reborn, you must let go of everything... and return stronger.", position = Vector3.new(-60, 0, 1450), color = Color3.fromRGB(240, 150, 40), accent = Color3.fromRGB(250, 220, 120) },
 }
 
--- Island training, paid with gold and kept forever. Rayleigh trains skills, Dr. Kureha passives.
+-- Island training, paid with gold and kept forever. Captain Grey trains skills, Granny Doc passives.
 Config.MASTERY = { max = 10, damage = 0.06, cooldown = 0.02, cost = 600, growth = 1.6 }
 Config.TRAINING = { max = 5, boost = 0.15, cost = 1000, growth = 1.8 }
 
@@ -950,7 +953,7 @@ function Config.trainCost(kind, level)
 	return math.floor(t.cost * t.growth ^ level)
 end
 
--- Gear: one item per slot. Buy with gold from Tom, or win Mythic/other drops from bosses.
+-- Gear: one item per slot. Buy with gold from Hammond, or win Mythic/other drops from bosses.
 -- bonus uses the same stat names as passives (damage, cooldown, health, crit, xp, gold, ...).
 Config.RARITIES = {
 	Common = Color3.fromRGB(170, 175, 190), Rare = Color3.fromRGB(80, 160, 255), Epic = Color3.fromRGB(180, 100, 255),
@@ -962,22 +965,22 @@ Config.GEAR_SLOT_ICONS = { weapon = "🗡️", outfit = "🧥", charm = "🧿" }
 Config.GEAR_ITEMS = {
 	{ id = "RustyCutlass", slot = "weapon", name = "Rusty Cutlass", icon = "🗡️", rarity = "Common", cost = 1500, bonus = { damage = 0.05 } },
 	{ id = "MarineSaber", slot = "weapon", name = "Marine Saber", icon = "⚔️", rarity = "Rare", cost = 7500, bonus = { damage = 0.10, crit = 0.03 } },
-	{ id = "Kabuto", slot = "weapon", name = "Kabuto", icon = "🎯", rarity = "Epic", cost = 25000, bonus = { area = 0.12, cooldown = 0.06 } },
-	{ id = "WadoIchimonji", slot = "weapon", name = "Wado Ichimonji", icon = "🗡️", rarity = "Epic", cost = 25000, bonus = { damage = 0.15, crit = 0.05 } },
-	{ id = "Shusui", slot = "weapon", name = "Shusui", icon = "⚔️", rarity = "Legendary", cost = 90000, bonus = { damage = 0.22, critDamage = 0.30 } },
-	{ id = "Enma", slot = "weapon", name = "Enma", icon = "🔥", rarity = "Mythic", cost = 0, bonus = { damage = 0.30, crit = 0.08, critDamage = 0.40 } },
+	{ id = "Kabuto", slot = "weapon", name = "Slingshot Staff", icon = "🎯", rarity = "Epic", cost = 25000, bonus = { area = 0.12, cooldown = 0.06 } },
+	{ id = "WadoIchimonji", slot = "weapon", name = "White Wind Katana", icon = "🗡️", rarity = "Epic", cost = 25000, bonus = { damage = 0.15, crit = 0.05 } },
+	{ id = "Shusui", slot = "weapon", name = "Black Autumn Blade", icon = "⚔️", rarity = "Legendary", cost = 90000, bonus = { damage = 0.22, critDamage = 0.30 } },
+	{ id = "Enma", slot = "weapon", name = "Abyss Blade", icon = "🔥", rarity = "Mythic", cost = 0, bonus = { damage = 0.30, crit = 0.08, critDamage = 0.40 } },
 	{ id = "SailorShirt", slot = "outfit", name = "Sailor Shirt", icon = "👕", rarity = "Common", cost = 1500, bonus = { health = 20 } },
 	{ id = "MarineCoat", slot = "outfit", name = "Marine Coat", icon = "🧥", rarity = "Rare", cost = 7500, bonus = { health = 40, defense = 0.04 } },
-	{ id = "FrankySpeedo", slot = "outfit", name = "Super Speedo", icon = "🩳", rarity = "Epic", cost = 25000, bonus = { speed = 0.10, regen = 1 } },
-	{ id = "JinbeKimono", slot = "outfit", name = "Jinbe's Kimono", icon = "👘", rarity = "Epic", cost = 25000, bonus = { health = 60, defense = 0.08 } },
-	{ id = "SeastoneArmor", slot = "outfit", name = "Seastone Armor", icon = "🛡️", rarity = "Legendary", cost = 90000, bonus = { health = 100, defense = 0.12 } },
+	{ id = "FrankySpeedo", slot = "outfit", name = "Speedy Trunks", icon = "🩳", rarity = "Epic", cost = 25000, bonus = { speed = 0.10, regen = 1 } },
+	{ id = "JinbeKimono", slot = "outfit", name = "Helmsman's Kimono", icon = "👘", rarity = "Epic", cost = 25000, bonus = { health = 60, defense = 0.08 } },
+	{ id = "SeastoneArmor", slot = "outfit", name = "Anchorstone Armor", icon = "🛡️", rarity = "Legendary", cost = 90000, bonus = { health = 100, defense = 0.12 } },
 	{ id = "EmperorCloak", slot = "outfit", name = "Emperor's Cloak", icon = "👑", rarity = "Mythic", cost = 0, bonus = { health = 150, defense = 0.15, regen = 2 } },
 	{ id = "LuckyCoin", slot = "charm", name = "Lucky Coin", icon = "🪙", rarity = "Common", cost = 1500, bonus = { gold = 0.10 } },
-	{ id = "LogPose", slot = "charm", name = "Log Pose", icon = "🧭", rarity = "Rare", cost = 7500, bonus = { magnet = 0.30, xp = 0.10 } },
-	{ id = "DenDenMushi", slot = "charm", name = "Den Den Mushi", icon = "🐌", rarity = "Epic", cost = 25000, bonus = { cooldown = 0.08, area = 0.08 } },
-	{ id = "EternalPose", slot = "charm", name = "Eternal Pose", icon = "📍", rarity = "Epic", cost = 25000, bonus = { xp = 0.20, cooldown = 0.05 } },
+	{ id = "LogPose", slot = "charm", name = "Island Compass", icon = "🧭", rarity = "Rare", cost = 7500, bonus = { magnet = 0.30, xp = 0.10 } },
+	{ id = "DenDenMushi", slot = "charm", name = "Snail Phone", icon = "🐌", rarity = "Epic", cost = 25000, bonus = { cooldown = 0.08, area = 0.08 } },
+	{ id = "EternalPose", slot = "charm", name = "Eternal Compass", icon = "📍", rarity = "Epic", cost = 25000, bonus = { xp = 0.20, cooldown = 0.05 } },
 	{ id = "TreasureMap", slot = "charm", name = "Treasure Map", icon = "🗺️", rarity = "Legendary", cost = 90000, bonus = { gold = 0.30, magnet = 0.40 } },
-	{ id = "DevilFruit", slot = "charm", name = "Devil Fruit", icon = "🍇", rarity = "Mythic", cost = 0, bonus = { damage = 0.15, cooldown = 0.10, xp = 0.25 } },
+	{ id = "DevilFruit", slot = "charm", name = "Mystic Fruit", icon = "🍇", rarity = "Mythic", cost = 0, bonus = { damage = 0.15, cooldown = 0.10, xp = 0.25 } },
 }
 Config.GearById = {}
 for _, item in Config.GEAR_ITEMS do
@@ -997,7 +1000,7 @@ Config.DROPS = {
 -- enough copies to reach +10).
 Config.DUPLICATE_GOLD = { Common = 500, Rare = 2000, Epic = 6000, Legendary = 15000, Mythic = 30000 }
 
--- Gear upgrades at Tom's: each level costs one duplicate copy of the item plus gold, and adds
+-- Gear upgrades at Hammond's: each level costs one duplicate copy of the item plus gold, and adds
 -- 10% of the item's base stats (+10 doubles them).
 Config.GEAR_UPGRADE = {
 	max = 10, per = 0.10, growth = 1.55,
@@ -1119,8 +1122,8 @@ Config.QUESTS_PER_DAY = 3
 -- Codes players can redeem once each (REWARDS menu). Add new ones for updates and your socials.
 Config.CODES = {
 	SETSAIL = { gold = 1000 },
-	ONEPIECE = { gold = 2000 },
-	GRANDLINE = { gold = 1500, revives = 1 },
+	TREASURE = { gold = 2000 },
+	HIGHSEAS = { gold = 1500, revives = 1 },
 }
 
 -- First clear of a map + difficulty pays a bonus: (base + perMap * (map # - 1)) * difficulty #.
@@ -1136,9 +1139,12 @@ Config.BADGES = {
 	Kills1000 = { id = 0, name = "1,000 Marines Down" },
 	Kills10000 = { id = 0, name = "10,000 Marines Down" },
 	Extreme = { id = 0, name = "Extreme Clear" }, -- win any map on Extreme
-	Conqueror = { id = 0, name = "Grand Line Conqueror" }, -- win the last map
+	Conqueror = { id = 0, name = "Seven Seas Conqueror" }, -- win the last map
 	Mythic = { id = 0, name = "Mythic Treasure" }, -- get a Mythic item
 	Lifesaver = { id = 0, name = "Lifesaver" }, -- revive a crewmate
+	Reborn = { id = 0, name = "Reborn" }, -- rebirth once
+	Raider = { id = 0, name = "Leviathan Slayer" }, -- win a raid
+	Endless = { id = 0, name = "Wave Rider" }, -- reach wave 25 in endless mode
 }
 
 -- Leaderboards on the island (all-time, updated every couple of minutes).
@@ -1146,8 +1152,12 @@ Config.LEADERBOARDS = {
 	{ stat = "gold", title = "BIGGEST BOUNTY", icon = "💰" },
 	{ stat = "kills", title = "MOST MARINES DEFEATED", icon = "☠️" },
 	{ stat = "wins", title = "MOST VICTORIES", icon = "🏆" },
+	{ stat = "endless", title = "HIGHEST ENDLESS WAVE", icon = "♾️" },
+	{ stat = "rebirths", title = "MOST REBIRTHS", icon = "⭐" },
 }
-Config.LEADERBOARD_SPOTS = { Vector3.new(58, 0, 1442), Vector3.new(67, 0, 1458), Vector3.new(76, 0, 1474) }
+Config.LEADERBOARD_SPOTS = {
+	Vector3.new(49, 0, 1426), Vector3.new(58, 0, 1442), Vector3.new(67, 0, 1458), Vector3.new(76, 0, 1474), Vector3.new(85, 0, 1490),
+}
 Config.LEADERBOARD_FACE = Vector3.new(0, 0, 1452)
 
 -- Titles over your head, from your all-time bounty (total gold earned).
@@ -1157,13 +1167,13 @@ Config.TITLES = {
 	{ bounty = 50000, title = "Supernova", color = rgb(120, 230, 140) },
 	{ bounty = 200000, title = "Warlord", color = rgb(255, 200, 70) },
 	{ bounty = 1000000, title = "Emperor", color = rgb(255, 110, 70) },
-	{ bounty = 5000000, title = "Pirate King", color = rgb(255, 90, 200) },
+	{ bounty = 5000000, title = "King of the Seas", color = rgb(255, 90, 200) },
 }
 
 -- Adventures --------------------------------------------------------------------------------
 
 -- Pickups that sometimes drop from defeated Marines.
---   Meat heals, Magnet pulls in every XP orb, Buster Call wipes out nearby Marines.
+--   Meat heals, Magnet pulls in every XP orb, Fleet Barrage wipes out nearby Marines.
 Config.PICKUPS = {
 	Meat = { icon = "🍖", chance = 0.012, heal = 0.3, color = rgb(210, 120, 70) },
 	Magnet = { icon = "🧲", chance = 0.004, color = rgb(90, 160, 255) },
@@ -1176,6 +1186,49 @@ Config.CREW_REVIVE = { time = 4, radius = 7, health = 0.5 }
 
 -- Hits push regular Marines back a little (studs per hit, less for big ones).
 Config.KNOCKBACK = 0.5
+
+-- Rebirth (the Sea Sage): start over for a permanent bonus. Resets gold, shop upgrades and
+-- training; keeps pirates, gear, map progress, achievements and stats.
+-- Cost of the next rebirth = cost * growth ^ rebirths so far. Bonuses stack per rebirth.
+Config.REBIRTH = { cost = 150000, growth = 1.6, gold = 0.25, damage = 0.10, max = 50 }
+
+-- Endless mode: on a map + difficulty you have cleared, the waves never stop. Every few waves
+-- the map's boss returns, stronger each time. Your best wave goes on a leaderboard.
+Config.ENDLESS = { bossEvery = 10, waveGold = 40, minWave = 1 }
+
+-- Raids: every so often a raid gate opens on the island for everyone. The crew starts a few
+-- levels up and must defeat a giant boss before time runs out.
+Config.RAID = {
+	every = 1800, first = 600, open = 60, time = 300, levels = 8,
+	gate = Vector3.new(0, 0, 1322), radius = 9,
+	map = {
+		key = "Raid", name = "Leviathan Raid", theme = "deepsea", index = 12, hp = 2.2, damage = 1.6, gold = 3,
+		boss = "Leviathan, the Sea King", bossColor = rgb(40, 110, 130), bossAccent = rgb(20, 40, 70),
+		bossLook = { hat = "fin", gear = "none", skin = rgb(60, 150, 170), eyes = rgb(255, 60, 60) },
+	},
+	difficulty = 3, bossHp = 3, gold = 4000, dropTier = 4,
+}
+Config.RAID.map.center = Vector3.new(-2 * Config.MAP_SPACING, 0, -5 * Config.MAP_SPACING) -- arena #21 (tools/build_place.py)
+
+-- Playing together: extra gold for every friend in your crew, and for members of your Roblox
+-- group (set groupId to your group's ID; 0 = off).
+Config.SOCIAL = { groupId = 0, groupGold = 0.10, friendGold = 0.10, maxFriendGold = 0.30 }
+
+-- Map hazards by theme: telegraphed circles that hurt (and sometimes slow) anyone inside.
+-- They start after the first wave. damage is multiplied by the map and difficulty.
+Config.HAZARDS = {
+	volcano = { name = "Eruptions", every = 6, count = 3, radius = 7, damage = 16, delay = 1.4, color = rgb(255, 90, 30) },
+	snow = { name = "Frost patches", every = 8, count = 2, radius = 9, damage = 4, delay = 1.2, color = rgb(160, 220, 255), slow = 0.55, slowTime = 2.5 },
+	desert = { name = "Quicksand", every = 9, count = 2, radius = 8, damage = 3, delay = 1.2, color = rgb(230, 190, 110), slow = 0.5, slowTime = 2 },
+	sky = { name = "Lightning", every = 5, count = 2, radius = 6, damage = 14, delay = 1.1, color = rgb(150, 200, 255), fx = "strike" },
+	spooky = { name = "Ghost flames", every = 7, count = 3, radius = 6, damage = 12, delay = 1.3, color = rgb(170, 110, 255) },
+	prison = { name = "Poison vents", every = 7, count = 3, radius = 7, damage = 10, delay = 1.3, color = rgb(150, 220, 90) },
+	wano = { name = "Fire arrows", every = 7, count = 4, radius = 5, damage = 10, delay = 1.2, color = rgb(255, 120, 80) },
+	deepsea = { name = "Whirlpools", every = 9, count = 2, radius = 9, damage = 6, delay = 1.3, color = rgb(60, 140, 230), slow = 0.6, slowTime = 2 },
+	jungle = { name = "Falling coconuts", every = 6, count = 3, radius = 4, damage = 12, delay = 1.1, color = rgb(160, 110, 60) },
+	marine = { name = "Fort cannons", every = 8, count = 2, radius = 7, damage = 12, delay = 1.4, color = rgb(255, 160, 60) },
+	ship = { name = "Cannon fire", every = 8, count = 2, radius = 7, damage = 12, delay = 1.4, color = rgb(255, 160, 60) },
+}
 
 -- Anti-cheat: players moving faster than their walk speed x slack (plus room for a dash) are
 -- pulled back to where they were.

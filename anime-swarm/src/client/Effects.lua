@@ -131,7 +131,7 @@ local function shockwave(pos, radius, color, time)
 	fadeOut(p, time, { Size = Vector3.new(0.2, radius * 2, radius * 2) })
 end
 
--- Briefly sets a body part on fire (Sanji's foot, Ace's fist).
+-- Briefly sets a body part on fire (Blaze's foot, Ignis's fist).
 local function ignite(player, partName, color, time)
 	local character = player and player.Character
 	local limb = character and character:FindFirstChild(partName)
@@ -314,7 +314,7 @@ end
 
 -- Handlers: one per effect kind the server sends ---------------------------------
 
--- Stretching punch (Luffy, Chopper): the arm shoots out to full range and snaps back.
+-- Stretching punch (Rocco, Tuck): the arm shoots out to full range and snaps back.
 function handlers.punch(ev)
 	task.delay(((ev.i or 1) - 1) * 0.035, function()
 		local root = rootOf(ev.p)
@@ -350,7 +350,7 @@ function handlers.punch(ev)
 	end)
 end
 
--- Sword or kick arcs sweeping in front (several lines for Zoro's three swords).
+-- Sword or kick arcs sweeping in front (several lines for Kenji's three swords).
 function handlers.slash(ev)
 	local radius = ev.r * 0.75
 	for j = 1, ev.arcs do
@@ -360,7 +360,7 @@ function handlers.slash(ev)
 	showHits(ev.hits, ev.c)
 end
 
--- Lightning that jumps from enemy to enemy; Nami's starts from a storm cloud.
+-- Lightning that jumps from enemy to enemy; Skye's starts from a storm cloud.
 function handlers.lightning(ev)
 	local points = ev.pts
 	if #points == 0 then
@@ -394,7 +394,7 @@ function handlers.lightning(ev)
 	showHits(ev.hits, ev.c)
 end
 
--- Arms that sprout from the ground (Robin). Returns nothing; parts clean themselves up.
+-- Arms that sprout from the ground (Flora). Returns nothing; parts clean themselves up.
 local function sproutArms(ground, spread, count, scale, color)
 	for i = 1, count do
 		local a = i / count * 2 * math.pi + math.random()
@@ -484,7 +484,7 @@ function handlers.boom(ev)
 	showHits(ev.hits, ev.c)
 end
 
--- Spin kick around the player; Sanji's burning kicks add flames.
+-- Spin kick around the player; Blaze's burning kicks add flames.
 function handlers.kick(ev)
 	local root = rootOf(ev.p)
 	local center = root and root.Position or ev.o
@@ -666,7 +666,7 @@ function handlers.heal(ev)
 	burst(ev.pos + Vector3.new(0, 2, 0), green, 14, { size = 1, speed = 6, life = 0.6, gravity = Vector3.new(0, 10, 0) })
 end
 
--- Soru: a puff of smoke where a CP9 agent vanishes or appears.
+-- shadow-step: a puff of smoke where a Shadow agent vanishes or appears.
 function handlers.puff(ev)
 	burst(ev.pos, Color3.fromRGB(230, 230, 235), 14, { texture = TEX_SMOKE, size = 3, speed = 8, life = 0.4 })
 	burst(ev.pos, Color3.fromRGB(150, 200, 255), 6, { size = 1, speed = 18, life = 0.2 })
@@ -694,14 +694,14 @@ function handlers.shout(ev)
 	Debris:AddItem(holder, 1.5)
 end
 
--- Someone grabbed a pickup (meat, magnet, Buster Call).
+-- Someone grabbed a pickup (meat, magnet, Fleet Barrage).
 function handlers.pickup(ev)
 	burst(ev.pos, ev.c, 18, { size = 1.2, speed = 14, life = 0.5, gravity = Vector3.new(0, 12, 0) })
 	shockwave(groundAt(ev.pos) + Vector3.new(0, 0.2, 0), 5, ev.c, 0.35)
 	Sounds.play("Pickup", { pos = ev.pos })
 end
 
--- Buster Call: warship shells rain down all over the area.
+-- Fleet Barrage: warship shells rain down all over the area.
 function handlers.buster(ev)
 	local red = Color3.fromRGB(255, 90, 50)
 	shockwave(groundAt(ev.pos) + Vector3.new(0, 0.3, 0), ev.r, red, 0.8)
@@ -721,6 +721,21 @@ function handlers.buster(ev)
 	end
 end
 
+-- Someone was reborn: a golden pillar of light.
+function handlers.rebirth(ev)
+	local gold = Color3.fromRGB(255, 215, 90)
+	local ground = groundAt(ev.pos)
+	local column = part({
+		Shape = Enum.PartType.Cylinder, Color = gold, Transparency = 0.2,
+		Size = Vector3.new(80, 6, 6), CFrame = CFrame.new(ground + Vector3.new(0, 40, 0)) * UPRIGHT,
+	})
+	fadeOut(column, 1.6, { Size = Vector3.new(80, 14, 14) })
+	shockwave(ground + Vector3.new(0, 0.3, 0), 18, gold, 1)
+	burst(ev.pos, gold, 40, { size = 1.5, speed = 25, life = 1, gravity = Vector3.new(0, 15, 0) })
+	flashLight(ev.pos, gold, 40, 1.5)
+	Sounds.play("Victory", { pos = ev.pos })
+end
+
 -- A treasure chest bursts open: gold sparkles fountain up.
 function handlers.chest(ev)
 	local gold = Color3.fromRGB(255, 205, 60)
@@ -738,12 +753,13 @@ function handlers.anim(_ev) end -- the animation itself is played in Effects.pla
 function handlers.warn(ev)
 	local ground = groundAt(ev.pos) + Vector3.new(0, 0.15, 0)
 	local size = ev.r * 2
+	local color = ev.c or Color3.fromRGB(255, 40, 40) -- map hazards bring their own color
 	local ring = part({
-		Shape = Enum.PartType.Cylinder, Color = Color3.fromRGB(255, 40, 40), Transparency = 0.55,
+		Shape = Enum.PartType.Cylinder, Color = color, Transparency = 0.55,
 		Size = Vector3.new(0.15, size, size), CFrame = CFrame.new(ground) * UPRIGHT,
 	})
 	local fill = part({
-		Shape = Enum.PartType.Cylinder, Color = Color3.fromRGB(255, 130, 60), Transparency = 0.3,
+		Shape = Enum.PartType.Cylinder, Color = ev.c and color:Lerp(Color3.new(1, 1, 1), 0.3) or Color3.fromRGB(255, 130, 60), Transparency = 0.3,
 		Size = Vector3.new(0.2, 0.5, 0.5), CFrame = ring.CFrame,
 	})
 	tween(fill, ev.t, { Size = Vector3.new(0.2, size, size) }, Enum.EasingStyle.Linear)
@@ -786,7 +802,7 @@ end
 
 -- Skill emblems ------------------------------------------------------------------
 -- Every skill a player owns floats around them as a little charm whose shape follows the skill:
--- blades for sword and wave skills, a fist for punches, rings for bursts, petals for Robin...
+-- blades for sword and wave skills, a fist for punches, rings for bursts, petals for Flora...
 
 local loadouts = {} -- [player] = { emblems = { { part, color, fx, size } } }
 

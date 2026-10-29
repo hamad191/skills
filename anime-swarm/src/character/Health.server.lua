@@ -1,2 +1,2 @@
 -- Empty on purpose: replaces Roblox's default health regen, so healing only comes
--- from Chopper and level-up rewards.
+-- from Tuck and level-up rewards.

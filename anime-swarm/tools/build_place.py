@@ -363,8 +363,16 @@ def leaderboard_spots():
     """(x, z) of the island leaderboards, read from Config.LEADERBOARD_SPOTS."""
     with open(os.path.join(ROOT, "src/shared/Config.lua"), encoding="utf-8") as f:
         text = f.read()
-    line = text[text.index("Config.LEADERBOARD_SPOTS"):].split("\n", 1)[0]
-    return [(float(x), float(z)) for x, z in re.findall(r"Vector3\.new\((-?[\d.]+), 0, (-?[\d.]+)\)", line)]
+    block = text[text.index("Config.LEADERBOARD_SPOTS"):].split("}", 1)[0]
+    return [(float(x), float(z)) for x, z in re.findall(r"Vector3\.new\((-?[\d.]+), 0, (-?[\d.]+)\)", block)]
+
+
+def raid_gate():
+    """(x, z) of the island's raid gate, from Config.RAID."""
+    with open(os.path.join(ROOT, "src/shared/Config.lua"), encoding="utf-8") as f:
+        text = f.read()
+    x, z = re.search(r"gate = Vector3\.new\((-?[\d.]+), 0, (-?[\d.]+)\)", text).groups()
+    return float(x), float(z)
 
 
 def free(x, z):
@@ -390,6 +398,7 @@ def spawn_island():
     BLOCKED.extend([(0, cz, 14), (PLAZA[0], PLAZA[1], PLAZA[2] + 4)])
     BLOCKED.extend((x, z, 13) for x, z in npc_spots())  # the island NPCs and their stalls (server/Npcs.lua)
     BLOCKED.extend((x, z, 8) for x, z in leaderboard_spots())  # leaderboards (server/Leaderboards.lua)
+    BLOCKED.append((*raid_gate(), 16))  # the raid gate (server/Raid.lua)
 
     # signs and landmarks around the spawn
     S = Placer(16, GRASS_TOP, cz + 16, 0)
@@ -416,7 +425,7 @@ def spawn_island():
         hut("HutA", -62, cz + 18, 12, 10, 9, (205, 170, 120), (150, 60, 45)),
         hut("HutB", -70, cz - 18, 12, 10, 9, (190, 160, 125), (60, 90, 150)),
         hut("HutC", -48, cz - 52, 10, 8, 8, (215, 185, 140), (150, 60, 45)),
-        hut("Tavern", -92, cz + 50, 22, 16, 11, (170, 120, 80), (110, 45, 35), sign="PARTY'S BAR"),
+        hut("Tavern", -92, cz + 50, 22, 16, 11, (170, 120, 80), (110, 45, 35), sign="ANCHOR TAVERN"),
     ]
     BLOCKED.extend([(-62, cz + 18, 12), (-70, cz - 18, 12), (-48, cz - 52, 10), (-92, cz + 50, 18)])
     for i, (x, z) in enumerate(((-80, cz + 36), (-83, cz + 33), (-74, cz + 62), (-55, cz + 30), (-58, cz - 30))):
@@ -1077,7 +1086,10 @@ def arena(index, key, name, theme):
 
 
 def arenas():
-    return item("Folder", "Arenas", children=[arena(i, *m) for i, m in enumerate(read_maps())])
+    maps = read_maps()
+    children = [arena(i, *m) for i, m in enumerate(maps)]
+    children.append(arena(len(maps), "Raid", "Leviathan Raid", "deepsea"))  # arena #21: Config.RAID
+    return item("Folder", "Arenas", children=children)
 
 
 # --- place ------------------------------------------------------------------

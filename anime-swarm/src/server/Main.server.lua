@@ -5,6 +5,8 @@
 --   Each adventure runs until its boss falls, its time runs out, or its whole crew is down.
 --   Players can leave early (keeping the gold they earned) or be revived: with a revive from
 --   the store, or by a crewmate standing in their revive circle.
+--   Modes: normal runs (waves, then the boss), endless runs (waves forever, boss every few
+--   waves) and raids (a giant boss for everyone who boards the island's raid gate).
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -22,6 +24,7 @@ local Monetization = require(script.Parent.Monetization)
 local Rewards = require(script.Parent.Rewards)
 local Leaderboards = require(script.Parent.Leaderboards)
 local Guard = require(script.Parent.Guard)
+local Raid = require(script.Parent.Raid)
 
 Players.CharacterAutoLoads = false
 
@@ -31,7 +34,7 @@ remoteFolder.Name = "Remotes"
 for _, name in {
 	"State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results", "Fx", "Portal",
 	"Announce", "Voyage", "Dash", "Leave", "Revive", "Train", "Gear", "UnlockClass", "Wave",
-	"Rewards", "Settings", "Sound",
+	"Rewards", "Settings", "Sound", "Rebirth",
 } do
 	local r = Instance.new("RemoteEvent")
 	r.Name = name
@@ -44,9 +47,12 @@ Fx.init(remotes.Fx)
 Portals.build()
 task.spawn(Npcs.build) -- building R15 characters can take a moment
 Leaderboards.build()
+Raid.build()
 
 local LOBBY_TEXT = "Step onto a voyage gate to choose an adventure!"
 local selectedClass = {}
+local groupMember = {} -- [player] = true if in the Roblox group (Config.SOCIAL)
+local friends = {} -- [userId .. ":" .. userId] = are they friends (cached)
 local runOf = {} -- [player] = the run they are in (nil = on the spawn island)
 local runs = {} -- [mapKey] = run in progress (one crew per map at a time)
 local lastDash = {} -- [player] = os.clock() of their last dash
@@ -81,6 +87,8 @@ local function sendMeta(player)
 		revives = data.revives, boosts = boosts, passes = Monetization.ownedList(player),
 		dashCooldown = Monetization.dashCooldown(player), loadFailed = data.loadFailed == true,
 		rewards = Rewards.snapshot(player), title = Leaderboards.titleFor(data.stats.gold or 0).title,
+		rebirths = data.stats.rebirths or 0, rebirthCost = PlayerData.rebirthCost(data.stats.rebirths or 0),
+		social = { groupSet = Config.SOCIAL.groupId > 0, inGroup = groupMember[player] == true },
 	})
 end
 
@@ -239,6 +247,10 @@ local function onPlayerAdded(player)
 		onCharacter(player, character)
 	end)
 	local data = PlayerData.get(player)
+	if Config.SOCIAL.groupId > 0 then
+		local ok, member = pcall(player.IsInGroup, player, Config.SOCIAL.groupId)
+		groupMember[player] = ok and member
+	end
 	Leaderboards.setup(player, data.stats)
 	player:LoadCharacter()
 	sendMeta(player)
@@ -265,6 +277,7 @@ Players.PlayerRemoving:Connect(function(player)
 	Weapons.cleanup(player)
 	Progression.stop(player)
 	selectedClass[player] = nil
+	groupMember[player] = nil
 	Monetization.release(player)
 	local data = PlayerData.get(player)
 	if data then
@@ -386,7 +399,7 @@ Enemies.onChest = function(runKey, kind, opener)
 	end
 end
 
--- Pickups: meat heals, a magnet pulls in every XP orb, a Buster Call clears the area.
+-- Pickups: meat heals, a magnet pulls in every XP orb, a Fleet Barrage clears the area.
 Enemies.onItem = function(runKey, kind, target)
 	local def = Config.PICKUPS[kind]
 	local player = target.player
@@ -398,7 +411,7 @@ Enemies.onItem = function(runKey, kind, target)
 		Enemies.busterCall(target.root.Position, def.radius, runKey, player)
 		local run = runs[runKey]
 		if run then
-			announce(run, player.DisplayName .. " called a BUSTER CALL!", Color3.fromRGB(255, 80, 60))
+			announce(run, player.DisplayName .. " called a FLEET BARRAGE!", Color3.fromRGB(255, 80, 60))
 		end
 	end
 	Rewards.stat(player, "pickups", 1)
@@ -424,10 +437,32 @@ local function reward(player, run, result)
 	end
 	local map, diff = run.map, run.diff
 	local elapsed = os.clock() - run.start
+	local endless, raid = run.mode == "endless", run.mode == "raid"
+	if endless then
+		result = "Endless" -- endless runs always pay out, however they end
+	end
 	local gold = s.kills + math.floor(elapsed / 10) + s.bonusGold + (result == "Victory" and 500 or 0)
+	if endless then
+		gold += (run.wave or 0) * Config.ENDLESS.waveGold
+	elseif raid and result == "Victory" then
+		gold += Config.RAID.gold
+	end
 	gold = math.floor(gold * map.gold * diff.gold * (1 + Progression.bonus(s, "gold")) * Monetization.goldMultiplier(player))
 	local unlocked, drop, firstClear
-	if result == "Victory" then
+	if endless then
+		Rewards.best(player, "endless", run.wave or 0)
+		if (run.wave or 0) >= 25 then
+			Rewards.achieve(player, "Endless")
+		end
+		if math.random() < math.min(0.8, (run.wave or 0) / 40) then
+			drop = dropText(giveItem(player, rollItem(math.min(#Config.Difficulties, run.difficulty + math.floor((run.wave or 0) / 20)))))
+		end
+	elseif raid and result == "Victory" then
+		drop = dropText(giveItem(player, rollItem(Config.RAID.dropTier)))
+		Rewards.stat(player, "raids", 1)
+		Rewards.stat(player, "bosses", 1)
+		Rewards.achieve(player, "Raider")
+	elseif result == "Victory" then
 		if PlayerData.recordClear(player, map.key, run.difficulty) then
 			unlocked = unlockMessage(map, run.difficulty)
 			firstClear = (Config.FIRST_CLEAR.base + Config.FIRST_CLEAR.perMap * (map.index - 1)) * run.difficulty
@@ -467,11 +502,11 @@ local function reward(player, run, result)
 		damage[i] = nil
 	end
 	remotes.Results:FireClient(player, {
-		result = result, adventure = map.name .. "  -  " .. diff.name, color = diff.color,
+		result = result, adventure = run.label, color = diff.color, wave = run.wave,
 		gold = gold, kills = s.kills, level = s.level, time = math.floor(elapsed), unlocked = unlocked, drop = drop,
 		firstClear = firstClear, damage = damage,
 	})
-	remotes.Sound:FireClient(player, result == "Victory" and "Victory" or "Down")
+	remotes.Sound:FireClient(player, result == "Defeat" and "Down" or "Victory")
 end
 
 -- Takes a player out of their run and back to the island.
@@ -605,6 +640,7 @@ local function startWave(run, wave, total, crew, hpScale, dmgScale, minutes)
 	end
 	local event = wave > 1 and pickEvent(wave, run.map.index) or nil
 	local mini = wave % Config.MINIBOSS_WAVE == 0
+	local bossWave = run.mode == "endless" and wave % Config.ENDLESS.bossEvery == 0
 	local info = { n = wave, total = total, title = "THE MARINES ARE COMING", sub = "Survive and grow stronger", color = Color3.fromRGB(120, 200, 255) }
 	if event then
 		info.title, info.sub, info.color = event.title, event.sub, event.color
@@ -613,6 +649,11 @@ local function startWave(run, wave, total, crew, hpScale, dmgScale, minutes)
 		info.title = "VICE ADMIRAL" .. (event and "  +  " .. event.title or "")
 		info.sub = "A Vice Admiral leads this wave!"
 		info.color = Color3.fromRGB(190, 90, 255)
+	end
+	if bossWave then
+		info.title = run.map.boss:upper() .. " RETURNS!"
+		info.sub = "Boss wave - stronger every time"
+		info.color = Color3.fromRGB(255, 60, 60)
 	end
 	sendWave(run, info)
 	task.delay(1.5, function()
@@ -625,7 +666,32 @@ local function startWave(run, wave, total, crew, hpScale, dmgScale, minutes)
 		if mini then
 			spawnAround("MiniBoss", run, runTargets(run), hpScale, dmgScale)
 		end
+		if bossWave then
+			local map, diff = run.map, run.diff
+			local look = { name = map.boss, color = map.bossColor, accent = map.bossAccent }
+			local grow = 1 + wave * 0.15
+			spawnAround("Boss", run, runTargets(run), crew * map.hp * diff.hp * grow, map.damage * diff.damage * (1 + wave * 0.04), look)
+		end
 	end)
+end
+
+-- Map hazards: every few seconds, telegraphed circles land near the crew.
+local function hazards(run, targets, elapsed, minutes)
+	local h = Config.HAZARDS[run.map.theme]
+	if not h or run.mode == "raid" or elapsed < Config.WAVE_LENGTH or elapsed < (run.nextHazard or 0) then
+		return
+	end
+	if not run.nextHazard then
+		announce(run, "⚠️ " .. h.name .. "! Watch the ground.", h.color)
+	end
+	run.nextHazard = elapsed + h.every
+	local landed = landedTargets(run, targets)
+	local damage = h.damage * run.map.damage * run.diff.damage * (1 + minutes * 0.1)
+	for i = 1, #landed > 0 and h.count or 0 do
+		local t = landed[math.random(#landed)]
+		local a, d = math.random() * math.pi * 2, i == 1 and math.random() * 3 or 4 + math.random() * 14
+		Enemies.hazard(run.key, t.root.Position + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d), h, damage)
+	end
 end
 
 -- Brings a knocked-out player back where they fell. how = "crew" (a crewmate's circle) or "item".
@@ -670,7 +736,7 @@ local function updateCircles(run, targets, dt)
 	end
 end
 
--- Once a second: Regeneration heals its owner, and healers (Chopper) heal everyone nearby.
+-- Once a second: Regeneration heals its owner, and healers (Tuck) heal everyone nearby.
 local function healers(targets)
 	for _, t in targets do
 		local regen = Progression.bonus(t.s, "regen")
@@ -697,6 +763,7 @@ end
 
 local function playRun(run)
 	local map, diff = run.map, run.diff
+	local endless, raid = run.mode == "endless", run.mode == "raid"
 	local waves = math.max(1, math.floor(diff.runLength / Config.WAVE_LENGTH))
 	local wave = 0
 	local lastTick = 0
@@ -707,7 +774,7 @@ local function playRun(run)
 		local minutes = elapsed / 60
 		local targets = runTargets(run)
 		if #targets == 0 then
-			return "Defeat"
+			return endless and "Endless" or "Defeat"
 		end
 
 		updateCircles(run, targets, 0.25)
@@ -718,12 +785,38 @@ local function playRun(run)
 		for _ = 1, math.min(4, desired - Enemies.count(run.key)) do
 			spawnAround(pickKind(minutes, map.index), run, targets, hpScale, dmgScale)
 		end
-		local due = math.min(waves, math.floor(elapsed / Config.WAVE_LENGTH) + 1)
-		if due > wave and elapsed < diff.runLength then
-			wave = due
-			startWave(run, wave, waves, crew, hpScale, dmgScale, minutes)
+		hazards(run, targets, elapsed, minutes)
+		local due = math.floor(elapsed / Config.WAVE_LENGTH) + 1
+		if not endless then
+			due = math.min(waves, due)
 		end
-		if elapsed >= diff.runLength then
+		if not raid and due > wave and (endless or elapsed < diff.runLength) then
+			wave = due
+			run.wave = wave
+			startWave(run, wave, not endless and waves or nil, crew, hpScale, dmgScale, minutes)
+		end
+		if raid then
+			-- the raid boss rises right away; beat it before time runs out
+			if not boss and elapsed >= 3 then
+				local look = { name = map.boss, color = map.bossColor, accent = map.bossAccent }
+				for k, v in map.bossLook do
+					look[k] = v
+				end
+				boss = spawnAround("Boss", run, targets, crew * map.hp * diff.hp * Config.RAID.bossHp, map.damage * diff.damage, look)
+				if boss then
+					bossAt = elapsed
+					sendWave(run, {
+						n = "RAID", title = map.boss:upper(), boss = true, color = Color3.fromRGB(80, 200, 255),
+						sub = string.format("Defeat it within %d:%02d!", Config.RAID.time // 60, Config.RAID.time % 60),
+					})
+				end
+			elseif boss and boss.dead then
+				return "Victory"
+			elseif boss and elapsed - bossAt >= Config.RAID.time then
+				announce(run, "The " .. map.boss .. " escaped into the deep...", Color3.fromRGB(80, 200, 255))
+				return "Defeat"
+			end
+		elseif not endless and elapsed >= diff.runLength then
 			if not boss then
 				local look = { name = map.boss, color = map.bossColor, accent = map.bossAccent }
 				boss = spawnAround("Boss", run, targets, crew * map.hp * diff.hp, map.damage * diff.damage, look)
@@ -750,8 +843,14 @@ local function playRun(run)
 		if os.clock() - lastTick >= 1 then
 			lastTick = os.clock()
 			healers(targets)
-			local text = not boss and clock(diff.runLength - elapsed)
-				or "BOSS  " .. clock(Config.BOSS_TIME_LIMIT - (elapsed - bossAt))
+			local text
+			if raid then
+				text = boss and "RAID  " .. clock(Config.RAID.time - (elapsed - bossAt)) or "RAID"
+			elseif endless then
+				text = "♾️  " .. clock(elapsed)
+			else
+				text = not boss and clock(diff.runLength - elapsed) or "BOSS  " .. clock(Config.BOSS_TIME_LIMIT - (elapsed - bossAt))
+			end
 			local crewIds = {}
 			for player in run.players do
 				table.insert(crewIds, player.UserId)
@@ -759,9 +858,10 @@ local function playRun(run)
 			for player in run.players do
 				local s = Progression.get(player)
 				remotes.State:FireClient(player, {
-					phase = "Run", text = text, adventure = map.name .. "  -  " .. diff.name, color = diff.color,
-					down = s ~= nil and s.dead, boss = boss ~= nil, crew = crewIds, map = map.key, theme = map.theme,
-					wave = wave, waves = waves, waveLeft = not boss and math.max(0, wave * Config.WAVE_LENGTH - elapsed) or nil,
+					phase = "Run", text = text, adventure = run.label, color = diff.color,
+					down = s ~= nil and s.dead, boss = boss ~= nil and not endless, crew = crewIds, map = map.key, theme = map.theme,
+					wave = not raid and wave or nil, waves = not endless and waves or nil, endless = endless,
+					waveLeft = (endless or not boss) and math.max(0, wave * Config.WAVE_LENGTH - elapsed) or nil,
 				})
 				Progression.sync(player)
 			end
@@ -779,7 +879,9 @@ local function finishRun(run, result)
 	end
 	for player in run.players do
 		reward(player, run, result)
-		remotes.State:FireClient(player, { phase = "Results", text = result == "Victory" and "VICTORY!" or "DEFEATED" })
+		remotes.State:FireClient(player, {
+			phase = "Results", text = result == "Victory" and "VICTORY!" or result == "Endless" and "WAVE " .. (run.wave or 0) or "DEFEATED",
+		})
 		Weapons.cleanup(player)
 		Progression.stop(player)
 	end
@@ -791,9 +893,30 @@ local function finishRun(run, result)
 	runs[run.key] = nil
 end
 
-local function startRun(map, difficulty, crew)
+-- How many of `player`'s friends are in this crew (cached; IsFriendsWith asks Roblox).
+local function friendsIn(player, crew)
+	local count = 0
+	for _, other in crew do
+		if other ~= player then
+			local key = math.min(player.UserId, other.UserId) .. ":" .. math.max(player.UserId, other.UserId)
+			if friends[key] == nil then
+				local ok, yes = pcall(player.IsFriendsWith, player, other.UserId)
+				friends[key] = ok and yes
+			end
+			count += friends[key] and 1 or 0
+		end
+	end
+	return count
+end
+
+-- mode: nil (normal), "endless" or "raid".
+local function startRun(map, difficulty, crew, mode)
 	local diff = Config.Difficulties[difficulty]
-	local run = { key = map.key, map = map, diff = diff, difficulty = difficulty, players = {}, start = os.clock() }
+	local label = map.name .. "  -  " .. diff.name .. (mode == "endless" and "  -  ENDLESS" or "")
+	if mode == "raid" then
+		label = map.name
+	end
+	local run = { key = map.key, map = map, diff = diff, difficulty = difficulty, players = {}, start = os.clock(), mode = mode, label = label }
 	runs[map.key] = run
 	for _, player in crew do
 		local data = PlayerData.get(player)
@@ -804,14 +927,35 @@ local function startRun(map, difficulty, crew)
 			for stat, value in Monetization.bonus(player) do
 				extra[stat] = (extra[stat] or 0) + value
 			end
+			-- rebirths, friends in the crew and group membership
+			local rebirths = data.stats.rebirths or 0
+			extra.gold = (extra.gold or 0) + rebirths * Config.REBIRTH.gold
+			extra.damage = (extra.damage or 0) + rebirths * Config.REBIRTH.damage
+			local social = math.min(Config.SOCIAL.maxFriendGold, friendsIn(player, crew) * Config.SOCIAL.friendGold)
+				+ (groupMember[player] and Config.SOCIAL.groupGold or 0)
+			extra.gold += social
 			Progression.start(player, classOf(player), data, extra)
 			Progression.applyStats(player)
 			Progression.sync(player)
 			remotes.State:FireClient(player, {
-				phase = "Run", text = "Set sail!", adventure = map.name .. "  -  " .. diff.name, color = diff.color,
-				map = map.key, theme = map.theme,
+				phase = "Run", text = "Set sail!", adventure = label, color = diff.color, map = map.key, theme = map.theme,
 			})
 			task.spawn(sendToArena, player, map.center)
+			if social > 0 then
+				task.delay(3, function()
+					remotes.Announce:FireClient(player, string.format("👥 Crew bonus: +%d%% gold for sailing with friends", math.floor(social * 100 + 0.5)), Config.RARITIES.Epic)
+				end)
+			end
+			if mode == "raid" then
+				-- raids start a few levels up
+				local xp = 0
+				for level = 1, Config.RAID.levels do
+					xp += Progression.xpNeeded(level)
+				end
+				task.delay(1.5, function()
+					Progression.addXP(player, xp)
+				end)
+			end
 		end
 	end
 	finishRun(run, playRun(run))
@@ -892,18 +1036,49 @@ remotes.Gear.OnServerEvent:Connect(Guard.limit("gear", 5, function(player, actio
 	end
 end))
 -- The captain of a gate picks where the crew sails.
-remotes.Voyage.OnServerEvent:Connect(Guard.limit("voyage", 4, function(player, mapKey, difficulty)
+remotes.Voyage.OnServerEvent:Connect(Guard.limit("voyage", 4, function(player, mapKey, difficulty, endless)
 	if typeof(mapKey) ~= "string" or typeof(difficulty) ~= "number" then
 		return
 	end
+	endless = endless == true
+	local data = PlayerData.get(player)
 	for _, gate in gates do
 		if gate.captain == player then
-			if PlayerData.unlocked(player, mapKey, difficulty) and not runs[mapKey] then
-				gate.map, gate.difficulty, gate.launchAt = mapKey, difficulty, nil
+			-- endless needs that difficulty cleared on that map
+			local endlessOk = not endless or (data and (data.progress[mapKey] or 0) >= difficulty)
+			if PlayerData.unlocked(player, mapKey, difficulty) and endlessOk and not runs[mapKey] then
+				gate.map, gate.difficulty, gate.endless, gate.launchAt = mapKey, difficulty, endless, nil
 			end
 			return
 		end
 	end
+end))
+-- The Sea Sage: start over for permanent bonuses.
+remotes.Rebirth.OnServerEvent:Connect(Guard.limit("rebirth", 0.5, function(player)
+	if runOf[player] then
+		return
+	end
+	local count = PlayerData.rebirth(player)
+	if not count then
+		return
+	end
+	local data = PlayerData.get(player)
+	PlayerData.requestSave(player)
+	remotes.Announce:FireClient(player, string.format("⭐ REBORN! Rebirth %d: +%d%% gold and +%d%% damage, forever", count,
+		count * Config.REBIRTH.gold * 100, count * Config.REBIRTH.damage * 100), Config.RARITIES.Legendary)
+	for _, other in Players:GetPlayers() do
+		if other ~= player then
+			remotes.Announce:FireClient(other, "⭐ " .. player.DisplayName .. " was reborn! (Rebirth " .. count .. ")", Config.RARITIES.Legendary)
+		end
+	end
+	Rewards.achieve(player, "Reborn")
+	Leaderboards.update(player, data.stats)
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if root then
+		Fx.emit("rebirth", { pos = root.Position })
+		task.spawn(Leaderboards.tag, player.Character, data.stats)
+	end
+	sendMeta(player)
 end))
 -- The client moves the character; the server grants the dash's moment of safety and shows it.
 remotes.Dash.OnServerEvent:Connect(function(player)
@@ -939,6 +1114,26 @@ Monetization.onChanged = function(player)
 end
 Monetization.onRevive = revive
 
+-- Raids -------------------------------------------------------------------------------------------
+
+Raid.canJoin = function(player)
+	return not runOf[player] and PlayerData.get(player) ~= nil
+end
+Raid.busy = function()
+	return runs[Config.RAID.map.key] ~= nil
+end
+Raid.onLaunch = function(players)
+	task.spawn(startRun, Config.RAID.map, Config.RAID.difficulty, players, "raid")
+end
+Raid.announce = function(text)
+	for _, player in Players:GetPlayers() do
+		if not runOf[player] then
+			remotes.Announce:FireClient(player, text, Color3.fromRGB(80, 200, 255))
+			remotes.Sound:FireClient(player, "Boss")
+		end
+	end
+end
+
 -- Voyage gates ----------------------------------------------------------------------------
 
 -- The first player on a pad is captain; when the countdown ends, the crew sails.
@@ -951,7 +1146,7 @@ local function updateGate(index, gate)
 	end
 	if not table.find(aboard, gate.captain) then
 		-- the captain stepped off: the next player in line takes over and picks again
-		gate.captain, gate.map, gate.difficulty, gate.launchAt = aboard[1], nil, nil, nil
+		gate.captain, gate.map, gate.difficulty, gate.endless, gate.launchAt = aboard[1], nil, nil, nil, nil
 	end
 	if gate.map and runs[gate.map] then
 		gate.map, gate.difficulty, gate.launchAt = nil, nil, nil -- another crew got there first
@@ -969,11 +1164,11 @@ local function updateGate(index, gate)
 		local left = math.ceil(gate.launchAt - os.clock())
 		if left <= 0 then
 			status = "Setting sail!"
-			local difficulty = gate.difficulty
-			gate.captain, gate.map, gate.difficulty, gate.launchAt = nil, nil, nil, nil
-			task.spawn(startRun, map, difficulty, aboard)
+			local difficulty, endless = gate.difficulty, gate.endless
+			gate.captain, gate.map, gate.difficulty, gate.endless, gate.launchAt = nil, nil, nil, nil, nil
+			task.spawn(startRun, map, difficulty, aboard, endless and "endless" or nil)
 		else
-			status = string.format("%s - %s  |  %d aboard  |  sailing in %d", map.name, diff.name, #aboard, left)
+			status = string.format("%s - %s%s  |  %d aboard  |  sailing in %d", map.name, diff.name, gate.endless and " - ENDLESS" or "", #aboard, left)
 		end
 	end
 	Portals.setStatus(index, status)

@@ -24,7 +24,7 @@ end
 local function stats(s, name, level)
 	local w = Config.Weapons[name]
 	local up = level - 1
-	local mastery = s.mastery[w.from or name] or 0 -- Rayleigh's training (evolutions use their base skill)
+	local mastery = s.mastery[w.from or name] or 0 -- Captain Grey's training (evolutions use their base skill)
 	return {
 		w = w,
 		damage = w.damage * (1 + 0.2 * up) * (1 + Config.MASTERY.damage * mastery) * Progression.damageMult(s),

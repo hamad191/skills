@@ -8,6 +8,7 @@ local StarterGui = game:GetService("StarterGui")
 local ContextActionService = game:GetService("ContextActionService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local MarketplaceService = game:GetService("MarketplaceService")
+local SocialService = game:GetService("SocialService")
 local Debris = game:GetService("Debris")
 
 local Config = require(RS:WaitForChild("Shared"):WaitForChild("Config"))
@@ -187,8 +188,20 @@ Lobby.init(root, {
 	buy = function(name)
 		remotes.BuyMeta:FireServer(name)
 	end,
-	voyage = function(mapKey, difficulty)
-		remotes.Voyage:FireServer(mapKey, difficulty)
+	voyage = function(mapKey, difficulty, endless)
+		remotes.Voyage:FireServer(mapKey, difficulty, endless)
+	end,
+	rebirth = function()
+		remotes.Rebirth:FireServer()
+	end,
+	invite = function()
+		-- Roblox's invite friends prompt (if this player is allowed to send invites)
+		task.spawn(function()
+			local ok, can = pcall(SocialService.CanSendGameInviteAsync, SocialService, player)
+			if ok and can then
+				pcall(SocialService.PromptGameInvite, SocialService, player)
+			end
+		end)
 	end,
 	train = function(kind, name)
 		remotes.Train:FireServer(kind, name)

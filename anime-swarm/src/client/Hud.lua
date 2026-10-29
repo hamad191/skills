@@ -573,10 +573,10 @@ function Hud.setState(state)
 		ui.waveFill.Size = UDim2.fromScale(1, 1)
 	elseif state.wave then
 		ui.waveIcon.Text = "🌊"
-		ui.waveText.Text = string.format("WAVE %d / %d", state.wave, state.waves or state.wave)
+		ui.waveText.Text = state.endless and string.format("WAVE %d  ♾️", state.wave) or string.format("WAVE %d / %d", state.wave, state.waves or state.wave)
 		ui.waveText.TextColor3 = Theme.TEXT
 		local left = state.waveLeft or 0
-		local label = state.wave < (state.waves or 0) and "next" or "boss"
+		local label = (state.endless or state.wave < (state.waves or 0)) and "next" or "boss"
 		ui.waveNext.Text = string.format("%s %d:%02d", label, left // 60, math.floor(left % 60))
 		-- the State comes once a second: glide the bar to where it will be by the next one
 		local length = Config.WAVE_LENGTH
@@ -589,7 +589,7 @@ end
 function Hud.showWave(info)
 	Sounds.play(info.boss and "Boss" or "Wave")
 	local color = info.color or Theme.ACCENT
-	ui.waveNumber.Text = info.boss and "FINAL WAVE" or "WAVE " .. tostring(info.n)
+	ui.waveNumber.Text = info.n == "RAID" and "RAID BOSS" or info.boss and "FINAL WAVE" or "WAVE " .. tostring(info.n)
 	ui.waveTitle.Text = info.title or ""
 	ui.waveSub.Text = info.sub or ""
 	ui.waveSub.TextColor3 = color:Lerp(Color3.new(1, 1, 1), 0.6)
@@ -944,10 +944,11 @@ end
 
 function Hud.showResults(r)
 	local victory = r.result == "Victory"
-	ui.resultTitle.Text = victory and "VICTORY" or "DEFEATED"
-	ui.resultTitle.TextColor3 = victory and Theme.GOLD or Theme.BAD
-	ui.resultIcon.Text = victory and "🏆" or "☠️"
-	ui.resultTile.BackgroundColor3 = victory and Theme.GOLD or Theme.BAD
+	local endless = r.result == "Endless"
+	ui.resultTitle.Text = endless and "WAVE " .. (r.wave or 0) .. " REACHED" or victory and "VICTORY" or "DEFEATED"
+	ui.resultTitle.TextColor3 = (victory or endless) and Theme.GOLD or Theme.BAD
+	ui.resultIcon.Text = endless and "🌊" or victory and "🏆" or "☠️"
+	ui.resultTile.BackgroundColor3 = endless and Theme.SEA or victory and Theme.GOLD or Theme.BAD
 	ui.resultAdventure.Text = r.adventure or ""
 	ui.resultAdventure.BackgroundColor3 = r.color or Theme.ACCENT
 	local notes = {}

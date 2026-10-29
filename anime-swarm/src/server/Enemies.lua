@@ -1,5 +1,5 @@
 -- Enemy spawning, bodies, movement, attacks and skills (rifle shots, telegraphed blasts, lasers,
--- snipes, heals, bombs, nets, Soru blinks, air blades, reinforcements), damage, XP orbs and chests.
+-- snipes, heals, bombs, nets, shadow-step blinks, air blades, reinforcements), damage, XP orbs and chests.
 -- Each enemy is an anchored torso moved by the server, with jointed limbs (Motor6Ds) that every
 -- client animates on its own (client/Rigs.lua): cheap enough for big swarms.
 local Players = game:GetService("Players")
@@ -157,7 +157,7 @@ local function dropChest(pos, runKey, kind)
 	table.insert(chests, { model = model, pos = base.Position, run = runKey, kind = kind, born = os.clock() })
 end
 
--- A pickup (meat, magnet, Buster Call) floating where a Marine fell.
+-- A pickup (meat, magnet, Fleet Barrage) floating where a Marine fell.
 local function dropItem(pos, runKey, kind)
 	local def = Config.PICKUPS[kind]
 	local part = makePart({
@@ -399,7 +399,7 @@ local function buildBody(def, colors, name, x, y, z)
 	attach(HATS[def.hat] or {})
 	attach(GEAR[def.gear] or {})
 	if def.gear == "coat" then
-		-- "Justice" on the back of every officer's coat
+		-- JUSTICE on the back of every officer's coat
 		local back
 		for _, p in model:GetChildren() do
 			if p.Name == "TorsoDetail" and p.Size.Z < 0.25 * s and p.Size.Y > 2.5 * s then
@@ -415,7 +415,7 @@ local function buildBody(def, colors, name, x, y, z)
 			text.Size = UDim2.fromScale(1, 0.6)
 			text.Position = UDim2.fromScale(0, 0.1)
 			text.BackgroundTransparency = 1
-			text.Text = "正義"
+			text.Text = "JUSTICE"
 			text.TextScaled = true
 			text.TextColor3 = DARK
 			text.Font = Enum.Font.GothamBlack
@@ -435,6 +435,10 @@ function Enemies.spawn(kind, x, z, hpScale, dmgScale, runKey, look)
 		return nil
 	end
 	look = look or {}
+	if look.hat or look.gear or look.skin or look.eyes then
+		-- a custom boss (e.g. the raid's sea king): same stats, different body
+		def = setmetatable({ hat = look.hat, gear = look.gear, skin = look.skin, eyes = look.eyes }, { __index = def })
+	end
 	local colors = { color = look.color or def.color, accent = look.accent or def.accent, skin = def.skin, eyes = def.eyes or DARK }
 	local name = look.name or def.name
 	local model, parts = buildBody(def, colors, name, x, y, z)
@@ -507,7 +511,7 @@ local function blast(e, pos, radius, damage, delay, onLand)
 	end)
 end
 
--- A telegraphed straight line (Pacifista lasers, sniper shots, sword lunges): a red strip shows
+-- A telegraphed straight line (Iron Sentinel lasers, sniper shots, sword lunges): a red strip shows
 -- on the ground, then everyone still on it gets hit. The enemy holds still while aiming.
 local function lineAttack(e, dir, length, width, damage, delay, beam)
 	local from = groundPos(e)
@@ -569,7 +573,7 @@ function SKILLS.dash(e, target, dist)
 	return true
 end
 
--- Pacifista (and the final boss): a wide laser from the mouth after a long aim.
+-- Iron Sentinel (and the final boss): a wide laser from the mouth after a long aim.
 function SKILLS.laser(e, target, dist)
 	if dist > e.def.range then
 		return false
@@ -628,7 +632,7 @@ function SKILLS.bomb(e, _target, dist)
 	return true
 end
 
--- Seastone Netter: a slow net that halves your speed for a moment.
+-- Chain Netter: a slow net that halves your speed for a moment.
 function SKILLS.net(e, target, dist)
 	if dist > e.def.range then
 		return false
@@ -640,7 +644,7 @@ function SKILLS.net(e, target, dist)
 	return true
 end
 
--- CP9 Agent: Soru - vanishes and reappears right beside you.
+-- Shadow Agent: shadow-step - vanishes and reappears right beside you.
 function SKILLS.blink(e, target, dist)
 	if dist < 10 or dist > 80 then
 		return false
@@ -659,7 +663,7 @@ function SKILLS.blink(e, target, dist)
 	return true
 end
 
--- CP9 Agent: Rankyaku - a kicked blade of air.
+-- Shadow Agent: Air Kick - a kicked blade of air.
 function SKILLS.rankyaku(e, target, dist)
 	if dist > e.def.range or dist < 8 then
 		return false
@@ -950,6 +954,23 @@ function Enemies.step(dt, targetsByRun)
 	end
 end
 
+-- A map hazard: a telegraphed circle (eruption, lightning, quicksand...) that hurts, and maybe
+-- slows, everyone of the run still inside when it lands. h = a Config.HAZARDS entry.
+function Enemies.hazard(runKey, pos, h, damage)
+	Fx.emit("warn", { pos = pos, r = h.radius, t = h.delay, c = h.color })
+	task.delay(h.delay, function()
+		for _, t in lastTargets[runKey] or NO_TARGETS do
+			if t.hum.Health > 0 and flat(t.root.Position - pos).Magnitude <= h.radius then
+				hurt(t, damage)
+				if h.slow and t.player then
+					Enemies.onSlow(t.player, h.slow, h.slowTime)
+				end
+			end
+		end
+		Fx.emit(h.fx or "slam", { pos = pos, r = h.radius, c = h.color })
+	end)
+end
+
 -- Magnet pickup: every XP orb of the run flies to this player.
 function Enemies.magnetize(runKey, target)
 	for _, o in orbs do
@@ -959,7 +980,7 @@ function Enemies.magnetize(runKey, target)
 	end
 end
 
--- Buster Call pickup: wipes out the Marines around `pos`; bosses only lose a slice of health.
+-- Fleet Barrage pickup: wipes out the Marines around `pos`; bosses only lose a slice of health.
 function Enemies.busterCall(pos, radius, runKey, player)
 	Fx.emit("buster", { pos = pos, r = radius })
 	for _, e in table.clone(list) do

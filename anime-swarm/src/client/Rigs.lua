@@ -2,7 +2,7 @@
 --   * enemies walk (legs and arms swing with their speed), aim their guns, carry bombs, and
 --     swing, cast or shoot when the server says they attack (attributes Pose / PoseAt)
 --   * island NPCs breathe, turn their head toward you, wave when you walk up, and play their
---     own idle (Rayleigh stands calm, Kureha sips sake, Tom hammers, Shakky smokes, Buggy laughs)
+--     own idle (Captain Grey stands calm, Granny Doc sips sake, Hammond hammers, Roxie smokes, Bingo laughs)
 -- Also shows NPC speech bubbles.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -192,6 +192,13 @@ local function animateNpc(model, st, dt, now)
 		le = Angles(rad(80) * k, 0, 0)
 		rs, re = Angles(0, 0, rad(25)), Angles(rad(60), 0, 0)
 		waist = waist * Angles(0, sin(now * 0.8) * 0.06, 0)
+	elseif st.style == "pray" then
+		-- palms together, a slow bow now and then
+		local k = every(now, st.phase, 6, 2.4)
+		rs, ls = Angles(rad(55), 0, rad(-28)), Angles(rad(55), 0, rad(28))
+		re, le = Angles(rad(70), 0, 0), Angles(rad(70), 0, 0)
+		waist = waist * Angles(rad(22) * k, 0, 0)
+		neckPitch = 0.25 * k
 	elseif st.style == "laugh" then
 		-- hands on hips, then a big "Gya-ha-ha!" every few seconds
 		local k = every(now, st.phase, 4, 1.6)

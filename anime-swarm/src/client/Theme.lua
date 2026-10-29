@@ -1,4 +1,4 @@
--- Shared look for every menu: "Grand Line" pirate style. Deep-sea navy panels with gold rope
+-- Shared look for every menu: "High Seas" pirate style. Deep-sea navy panels with gold rope
 -- trim and corner rivets, glossy chunky buttons, parchment for wanted posters, and cartoon
 -- fonts (Luckiest Guy titles, Fredoka One labels). Colors, fonts and small UI builders.
 local TweenService = game:GetService("TweenService")

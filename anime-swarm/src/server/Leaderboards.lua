@@ -1,5 +1,6 @@
 -- Fame: leaderboards on the island (all-time top 10s saved in OrderedDataStores), the player
--- list's leaderstats, and a title over everyone's head from their all-time bounty.
+-- list's leaderstats, and a title over everyone's head from their all-time bounty (with a star
+-- count for rebirths).
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
@@ -192,6 +193,9 @@ function Leaderboards.setup(player, stats)
 	local kills = Instance.new("IntValue")
 	kills.Name = "☠️ Kills"
 	kills.Parent = folder
+	local rebirths = Instance.new("IntValue")
+	rebirths.Name = "⭐ Rebirths"
+	rebirths.Parent = folder
 	folder.Parent = player
 	Leaderboards.update(player, stats)
 end
@@ -201,6 +205,7 @@ function Leaderboards.update(player, stats)
 	if folder then
 		folder["💰 Bounty"].Value = math.floor(stats.gold or 0)
 		folder["☠️ Kills"].Value = math.floor(stats.kills or 0)
+		folder["⭐ Rebirths"].Value = math.floor(stats.rebirths or 0)
 	end
 	Leaderboards.submit(player, stats)
 end
@@ -224,7 +229,8 @@ function Leaderboards.tag(character, stats)
 	tag.MaxDistance = 70
 	tag.LightInfluence = 0
 	tag.Parent = head
-	label(tag, { Size = UDim2.new(1, 0, 0.55, 0), Text = title.title, Font = Enum.Font.LuckiestGuy, TextColor3 = title.color, TextStrokeTransparency = 0.2 })
+	local stars = (stats.rebirths or 0) > 0 and "⭐" .. stats.rebirths .. " " or ""
+	label(tag, { Size = UDim2.new(1, 0, 0.55, 0), Text = stars .. title.title, Font = Enum.Font.LuckiestGuy, TextColor3 = title.color, TextStrokeTransparency = 0.2 })
 	label(tag, { Size = UDim2.new(1, 0, 0.45, 0), Position = UDim2.fromScale(0, 0.55), Text = "💰 " .. short(bounty), TextColor3 = Color3.fromRGB(255, 220, 120), TextStrokeTransparency = 0.3 })
 end
 

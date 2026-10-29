@@ -20,6 +20,7 @@ local lastPortalMessage = 0
 local portal -- latest boarding info from the server while standing on a gate
 local pickerOpened = false -- opened the map select once for this boarding
 local selectedMap, selectedDifficulty = Config.Maps[1].key, 1
+local endlessOn = false
 local meta = { gold = 0, levels = {}, costs = {}, progress = {}, class = Config.DEFAULT_CLASS }
 
 local THEME_COLORS = {
@@ -117,7 +118,7 @@ local function buildCrew()
 		Theme.gradient(portrait, Color3.fromRGB(255, 255, 255), Color3.fromRGB(140, 140, 140), 135)
 		Theme.text({ Size = UDim2.fromScale(0.8, 0.8), Position = UDim2.fromScale(0.1, 0.1), Text = class.icon, ZIndex = 14 }, portrait)
 		Theme.title({
-			Size = UDim2.new(1, -16, 0, 24), Position = UDim2.fromOffset(8, 126), Text = name:upper(),
+			Size = UDim2.new(1, -16, 0, 24), Position = UDim2.fromOffset(8, 126), Text = class.name:upper(),
 			TextColor3 = Theme.INK, TextStrokeTransparency = 1, ZIndex = 13, MaxSize = 22,
 		}, card)
 		Theme.text({ Size = UDim2.new(1, -20, 0, 14), Position = UDim2.fromOffset(10, 150), Text = class.title, TextColor3 = Color3.fromRGB(120, 85, 50), Font = Theme.BOLD, ZIndex = 13, MaxSize = 13 }, card)
@@ -235,13 +236,19 @@ local function buildVoyage()
 	ui.mapInfo = Theme.text({ Size = UDim2.new(1, -24, 0, 16), Position = UDim2.fromOffset(12, 86), TextColor3 = Theme.MUTED, ZIndex = 12, MaxSize = 13 }, side)
 	for d, diff in Config.Difficulties do
 		diffButtons[d] = Theme.button({
-			Size = UDim2.new(1, -24, 0, 48), Position = UDim2.fromOffset(12, 112 + (d - 1) * 56), Text = "",
+			Size = UDim2.new(1, -24, 0, 44), Position = UDim2.fromOffset(12, 110 + (d - 1) * 50), Text = "",
 			BackgroundColor3 = diff.color, ZIndex = 12,
 		}, side, function()
 			selectedDifficulty = d
 			Lobby.refreshVoyage()
 		end)
 	end
+	ui.endless = Theme.button({
+		Size = UDim2.new(1, -24, 0, 40), Position = UDim2.new(0, 12, 1, -112), Text = "", BackgroundColor3 = Theme.CARD_LIGHT, ZIndex = 12,
+	}, side, function()
+		endlessOn = not endlessOn
+		Lobby.refreshVoyage()
+	end)
 	ui.sail = Theme.button({
 		Size = UDim2.new(1, -24, 0, 54), Position = UDim2.new(0, 12, 1, -66), Text = "⛵  SET SAIL",
 		BackgroundColor3 = Theme.GOOD, ZIndex = 12,
@@ -249,13 +256,14 @@ local function buildVoyage()
 		local map = Config.MapByKey[selectedMap]
 		local busy = portal and portal.busy and portal.busy[selectedMap]
 		if isCaptain() and not busy and Config.unlocked(meta.progress, map, selectedDifficulty) then
-			callbacks.voyage(selectedMap, selectedDifficulty)
+			local endless = endlessOn and (meta.progress[selectedMap] or 0) >= selectedDifficulty
+			callbacks.voyage(selectedMap, selectedDifficulty, endless)
 			Lobby.toggle("voyage", false)
 		end
 	end)
 end
 
--- Training (Rayleigh: skills, Dr. Kureha: passives) ------------------------------------------
+-- Training (Captain Grey: skills, Granny Doc: passives) ------------------------------------------
 
 local trainTab = "skills"
 
@@ -263,7 +271,7 @@ local function buildTrain()
 	local frame, sub = panel("Train", 780, 640, "TRAINING")
 	ui.trainHint = sub
 	ui.trainTabs = {}
-	for i, tab in { { "skills", "⚔️  SKILLS  -  Rayleigh" }, { "passives", "💊  PASSIVES  -  Dr. Kureha" } } do
+	for i, tab in { { "skills", "⚔️  SKILLS  -  Captain Grey" }, { "passives", "💊  PASSIVES  -  Granny Doc" } } do
 		ui.trainTabs[tab[1]] = Theme.button({
 			Size = UDim2.fromOffset(250, 38), Position = UDim2.fromOffset(28 + (i - 1) * 262, 88), Text = tab[2],
 			BackgroundColor3 = Theme.CARD_LIGHT, ZIndex = 12,
@@ -310,7 +318,7 @@ function Lobby.refreshTrain()
 	local mastery, training = meta.mastery or {}, meta.training or {}
 	if trainTab == "skills" then
 		local class = Config.Classes[meta.class] or Config.Classes[Config.DEFAULT_CLASS]
-		ui.trainHint.Text = "Permanently power up " .. (meta.class or "your pirate") .. "'s skills. Switch pirates in CREW to train others."
+		ui.trainHint.Text = "Permanently power up " .. class.name .. "'s skills. Switch pirates in CREW to train others."
 		for i, key in class.skills do
 			local w = Config.Weapons[key]
 			local level = mastery[key] or 0
@@ -334,7 +342,7 @@ function Lobby.refreshTrain()
 	end
 end
 
--- Gear (Tom the Shipwright) ----------------------------------------------------------------
+-- Gear (Hammond the Shipwright) ----------------------------------------------------------------
 
 local gearTab = "weapon"
 
@@ -429,7 +437,7 @@ function Lobby.refreshGear()
 	end
 end
 
--- Robux store (Buggy) --------------------------------------------------------------------
+-- Robux store (Bingo) --------------------------------------------------------------------
 
 local function buildStore()
 	local frame = panel("Store", 840, 640, "STORE", "Support the game and get perks. Game passes are forever; products are used up.")
@@ -500,11 +508,71 @@ function Lobby.refreshStore()
 	end
 end
 
+-- Rebirth (the Sea Sage) ------------------------------------------------------------------
+
+local rebirthConfirmUntil = 0
+
+local function buildRebirth()
+	local frame = panel("Rebirth", 660, 560, "⭐ REBIRTH", "Start over stronger. Rebirth bonuses stack and last forever.")
+	ui.rebirthCount = Theme.title({ Size = UDim2.new(1, -40, 0, 50), Position = UDim2.fromOffset(20, 94), Text = "", TextColor3 = Theme.GOLD, ZIndex = 11 }, frame)
+	ui.rebirthNow = Theme.text({ Size = UDim2.new(1, -40, 0, 22), Position = UDim2.fromOffset(20, 148), Font = Theme.BOLD, TextColor3 = Theme.MUTED, ZIndex = 11, MaxSize = 18 }, frame)
+	ui.rebirthNext = Theme.text({ Size = UDim2.new(1, -40, 0, 24), Position = UDim2.fromOffset(20, 174), Font = Theme.BOLD, TextColor3 = Theme.GOOD, ZIndex = 11, MaxSize = 20 }, frame)
+	for i, list in {
+		{ "❌ YOU LOSE", Theme.BAD, { "💰 All your gold", "🛒 Shop upgrades", "⚔️ Skill training", "💊 Passive training" } },
+		{ "✅ YOU KEEP", Theme.GOOD, { "👒 Every pirate you unlocked", "🛡️ All your gear and upgrades", "🗺️ Map progress", "🏅 Achievements and stats" } },
+	} do
+		local card = Theme.card({ Size = UDim2.fromOffset(290, 176), Position = UDim2.fromOffset(24 + (i - 1) * 306, 212), ZIndex = 11 }, frame)
+		Theme.title({ Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 10), Text = list[1], TextColor3 = list[2], ZIndex = 12, MaxSize = 20 }, card)
+		for j, line in list[3] do
+			Theme.text({ Size = UDim2.new(1, -24, 0, 24), Position = UDim2.fromOffset(14, 42 + (j - 1) * 31), Text = line, Font = Theme.BOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12, MaxSize = 16 }, card)
+		end
+	end
+	ui.rebirthCost = Theme.title({ Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, 400), Text = "", TextColor3 = Theme.GOLD, ZIndex = 11 }, frame)
+	ui.rebirthButton = Theme.button({ Size = UDim2.fromOffset(320, 56), Position = UDim2.new(0.5, -160, 0, 446), Text = "", ZIndex = 12 }, frame, function()
+		local cost = meta.rebirthCost or math.huge
+		if (meta.gold or 0) < cost then
+			return
+		end
+		if os.clock() < rebirthConfirmUntil then
+			rebirthConfirmUntil = 0
+			callbacks.rebirth()
+		else
+			-- ask twice: this resets a lot
+			rebirthConfirmUntil = os.clock() + 3
+			ui.rebirthButton.Text = "TAP AGAIN TO BE REBORN"
+			ui.rebirthButton.BackgroundColor3 = Theme.BAD
+			task.delay(3, Lobby.refreshRebirth)
+		end
+	end)
+end
+
+function Lobby.refreshRebirth()
+	if not ui.rebirthCount then
+		return
+	end
+	local n, r = meta.rebirths or 0, Config.REBIRTH
+	ui.rebirthCount.Text = string.format("⭐ %d REBIRTH%s", n, n == 1 and "" or "S")
+	ui.rebirthNow.Text = string.format("Your bonus now: +%d%% gold, +%d%% damage", n * r.gold * 100, n * r.damage * 100)
+	ui.rebirthNext.Text = string.format("After rebirth: +%d%% gold, +%d%% damage", (n + 1) * r.gold * 100, (n + 1) * r.damage * 100)
+	local cost = meta.rebirthCost or 0
+	local maxed = n >= r.max
+	ui.rebirthCost.Text = maxed and "MAX REBIRTHS" or "Cost: 💰 " .. Theme.comma(cost)
+	if os.clock() >= rebirthConfirmUntil then
+		ui.rebirthButton.Text = maxed and "MAXED" or (meta.gold or 0) >= cost and "⭐ BE REBORN" or "NEED MORE GOLD"
+		ui.rebirthButton.BackgroundColor3 = not maxed and (meta.gold or 0) >= cost and Color3.fromRGB(240, 170, 40) or Theme.LOCKED
+	end
+end
+
 -- Rewards: daily login calendar, daily quests, codes and achievements ---------------------
 
 local function buildRewards()
 	local frame = panel("Rewards", 860, 660, "🎁 REWARDS", "Log in every day, finish quests, redeem codes and collect achievements.")
 	frame.Position = UDim2.new(0.5, -430, 0.5, -330)
+	-- playing together: invite friends, group bonus
+	Theme.button({ Size = UDim2.fromOffset(150, 36), Position = UDim2.new(1, -220, 0, 22), Text = "📨 INVITE FRIENDS", BackgroundColor3 = Theme.SEA, ZIndex = 12 }, frame, function()
+		callbacks.invite()
+	end)
+	ui.groupChip = Theme.chip({ Size = UDim2.fromOffset(300, 22), Position = UDim2.new(1, -370, 0, 62), Text = "", ZIndex = 12, MaxSize = 12 }, frame, Theme.SEA)
 
 	-- daily calendar
 	ui.dailyTitle = Theme.title({ Size = UDim2.fromOffset(500, 24), Position = UDim2.fromOffset(28, 94), Text = "📅 DAILY REWARD", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 11, MaxSize = 20 }, frame)
@@ -559,8 +627,8 @@ local function buildRewards()
 
 	-- achievements
 	ui.achieveTitle = Theme.title({ Size = UDim2.fromOffset(400, 24), Position = UDim2.fromOffset(440, 524), Text = "🏅 ACHIEVEMENTS", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 11, MaxSize = 20 }, frame)
-	local grid = Theme.new("Frame", { Size = UDim2.fromOffset(392, 92), Position = UDim2.fromOffset(440, 552), BackgroundTransparency = 1, ZIndex = 11 }, frame)
-	Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(74, 42), CellPadding = UDim2.fromOffset(4, 6), SortOrder = Enum.SortOrder.Name }, grid)
+	local grid = Theme.new("Frame", { Size = UDim2.fromOffset(392, 100), Position = UDim2.fromOffset(440, 552), BackgroundTransparency = 1, ZIndex = 11 }, frame)
+	Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(60, 30), CellPadding = UDim2.fromOffset(4, 4), SortOrder = Enum.SortOrder.Name }, grid)
 	ui.achieveChips = {}
 	for key, badge in Config.BADGES do
 		local chip = Theme.chip({ Name = key, Text = "🏅", MaxSize = 22, ZIndex = 12 }, grid, Theme.LOCKED)
@@ -617,6 +685,9 @@ function Lobby.refreshRewards()
 	end
 	ui.achieveTitle.Text = string.format("🏅 ACHIEVEMENTS  %d / %d", earned, total)
 	ui.rewardsDot.Visible = ready
+	local social = meta.social or {}
+	ui.groupChip.Text = string.format("👥 +%d%% gold per friend in your crew", Config.SOCIAL.friendGold * 100)
+		.. (social.groupSet and (social.inGroup and "  -  group bonus ✓" or "  -  join our group: +10%") or "")
 end
 
 -- Gold, side menu, hint and the gate banner ----------------------------------------------
@@ -702,6 +773,7 @@ function Lobby.init(gui, cb)
 	buildShop()
 	buildStore()
 	buildRewards()
+	buildRebirth()
 	buildVoyage()
 	Lobby.setMeta(meta)
 
@@ -756,6 +828,8 @@ function Lobby.toggle(name, open)
 			Lobby.refreshStore()
 		elseif name == "rewards" then
 			Lobby.refreshRewards()
+		elseif name == "rebirth" then
+			Lobby.refreshRebirth()
 		end
 	end
 	p.frame.Visible = open
@@ -788,7 +862,7 @@ function Lobby.showSkills(name)
 	end
 	ui.detailsIcon.Text = class.icon
 	ui.detailsTile.BackgroundColor3 = class.color
-	ui.detailsTitle.Text = name:upper() .. "  -  " .. class.title:upper()
+	ui.detailsTitle.Text = class.name:upper() .. "  -  " .. class.title:upper()
 	ui.detailsSkills.Text = table.concat(names, "    ")
 end
 
@@ -830,6 +904,11 @@ function Lobby.refreshVoyage()
 		stroke.Transparency = d == selectedDifficulty and 0 or 0.82
 	end
 
+	-- endless: only on a difficulty already cleared on this map
+	local endlessOk = (progress[map.key] or 0) >= selectedDifficulty
+	ui.endless.Text = not endlessOk and "♾️  ENDLESS  🔒 clear this difficulty first"
+		or endlessOn and "♾️  ENDLESS MODE: ON" or "♾️  ENDLESS MODE: OFF"
+	ui.endless.BackgroundColor3 = endlessOk and endlessOn and Color3.fromRGB(150, 80, 220) or Theme.CARD_LIGHT
 	if not Config.unlocked(progress, map, selectedDifficulty) then
 		ui.sail.Text = map.index > 1 and (progress[Config.Maps[map.index - 1].key] or 0) < 1
 			and "🔒  CLEAR " .. Config.Maps[map.index - 1].name:upper() .. " FIRST" or "🔒  LOCKED"
@@ -838,7 +917,7 @@ function Lobby.refreshVoyage()
 		ui.sail.Text = "ANOTHER CREW IS HERE"
 		ui.sail.BackgroundColor3 = Theme.LOCKED
 	elseif isCaptain() then
-		ui.sail.Text = "⛵  SET SAIL"
+		ui.sail.Text = endlessOn and endlessOk and "♾️  SET SAIL (ENDLESS)" or "⛵  SET SAIL"
 		ui.sail.BackgroundColor3 = Theme.GOOD
 	else
 		ui.sail.Text = "ONLY THE CAPTAIN CHOOSES"
@@ -854,7 +933,7 @@ function Lobby.setMeta(data)
 	local class = Config.Classes[data.class] or Config.Classes[Config.DEFAULT_CLASS]
 	Lobby.showSkills(data.class)
 	ui.gold.Text = Theme.comma(data.gold)
-	ui.crewName.Text = "Playing as " .. (data.class or "")
+	ui.crewName.Text = "Playing as " .. class.name
 	ui.playingIcon.Text = class.icon
 	ui.playingTile.BackgroundColor3 = class.color
 	for name, card in classCards do
@@ -887,6 +966,7 @@ function Lobby.setMeta(data)
 	ui.saveWarning.Visible = data.loadFailed == true
 	ui.titleChip.Text = "⭐ " .. (data.title or "Rookie") .. "   💰 " .. Theme.comma((data.rewards and data.rewards.stats.gold) or 0) .. " bounty"
 	Lobby.refreshRewards()
+	Lobby.refreshRebirth()
 	Lobby.refreshVoyage()
 	if panels.train.frame.Visible then
 		Lobby.refreshTrain()

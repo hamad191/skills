@@ -24,7 +24,10 @@ local LOCK_TIMEOUT = 600 -- seconds before a crashed server's lock is ignored
 local AUTOSAVE_EVERY = 120
 local MAX_RECEIPTS = 100
 local SAVE_GAP = 8 -- seconds between requested saves for one player
-local STATS = { "kills", "wins", "runs", "gold", "bosses", "minibosses", "chests", "pickups", "revives", "wave", "level" }
+local STATS = {
+	"kills", "wins", "runs", "gold", "bosses", "minibosses", "chests", "pickups", "revives", "wave", "level",
+	"endless", "raids", "rebirths",
+}
 local QUEST_BY_ID = {}
 for _, q in Config.QUESTS do
 	QUEST_BY_ID[q.id] = q
@@ -276,7 +279,7 @@ function PlayerData.buy(player, name)
 	return true
 end
 
--- Rayleigh's skill mastery ("skill") and Dr. Kureha's passive training ("passive").
+-- Captain Grey's skill mastery ("skill") and Granny Doc's passive training ("passive").
 function PlayerData.train(player, kind, name)
 	local data = cache[player]
 	local known = kind == "skill" and Config.Weapons[name] and not Config.Weapons[name].evolved
@@ -335,7 +338,7 @@ function PlayerData.equipGear(player, id)
 	return true
 end
 
--- Upgrades an owned item one level at Tom's: costs one duplicate copy of it plus gold.
+-- Upgrades an owned item one level at Hammond's: costs one duplicate copy of it plus gold.
 function PlayerData.upgradeGear(player, id)
 	local data, item = cache[player], Config.GearById[id]
 	if not data or not item or not data.items[id] then
@@ -544,6 +547,32 @@ function PlayerData.setSettings(player, settings)
 			data.settings[key] = settings[key]
 		end
 	end
+end
+
+-- Rebirth ------------------------------------------------------------------------------------
+
+function PlayerData.rebirthCost(rebirths)
+	return math.floor(Config.REBIRTH.cost * Config.REBIRTH.growth ^ rebirths)
+end
+
+-- Starts over for a permanent bonus: resets gold, shop upgrades and training. Returns the new
+-- rebirth count, or nil if the player can't afford it.
+function PlayerData.rebirth(player)
+	local data = cache[player]
+	if not data then
+		return nil
+	end
+	local count = data.stats.rebirths or 0
+	if count >= Config.REBIRTH.max or data.gold < PlayerData.rebirthCost(count) then
+		return nil
+	end
+	data.gold = 0
+	for name in Config.Meta do
+		data.meta[name] = 0
+	end
+	data.mastery, data.training = {}, {}
+	data.stats.rebirths = count + 1
+	return count + 1
 end
 
 -- Finishes the first-time guide. Returns true the first time.
