@@ -13,8 +13,9 @@ Enemies.onKilled = function(_enemy, _killer) end
 Enemies.onPickup = function(_player, _xp) end
 Enemies.onChest = function(_runKey, _kind, _opener) end -- a crew member opened a treasure chest
 Enemies.onSlow = function(_player, _factor, _seconds) end -- a seastone net hit a player
+Enemies.onItem = function(_runKey, _kind, _target) end -- a crew member grabbed a pickup
 
-local list, orbs, bullets, chests = {}, {}, {}, {}
+local list, orbs, bullets, chests, items = {}, {}, {}, {}, {}
 local nextBulletId = 0
 local lastTargets = {} -- targets from the latest step, used when delayed blasts land
 local NO_TARGETS = {}
@@ -154,6 +155,30 @@ local function dropChest(pos, runKey, kind)
 	icon.Parent = tag
 	model.Parent = folder
 	table.insert(chests, { model = model, pos = base.Position, run = runKey, kind = kind, born = os.clock() })
+end
+
+-- A pickup (meat, magnet, Buster Call) floating where a Marine fell.
+local function dropItem(pos, runKey, kind)
+	local def = Config.PICKUPS[kind]
+	local part = makePart({
+		Name = kind, Shape = Enum.PartType.Ball, Size = Vector3.one * 1.8, Material = Enum.Material.ForceField,
+		Color = def.color, Position = pos + Vector3.new(0, 1.6, 0),
+	}, orbFolder)
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness = def.color, 10, 1.5
+	light.Parent = part
+	local tag = Instance.new("BillboardGui")
+	tag.Size = UDim2.fromOffset(44, 44)
+	tag.AlwaysOnTop = true
+	tag.MaxDistance = 160
+	tag.Parent = part
+	local icon = Instance.new("TextLabel")
+	icon.Size = UDim2.fromScale(1, 1)
+	icon.BackgroundTransparency = 1
+	icon.TextScaled = true
+	icon.Text = def.icon
+	icon.Parent = tag
+	table.insert(items, { part = part, pos = part.Position, kind = kind, run = runKey, born = os.clock() })
 end
 
 local function flash(e)
@@ -707,6 +732,14 @@ function Enemies.damage(e, amount, player)
 	end
 	if e.hp > 0 then
 		flash(e)
+		-- regular Marines get knocked back a little
+		local root = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root and not e.def.healthBar and Config.KNOCKBACK > 0 and os.clock() >= e.busyUntil then
+			local away = flat(e.root.Position - root.Position)
+			if away.Magnitude > 0.1 then
+				e.root.CFrame += away.Unit * (Config.KNOCKBACK / e.def.scale)
+			end
+		end
 		return
 	end
 	e.dead = true
@@ -714,18 +747,81 @@ function Enemies.damage(e, amount, player)
 		dropOrb(e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale - 0.8, 0), e.def.xp, e.run)
 	end
 	Fx.emit("death", { pos = e.root.Position, c = e.color, s = e.def.scale })
+	local ground = e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale, 0)
 	local chestChance = Config.CHESTS[e.kind]
 	if chestChance and math.random() < chestChance then
-		dropChest(e.root.Position - Vector3.new(0, LEG_DEPTH * e.def.scale, 0), e.run, e.kind)
+		dropChest(ground, e.run, e.kind)
+	end
+	for kind, def in Config.PICKUPS do
+		if math.random() < def.chance then
+			dropItem(ground, e.run, kind)
+			break
+		end
 	end
 	Enemies.onKilled(e, player)
 	e.model:Destroy()
+end
+
+-- Keeps the swarm from melting into one blob: overlapping enemies push each other apart
+-- (big ones push harder). Uses a grid so each enemy only checks its neighbors.
+local CELL = 6
+local function cellKey(x, z)
+	return (math.floor(x / CELL) + 32768) * 65536 + (math.floor(z / CELL) + 32768)
+end
+
+local function separation()
+	local grid = {}
+	for _, e in list do
+		if not e.dead then
+			local p = e.root.Position
+			local key = cellKey(p.X, p.Z)
+			local cell = grid[key]
+			if not cell then
+				cell = {}
+				grid[key] = cell
+			end
+			table.insert(cell, e)
+			e.push = nil
+		end
+	end
+	for _, e in list do
+		if not e.dead then
+			local p = e.root.Position
+			local cx, cz = math.floor(p.X / CELL), math.floor(p.Z / CELL)
+			local px, pz = 0, 0
+			for dx = -1, 1 do
+				for dz = -1, 1 do
+					for _, other in grid[(cx + dx + 32768) * 65536 + (cz + dz + 32768)] or NO_TARGETS do
+						if other ~= e then
+							local o = other.root.Position
+							local ox, oz = p.X - o.X, p.Z - o.Z
+							local d = math.sqrt(ox * ox + oz * oz)
+							local reach = (e.radius + other.radius) * 1.1
+							if d < reach then
+								if d < 0.01 then
+									ox, oz, d = math.random() - 0.5, math.random() - 0.5, 0.5
+								end
+								local share = other.radius / (e.radius + other.radius)
+								local strength = (reach - d) * share
+								px += ox / d * strength
+								pz += oz / d * strength
+							end
+						end
+					end
+				end
+			end
+			if px ~= 0 or pz ~= 0 then
+				e.push = Vector3.new(px, 0, pz)
+			end
+		end
+	end
 end
 
 -- targetsByRun: [runKey] = array of { player, root, hum, magnet }
 function Enemies.step(dt, targetsByRun)
 	local now = os.clock()
 	lastTargets = targetsByRun
+	separation()
 	for i = #list, 1, -1 do
 		local e = list[i]
 		if e.dead then
@@ -746,12 +842,14 @@ function Enemies.step(dt, targetsByRun)
 			local reach = e.radius + 2
 			-- shooters and support stop at a distance; everyone else walks right up
 			local stopAt = e.def.keepAway and e.def.range * 0.8 or reach
+			local push = e.push and e.push * math.min(1, dt * 10) or Vector3.zero
 			if not busy and bestDist > stopAt then
-				local newPos = pos + to.Unit * math.min(e.def.speed * dt, bestDist - stopAt)
+				local newPos = pos + to.Unit * math.min(e.def.speed * dt, bestDist - stopAt) + push
 				local sway = math.sin(now * 9 + e.phase) * 0.04
 				e.root.CFrame = CFrame.lookAt(newPos, newPos + to) * CFrame.Angles(0, 0, sway)
 			elseif not busy and to.Magnitude > 0.1 then
-				faceTo(e, to) -- keep facing the target while standing
+				local newPos = pos + push
+				e.root.CFrame = CFrame.lookAt(newPos, newPos + to) -- keep facing the target while standing
 			end
 			if not busy and bestDist <= reach and now - e.lastHit >= 1 then
 				e.lastHit = now
@@ -774,6 +872,30 @@ function Enemies.step(dt, targetsByRun)
 				table.remove(chests, i)
 				break
 			end
+		end
+	end
+
+	for i = #items, 1, -1 do
+		local item = items[i]
+		local age = now - item.born
+		local taken
+		for _, t in targetsByRun[item.run] or NO_TARGETS do
+			if flat(t.root.Position - item.pos).Magnitude <= 4 then
+				taken = t
+				break
+			end
+		end
+		if taken then
+			Fx.emit("pickup", { pos = item.pos, c = item.part.Color, icon = Config.PICKUPS[item.kind].icon })
+			Enemies.onItem(item.run, item.kind, taken)
+		end
+		if taken or age > Config.PICKUP_LIFETIME then
+			item.part:Destroy()
+			table.remove(items, i)
+		else
+			-- bob, and blink during the last few seconds
+			item.part.Position = item.pos + Vector3.new(0, math.sin(age * 3) * 0.4, 0)
+			item.part.Transparency = age > Config.PICKUP_LIFETIME - 4 and (math.floor(age * 6) % 2) * 0.6 or 0
 		end
 	end
 
@@ -822,7 +944,30 @@ function Enemies.step(dt, targetsByRun)
 				o.part:Destroy()
 				table.remove(orbs, i)
 			else
-				o.part.Position += to.Unit * math.min(to.Magnitude, 60 * dt)
+				o.part.Position += to.Unit * math.min(to.Magnitude, (o.fast and 160 or 60) * dt)
+			end
+		end
+	end
+end
+
+-- Magnet pickup: every XP orb of the run flies to this player.
+function Enemies.magnetize(runKey, target)
+	for _, o in orbs do
+		if o.run == runKey then
+			o.target, o.fast = target, true
+		end
+	end
+end
+
+-- Buster Call pickup: wipes out the Marines around `pos`; bosses only lose a slice of health.
+function Enemies.busterCall(pos, radius, runKey, player)
+	Fx.emit("buster", { pos = pos, r = radius })
+	for _, e in table.clone(list) do
+		if not e.dead and e.run == runKey and flat(e.root.Position - pos).Magnitude <= radius then
+			if e.def.healthBar then
+				Enemies.damage(e, e.maxHp * Config.PICKUPS.BusterCall.bossDamage, player)
+			else
+				Enemies.damage(e, e.hp + 1, player)
 			end
 		end
 	end
@@ -882,8 +1027,14 @@ function Enemies.count(runKey)
 	return n
 end
 
--- Removes one adventure's enemies, bullets, chests and XP orbs.
+-- Removes one adventure's enemies, bullets, chests, pickups and XP orbs.
 function Enemies.clear(runKey)
+	for i = #items, 1, -1 do
+		if items[i].run == runKey then
+			items[i].part:Destroy()
+			table.remove(items, i)
+		end
+	end
 	for i = #chests, 1, -1 do
 		if chests[i].run == runKey then
 			chests[i].model:Destroy()

@@ -3,6 +3,8 @@
 -- fonts (Luckiest Guy titles, Fredoka One labels). Colors, fonts and small UI builders.
 local TweenService = game:GetService("TweenService")
 
+local Sounds = require(script.Parent.Sounds)
+
 local Theme = {}
 
 Theme.BG = Color3.fromRGB(7, 17, 30)
@@ -237,6 +239,9 @@ function Theme.button(props, parent, onClick)
 	end)
 	button.MouseButton1Up:Connect(function()
 		Theme.tween(scale, 0.1, { Scale = 1.03 })
+	end)
+	button.Activated:Connect(function()
+		Sounds.play("Click")
 	end)
 	if onClick then
 		button.Activated:Connect(onClick)

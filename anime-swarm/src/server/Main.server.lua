@@ -3,7 +3,8 @@
 --   The first player on a pad is the captain and picks a map + difficulty they have unlocked.
 --   When the gate's countdown ends, everyone on the pad sails to that map's arena.
 --   Each adventure runs until its boss falls, its time runs out, or its whole crew is down.
---   Players can leave early (keeping the gold they earned) or be revived.
+--   Players can leave early (keeping the gold they earned) or be revived: with a revive from
+--   the store, or by a crewmate standing in their revive circle.
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -18,6 +19,9 @@ local Portals = require(script.Parent.Portals)
 local Gear = require(script.Parent.Gear)
 local Npcs = require(script.Parent.Npcs)
 local Monetization = require(script.Parent.Monetization)
+local Rewards = require(script.Parent.Rewards)
+local Leaderboards = require(script.Parent.Leaderboards)
+local Guard = require(script.Parent.Guard)
 
 Players.CharacterAutoLoads = false
 
@@ -27,6 +31,7 @@ remoteFolder.Name = "Remotes"
 for _, name in {
 	"State", "Stats", "LevelUp", "Choose", "Reroll", "SelectClass", "BuyMeta", "Meta", "Results", "Fx", "Portal",
 	"Announce", "Voyage", "Dash", "Leave", "Revive", "Train", "Gear", "UnlockClass", "Wave",
+	"Rewards", "Settings", "Sound",
 } do
 	local r = Instance.new("RemoteEvent")
 	r.Name = name
@@ -38,6 +43,7 @@ Progression.init(remotes)
 Fx.init(remotes.Fx)
 Portals.build()
 task.spawn(Npcs.build) -- building R15 characters can take a moment
+Leaderboards.build()
 
 local LOBBY_TEXT = "Step onto a voyage gate to choose an adventure!"
 local selectedClass = {}
@@ -74,6 +80,7 @@ local function sendMeta(player)
 		gearLevels = data.gearLevels, gearCopies = data.gearCopies, classes = data.classes,
 		revives = data.revives, boosts = boosts, passes = Monetization.ownedList(player),
 		dashCooldown = Monetization.dashCooldown(player), loadFailed = data.loadFailed == true,
+		rewards = Rewards.snapshot(player), title = Leaderboards.titleFor(data.stats.gold or 0).title,
 	})
 end
 
@@ -87,14 +94,16 @@ local function announce(run, text, color)
 	end
 end
 
-local function sendToArena(player, center)
+-- Drops a player into the arena near `center` (exact = right on that spot).
+local function sendToArena(player, center, exact)
 	local character = player.Character
 	local root = character and character:WaitForChild("HumanoidRootPart", 5)
 	if not root then
 		return
 	end
 	local a = math.random() * 2 * math.pi
-	local r = math.random() * Config.ARENA_DROP_RADIUS
+	local r = exact and 0 or math.random() * Config.ARENA_DROP_RADIUS
+	Guard.allowTeleport(player)
 	character:PivotTo(CFrame.new(center.X + math.cos(a) * r, center.Y + 5, center.Z + math.sin(a) * r))
 end
 
@@ -121,15 +130,81 @@ local function addVipTag(character)
 	text.Parent = tag
 end
 
+-- Revive circles ------------------------------------------------------------------------------
+-- A knocked-out player leaves a glowing circle; a crewmate standing in it brings them back.
+
+local downs = {} -- [player] = { run, pos, progress, part, fill }
+local circleFolder = Instance.new("Folder")
+circleFolder.Name = "ReviveCircles"
+circleFolder.Parent = workspace
+
+local function removeCircle(player)
+	local down = downs[player]
+	if down then
+		down.part:Destroy()
+		downs[player] = nil
+	end
+end
+
+local function makeCircle(player, run, pos)
+	removeCircle(player)
+	local size = Config.CREW_REVIVE.radius * 2
+	local part = Instance.new("Part")
+	part.Name = player.Name
+	part.Shape = Enum.PartType.Cylinder
+	part.Size = Vector3.new(0.3, size, size)
+	part.CFrame = CFrame.new(pos.X, pos.Y - 2.6, pos.Z) * CFrame.Angles(0, 0, math.pi / 2)
+	part.Color = Color3.fromRGB(255, 90, 140)
+	part.Material = Enum.Material.Neon
+	part.Transparency = 0.45
+	part.Anchored, part.CanCollide, part.CanQuery, part.CanTouch = true, false, false, false
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness = part.Color, 14, 1.5
+	light.Parent = part
+	local tag = Instance.new("BillboardGui")
+	tag.Size = UDim2.fromOffset(200, 56)
+	tag.StudsOffset = Vector3.new(0, 4, 0)
+	tag.AlwaysOnTop = true
+	tag.MaxDistance = 250
+	tag.Parent = part
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.new(1, 0, 0, 32)
+	text.BackgroundTransparency = 1
+	text.TextScaled = true
+	text.Font = Enum.Font.LuckiestGuy
+	text.TextColor3 = Color3.fromRGB(255, 200, 220)
+	text.TextStrokeTransparency = 0
+	text.Text = "💖 REVIVE " .. player.DisplayName:upper()
+	text.Parent = tag
+	local back = Instance.new("Frame")
+	back.Size = UDim2.new(1, -20, 0, 12)
+	back.Position = UDim2.fromOffset(10, 38)
+	back.BackgroundColor3 = Color3.fromRGB(40, 10, 25)
+	back.Parent = tag
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.fromScale(0, 1)
+	fill.BackgroundColor3 = Color3.fromRGB(255, 90, 140)
+	fill.BorderSizePixel = 0
+	fill.Parent = back
+	part.Parent = circleFolder
+	downs[player] = { run = run, pos = pos, progress = 0, part = part, fill = fill }
+end
+
 local function onCharacter(player, character)
 	local hum = character:WaitForChild("Humanoid")
 	hum.Died:Connect(function()
 		local s = Progression.get(player)
-		if runOf[player] and s then
+		local run = runOf[player]
+		if run and s then
 			-- out until revived or the crew's adventure ends; they can watch or leave
 			s.dead = true
 			Weapons.cleanup(player)
 			remotes.LevelUp:FireClient(player, nil)
+			remotes.Sound:FireClient(player, "Down")
+			local root = character:FindFirstChild("HumanoidRootPart")
+			if root and not run.ending then
+				makeCircle(player, run, root.Position)
+			end
 			return
 		end
 		task.wait(3)
@@ -146,6 +221,10 @@ local function onCharacter(player, character)
 			if Monetization.owns(player, "VIP") then
 				addVipTag(character)
 			end
+			local data = PlayerData.get(player)
+			if data then
+				Leaderboards.tag(character, data.stats)
+			end
 		end
 	end)
 end
@@ -159,10 +238,12 @@ local function onPlayerAdded(player)
 	player.CharacterAdded:Connect(function(character)
 		onCharacter(player, character)
 	end)
+	local data = PlayerData.get(player)
+	Leaderboards.setup(player, data.stats)
 	player:LoadCharacter()
 	sendMeta(player)
 	sendLobby(player)
-	local data = PlayerData.get(player)
+	Rewards.welcome(player)
 	if data and data.loadFailed then
 		remotes.Announce:FireClient(player, "Your save couldn't load - progress won't save this visit. Try rejoining.", Config.RARITIES.Mythic)
 	end
@@ -180,10 +261,16 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 	runOf[player] = nil
 	lastDash[player] = nil
+	removeCircle(player)
 	Weapons.cleanup(player)
 	Progression.stop(player)
 	selectedClass[player] = nil
 	Monetization.release(player)
+	local data = PlayerData.get(player)
+	if data then
+		Leaderboards.submit(player, data.stats, true)
+	end
+	Leaderboards.release(player)
 	PlayerData.release(player)
 end)
 
@@ -192,6 +279,13 @@ Enemies.onKilled = function(enemy, killer)
 	if s then
 		s.kills += 1
 		s.bonusGold += enemy.def.gold or 0
+		Rewards.stat(killer, "kills", 1)
+	end
+	local run = runs[enemy.run]
+	if run and enemy.kind == "MiniBoss" then
+		for player in run.players do
+			Rewards.stat(player, "minibosses", 1)
+		end
 	end
 end
 Enemies.onPickup = Progression.addXP
@@ -260,6 +354,10 @@ local function giveItem(player, item)
 		drop.gold = Config.DUPLICATE_GOLD[item.rarity]
 		data.gold += drop.gold
 	end
+	if item.rarity == "Mythic" then
+		Rewards.achieve(player, "Mythic")
+	end
+	PlayerData.requestSave(player)
 	return drop
 end
 
@@ -284,7 +382,26 @@ Enemies.onChest = function(runKey, kind, opener)
 		local drop = giveItem(player, rollItem(tier))
 		local who = player == opener and "" or opener.DisplayName .. " opened a chest!  "
 		remotes.Announce:FireClient(player, who .. dropText(drop), Config.RARITIES[drop.rarity])
+		Rewards.stat(player, "chests", 1)
 	end
+end
+
+-- Pickups: meat heals, a magnet pulls in every XP orb, a Buster Call clears the area.
+Enemies.onItem = function(runKey, kind, target)
+	local def = Config.PICKUPS[kind]
+	local player = target.player
+	if kind == "Meat" then
+		target.hum.Health = math.min(target.hum.MaxHealth, target.hum.Health + target.hum.MaxHealth * def.heal)
+	elseif kind == "Magnet" then
+		Enemies.magnetize(runKey, target)
+	elseif kind == "BusterCall" then
+		Enemies.busterCall(target.root.Position, def.radius, runKey, player)
+		local run = runs[runKey]
+		if run then
+			announce(run, player.DisplayName .. " called a BUSTER CALL!", Color3.fromRGB(255, 80, 60))
+		end
+	end
+	Rewards.stat(player, "pickups", 1)
 end
 
 -- What a first clear of this map + difficulty opens up.
@@ -309,26 +426,58 @@ local function reward(player, run, result)
 	local elapsed = os.clock() - run.start
 	local gold = s.kills + math.floor(elapsed / 10) + s.bonusGold + (result == "Victory" and 500 or 0)
 	gold = math.floor(gold * map.gold * diff.gold * (1 + Progression.bonus(s, "gold")) * Monetization.goldMultiplier(player))
-	local unlocked, drop
+	local unlocked, drop, firstClear
 	if result == "Victory" then
 		if PlayerData.recordClear(player, map.key, run.difficulty) then
 			unlocked = unlockMessage(map, run.difficulty)
+			firstClear = (Config.FIRST_CLEAR.base + Config.FIRST_CLEAR.perMap * (map.index - 1)) * run.difficulty
+			gold += firstClear
 		end
 		if math.random() < Config.DROPS[run.difficulty].chance then
 			drop = dropText(giveItem(player, rollItem(run.difficulty)))
 		end
+		Rewards.stat(player, "wins", 1)
+		Rewards.stat(player, "bosses", 1)
+		Rewards.achieve(player, "FirstVictory")
+		if run.difficulty == #Config.Difficulties then
+			Rewards.achieve(player, "Extreme")
+		end
+		if map.index == #Config.Maps then
+			Rewards.achieve(player, "Conqueror")
+		end
 	end
 	data.gold += gold
-	task.spawn(PlayerData.save, player)
+	Rewards.stat(player, "gold", gold)
+	Rewards.stat(player, "runs", 1)
+	Rewards.best(player, "level", s.level)
+	PlayerData.requestSave(player)
+
+	-- damage per skill, biggest first
+	local damage = {}
+	for name, amount in s.damageBy do
+		local def = Progression.def(name)
+		if def and amount >= 1 then
+			table.insert(damage, { name = def.name, icon = def.icon, color = def.color, amount = math.floor(amount) })
+		end
+	end
+	table.sort(damage, function(a, b)
+		return a.amount > b.amount
+	end)
+	for i = #damage, 7, -1 do
+		damage[i] = nil
+	end
 	remotes.Results:FireClient(player, {
 		result = result, adventure = map.name .. "  -  " .. diff.name, color = diff.color,
 		gold = gold, kills = s.kills, level = s.level, time = math.floor(elapsed), unlocked = unlocked, drop = drop,
+		firstClear = firstClear, damage = damage,
 	})
+	remotes.Sound:FireClient(player, result == "Victory" and "Victory" or "Down")
 end
 
 -- Takes a player out of their run and back to the island.
 local function sendHome(player)
 	runOf[player] = nil
+	removeCircle(player)
 	Weapons.cleanup(player)
 	Progression.stop(player)
 	if player.Parent then
@@ -451,6 +600,9 @@ end
 -- Starts wave `wave` of `total`: shows the banner, then the event squad (and every few waves a
 -- Vice Admiral) lands a moment later.
 local function startWave(run, wave, total, crew, hpScale, dmgScale, minutes)
+	for player in run.players do
+		Rewards.best(player, "wave", wave)
+	end
 	local event = wave > 1 and pickEvent(wave, run.map.index) or nil
 	local mini = wave % Config.MINIBOSS_WAVE == 0
 	local info = { n = wave, total = total, title = "THE MARINES ARE COMING", sub = "Survive and grow stronger", color = Color3.fromRGB(120, 200, 255) }
@@ -474,6 +626,48 @@ local function startWave(run, wave, total, crew, hpScale, dmgScale, minutes)
 			spawnAround("MiniBoss", run, runTargets(run), hpScale, dmgScale)
 		end
 	end)
+end
+
+-- Brings a knocked-out player back where they fell. how = "crew" (a crewmate's circle) or "item".
+local function bringBack(player, run, pos, health)
+	local s = Progression.get(player)
+	s.dead = false
+	s.invulnerableUntil = os.clock() + 3
+	removeCircle(player)
+	Guard.allowTeleport(player, 5)
+	player:LoadCharacter()
+	task.spawn(function()
+		sendToArena(player, pos, true)
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if hum and health < 1 then
+			task.wait(0.2)
+			hum.Health = hum.MaxHealth * health
+		end
+	end)
+end
+
+-- Crewmates standing in a revive circle fill it up; it drains slowly when they step out.
+local function updateCircles(run, targets, dt)
+	for player, down in downs do
+		if down.run == run and runOf[player] == run then
+			local helper
+			for _, t in targets do
+				if t.player ~= player and Vector3.new(t.root.Position.X - down.pos.X, 0, t.root.Position.Z - down.pos.Z).Magnitude <= Config.CREW_REVIVE.radius then
+					helper = t.player
+					break
+				end
+			end
+			down.progress = helper and down.progress + dt or math.max(0, down.progress - dt * 0.5)
+			down.fill.Size = UDim2.fromScale(down.progress / Config.CREW_REVIVE.time, 1)
+			if helper and down.progress >= Config.CREW_REVIVE.time then
+				bringBack(player, run, down.pos, Config.CREW_REVIVE.health)
+				announce(run, helper.DisplayName .. " revived " .. player.DisplayName .. "!", Config.RARITIES.Legendary)
+				Rewards.stat(helper, "revives", 1)
+			end
+		elseif downs[player] and runOf[player] ~= down.run then
+			removeCircle(player)
+		end
+	end
 end
 
 -- Once a second: Regeneration heals its owner, and healers (Chopper) heal everyone nearby.
@@ -516,6 +710,7 @@ local function playRun(run)
 			return "Defeat"
 		end
 
+		updateCircles(run, targets, 0.25)
 		local crew = 1 + 0.3 * (#targets - 1)
 		local hpScale = (1 + minutes * 0.4) * crew * map.hp * diff.hp
 		local dmgScale = (1 + minutes * 0.15) * map.damage * diff.damage
@@ -565,7 +760,7 @@ local function playRun(run)
 				local s = Progression.get(player)
 				remotes.State:FireClient(player, {
 					phase = "Run", text = text, adventure = map.name .. "  -  " .. diff.name, color = diff.color,
-					down = s ~= nil and s.dead, boss = boss ~= nil, crew = crewIds,
+					down = s ~= nil and s.dead, boss = boss ~= nil, crew = crewIds, map = map.key, theme = map.theme,
 					wave = wave, waves = waves, waveLeft = not boss and math.max(0, wave * Config.WAVE_LENGTH - elapsed) or nil,
 				})
 				Progression.sync(player)
@@ -577,6 +772,11 @@ end
 
 local function finishRun(run, result)
 	run.ending = true
+	for player, down in downs do
+		if down.run == run then
+			removeCircle(player)
+		end
+	end
 	for player in run.players do
 		reward(player, run, result)
 		remotes.State:FireClient(player, { phase = "Results", text = result == "Victory" and "VICTORY!" or "DEFEATED" })
@@ -609,6 +809,7 @@ local function startRun(map, difficulty, crew)
 			Progression.sync(player)
 			remotes.State:FireClient(player, {
 				phase = "Run", text = "Set sail!", adventure = map.name .. "  -  " .. diff.name, color = diff.color,
+				map = map.key, theme = map.theme,
 			})
 			task.spawn(sendToArena, player, map.center)
 		end
@@ -623,53 +824,62 @@ local function revive(player)
 		return false
 	end
 	data.revives -= 1
-	s.dead = false
-	s.invulnerableUntil = os.clock() + 3
-	player:LoadCharacter()
-	task.spawn(sendToArena, player, run.map.center)
+	local down = downs[player]
+	bringBack(player, run, down and down.pos or run.map.center, 1)
 	announce(run, player.DisplayName .. " is back in the fight!", Config.RARITIES.Legendary)
-	task.spawn(PlayerData.save, player)
+	PlayerData.requestSave(player)
 	sendMeta(player)
 	return true
 end
 
 -- Player requests -------------------------------------------------------------------------
 
-remotes.Choose.OnServerEvent:Connect(function(player, index)
+remotes.Choose.OnServerEvent:Connect(Guard.limit("choose", 8, function(player, index)
 	if typeof(index) == "number" then
 		Progression.choose(player, index)
 	end
-end)
-remotes.Reroll.OnServerEvent:Connect(Progression.reroll)
-remotes.Meta.OnServerEvent:Connect(sendMeta)
+end))
+remotes.Reroll.OnServerEvent:Connect(Guard.limit("reroll", 4, Progression.reroll))
+remotes.Meta.OnServerEvent:Connect(Guard.limit("meta", 2, sendMeta))
 local function selectClass(player, name)
 	selectedClass[player] = name
 	Gear.apply(player.Character, name)
 	sendMeta(player)
 end
-remotes.SelectClass.OnServerEvent:Connect(function(player, name)
+remotes.SelectClass.OnServerEvent:Connect(Guard.limit("class", 4, function(player, name)
 	if not runOf[player] and typeof(name) == "string" and PlayerData.hasClass(player, name) then
 		selectClass(player, name)
 	end
-end)
+end))
 -- Pirates are bought with gold; buying one also picks it.
-remotes.UnlockClass.OnServerEvent:Connect(function(player, name)
+remotes.UnlockClass.OnServerEvent:Connect(Guard.limit("unlock", 2, function(player, name)
 	if not runOf[player] and typeof(name) == "string" and PlayerData.unlockClass(player, name) then
-		task.spawn(PlayerData.save, player)
+		PlayerData.requestSave(player)
+		Rewards.achieve(player, "FirstPirate")
+		local data = PlayerData.get(player)
+		local all = true
+		for className in Config.Classes do
+			all = all and data.classes[className] == true
+		end
+		if all then
+			Rewards.achieve(player, "FullCrew")
+		end
 		selectClass(player, name)
 	end
-end)
-remotes.BuyMeta.OnServerEvent:Connect(function(player, name)
+end))
+remotes.BuyMeta.OnServerEvent:Connect(Guard.limit("buy", 5, function(player, name)
 	if not runOf[player] and typeof(name) == "string" and PlayerData.buy(player, name) then
+		PlayerData.requestSave(player)
 		sendMeta(player)
 	end
-end)
-remotes.Train.OnServerEvent:Connect(function(player, kind, name)
+end))
+remotes.Train.OnServerEvent:Connect(Guard.limit("train", 5, function(player, kind, name)
 	if not runOf[player] and typeof(kind) == "string" and typeof(name) == "string" and PlayerData.train(player, kind, name) then
+		PlayerData.requestSave(player)
 		sendMeta(player)
 	end
-end)
-remotes.Gear.OnServerEvent:Connect(function(player, action, id)
+end))
+remotes.Gear.OnServerEvent:Connect(Guard.limit("gear", 5, function(player, action, id)
 	if runOf[player] or typeof(action) ~= "string" or typeof(id) ~= "string" then
 		return
 	end
@@ -677,11 +887,12 @@ remotes.Gear.OnServerEvent:Connect(function(player, action, id)
 		or action == "equip" and PlayerData.equipGear(player, id)
 		or action == "upgrade" and PlayerData.upgradeGear(player, id)
 	if changed then
+		PlayerData.requestSave(player)
 		sendMeta(player)
 	end
-end)
+end))
 -- The captain of a gate picks where the crew sails.
-remotes.Voyage.OnServerEvent:Connect(function(player, mapKey, difficulty)
+remotes.Voyage.OnServerEvent:Connect(Guard.limit("voyage", 4, function(player, mapKey, difficulty)
 	if typeof(mapKey) ~= "string" or typeof(difficulty) ~= "number" then
 		return
 	end
@@ -693,7 +904,7 @@ remotes.Voyage.OnServerEvent:Connect(function(player, mapKey, difficulty)
 			return
 		end
 	end
-end)
+end))
 -- The client moves the character; the server grants the dash's moment of safety and shows it.
 remotes.Dash.OnServerEvent:Connect(function(player)
 	local now = os.clock()
@@ -701,6 +912,7 @@ remotes.Dash.OnServerEvent:Connect(function(player)
 		return
 	end
 	lastDash[player] = now
+	Guard.dashed(player)
 	local s = Progression.get(player)
 	if s and not s.dead then
 		s.invulnerableUntil = math.max(s.invulnerableUntil, now + Config.DASH.invulnerable)
@@ -708,15 +920,16 @@ remotes.Dash.OnServerEvent:Connect(function(player)
 	Fx.emit("dash", { p = player })
 end)
 -- Leaving keeps the gold earned so far (no victory bonus).
-remotes.Leave.OnServerEvent:Connect(function(player)
+remotes.Leave.OnServerEvent:Connect(Guard.limit("leave", 1, function(player)
 	local run = runOf[player]
 	if run and not run.ending then
 		reward(player, run, "Defeat")
 		run.players[player] = nil
 		sendHome(player)
 	end
-end)
-remotes.Revive.OnServerEvent:Connect(revive)
+end))
+remotes.Revive.OnServerEvent:Connect(Guard.limit("revive", 1, revive))
+Rewards.init(remotes, sendMeta)
 
 Monetization.onChanged = function(player)
 	sendMeta(player)

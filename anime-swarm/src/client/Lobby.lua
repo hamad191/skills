@@ -1,5 +1,6 @@
--- Spawn island UI: character select, training, gear, upgrades shop, Robux store, the gate's
--- map select, gold counter, hints and the voyage gate boarding banner. NPC prompts open these
+-- Spawn island UI: character select, training, gear, upgrades shop, Robux store, rewards (daily
+-- login, quests, codes, achievements), the gate's map select, gold counter and title, hints and
+-- the voyage gate boarding banner. NPC prompts open these
 -- menus too (see SwarmClient). Maps are only chosen at a voyage gate.
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -499,12 +500,131 @@ function Lobby.refreshStore()
 	end
 end
 
+-- Rewards: daily login calendar, daily quests, codes and achievements ---------------------
+
+local function buildRewards()
+	local frame = panel("Rewards", 860, 660, "🎁 REWARDS", "Log in every day, finish quests, redeem codes and collect achievements.")
+	frame.Position = UDim2.new(0.5, -430, 0.5, -330)
+
+	-- daily calendar
+	ui.dailyTitle = Theme.title({ Size = UDim2.fromOffset(500, 24), Position = UDim2.fromOffset(28, 94), Text = "📅 DAILY REWARD", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 11, MaxSize = 20 }, frame)
+	ui.dailyCards = {}
+	for day, reward in Config.DAILY_REWARDS do
+		local card = Theme.card({ Size = UDim2.fromOffset(108, 118), Position = UDim2.fromOffset(28 + (day - 1) * 116, 124), ZIndex = 11 }, frame)
+		Theme.title({ Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 8), Text = "DAY " .. day, ZIndex = 12, MaxSize = 16 }, card)
+		Theme.text({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 30), Text = reward.revives and "💎" or "💰", ZIndex = 12 }, card)
+		Theme.text({
+			Size = UDim2.new(1, -8, 0, 32), Position = UDim2.fromOffset(4, 76), TextWrapped = true, Font = Theme.BOLD, ZIndex = 12, MaxSize = 14,
+			Text = Theme.comma(reward.gold) .. (reward.revives and "\n+ revive" or ""), TextColor3 = Theme.GOLD,
+		}, card)
+		local check = Theme.text({ Size = UDim2.fromScale(1, 1), Text = "✓", Font = Theme.TITLE_FONT, TextColor3 = Theme.GOOD, BackgroundTransparency = 0.35, BackgroundColor3 = Theme.BG, Visible = false, ZIndex = 14 }, card)
+		Theme.corner(check, 12)
+		ui.dailyCards[day] = { card = card, stroke = card:FindFirstChildOfClass("UIStroke"), check = check }
+	end
+	ui.dailyClaim = Theme.button({ Size = UDim2.fromOffset(300, 44), Position = UDim2.new(0.5, -150, 0, 252), Text = "", ZIndex = 12 }, frame, function()
+		callbacks.rewards("daily")
+	end)
+
+	-- quests
+	Theme.title({ Size = UDim2.fromOffset(500, 24), Position = UDim2.fromOffset(28, 308), Text = "📜 DAILY QUESTS", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 11, MaxSize = 20 }, frame)
+	ui.questRows = {}
+	for i = 1, Config.QUESTS_PER_DAY do
+		local row = Theme.card({ Size = UDim2.new(1, -56, 0, 54), Position = UDim2.fromOffset(28, 336 + (i - 1) * 60), ZIndex = 11 }, frame)
+		local text = Theme.text({ Size = UDim2.new(1, -330, 0, 22), Position = UDim2.fromOffset(14, 6), Font = Theme.BOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 12, MaxSize = 16 }, row)
+		local bar, fill, label = Theme.bar({ Size = UDim2.new(1, -330, 0, 14), Position = UDim2.fromOffset(14, 32), ZIndex = 12 }, row,
+			Color3.fromRGB(255, 220, 110), Color3.fromRGB(240, 150, 40))
+		local gold = Theme.title({ Size = UDim2.fromOffset(120, 24), Position = UDim2.new(1, -306, 0, 15), TextColor3 = Theme.GOLD, ZIndex = 12, MaxSize = 18 }, row)
+		local claim = Theme.button({ Size = UDim2.fromOffset(160, 40), Position = UDim2.new(1, -172, 0, 7), Text = "", ZIndex = 12 }, row, function()
+			callbacks.rewards("quest", i)
+		end)
+		ui.questRows[i] = { row = row, text = text, bar = bar, fill = fill, label = label, gold = gold, claim = claim }
+	end
+
+	-- codes
+	Theme.title({ Size = UDim2.fromOffset(300, 24), Position = UDim2.fromOffset(28, 524), Text = "🎟️ CODES", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 11, MaxSize = 20 }, frame)
+	local box = Theme.new("TextBox", {
+		Size = UDim2.fromOffset(250, 42), Position = UDim2.fromOffset(28, 552), PlaceholderText = "Enter a code", Text = "",
+		Font = Theme.BOLD, TextScaled = true, TextColor3 = Theme.TEXT, PlaceholderColor3 = Theme.MUTED,
+		BackgroundColor3 = Theme.BG, ClearTextOnFocus = false, ZIndex = 12,
+	}, frame)
+	Theme.corner(box, 10)
+	Theme.stroke(box, Theme.TRIM, 1.5, 0.3)
+	Theme.padding(box, 8)
+	Theme.button({ Size = UDim2.fromOffset(120, 42), Position = UDim2.fromOffset(288, 552), Text = "REDEEM", BackgroundColor3 = Theme.GOOD, ZIndex = 12 }, frame, function()
+		if box.Text ~= "" then
+			callbacks.rewards("code", box.Text)
+			box.Text = ""
+		end
+	end)
+
+	-- achievements
+	ui.achieveTitle = Theme.title({ Size = UDim2.fromOffset(400, 24), Position = UDim2.fromOffset(440, 524), Text = "🏅 ACHIEVEMENTS", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 11, MaxSize = 20 }, frame)
+	local grid = Theme.new("Frame", { Size = UDim2.fromOffset(392, 92), Position = UDim2.fromOffset(440, 552), BackgroundTransparency = 1, ZIndex = 11 }, frame)
+	Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(74, 42), CellPadding = UDim2.fromOffset(4, 6), SortOrder = Enum.SortOrder.Name }, grid)
+	ui.achieveChips = {}
+	for key, badge in Config.BADGES do
+		local chip = Theme.chip({ Name = key, Text = "🏅", MaxSize = 22, ZIndex = 12 }, grid, Theme.LOCKED)
+		ui.achieveChips[key] = { chip = chip, name = badge.name }
+		chip.MouseEnter:Connect(function()
+			ui.achieveTitle.Text = "🏅 " .. badge.name:upper()
+		end)
+		chip.MouseLeave:Connect(function()
+			Lobby.refreshRewards()
+		end)
+	end
+end
+
+-- Redraws the rewards menu from meta.rewards, and the red dot on its button.
+function Lobby.refreshRewards()
+	local r = meta.rewards
+	if not r or not ui.dailyCards then
+		return
+	end
+	local daily = r.daily
+	ui.dailyTitle.Text = string.format("📅 DAILY REWARD  -  %d day streak", daily.canClaim and math.max(daily.streak - 1, 0) or daily.streak)
+	for day, card in ui.dailyCards do
+		local isNext = day == daily.index
+		card.check.Visible = day < daily.index or (day == daily.index and not daily.canClaim)
+		card.stroke.Color = isNext and daily.canClaim and Theme.GOLD or Theme.TRIM
+		card.stroke.Thickness = isNext and daily.canClaim and 3 or 1
+		card.stroke.Transparency = isNext and daily.canClaim and 0 or 0.75
+	end
+	ui.dailyClaim.Text = daily.canClaim and "🎁 CLAIM DAY " .. daily.index or "COME BACK TOMORROW"
+	ui.dailyClaim.BackgroundColor3 = daily.canClaim and Theme.GOOD or Theme.LOCKED
+	local ready = daily.canClaim
+	for i, row in ui.questRows do
+		local q = r.quests[i]
+		row.row.Visible = q ~= nil
+		if q then
+			local done = q.progress >= q.goal
+			row.text.Text = q.text
+			row.fill.Size = UDim2.fromScale(math.clamp(q.progress / q.goal, 0, 1), 1)
+			row.label.Text = Theme.comma(q.progress) .. " / " .. Theme.comma(q.goal)
+			row.gold.Text = "💰 " .. Theme.comma(q.gold)
+			row.claim.Text = q.claimed and "✓ CLAIMED" or done and "CLAIM" or "IN PROGRESS"
+			row.claim.BackgroundColor3 = q.claimed and Theme.LOCKED or done and Theme.GOOD or Theme.CARD_LIGHT
+			ready = ready or (done and not q.claimed)
+		end
+	end
+	local earned, total = 0, 0
+	for key, entry in ui.achieveChips do
+		total += 1
+		local got = r.badges and r.badges[key]
+		earned += got and 1 or 0
+		entry.chip.BackgroundColor3 = got and Theme.GOLD or Theme.LOCKED
+		entry.chip.BackgroundTransparency = got and 0.2 or 0.6
+		entry.chip.TextTransparency = got and 0 or 0.6
+	end
+	ui.achieveTitle.Text = string.format("🏅 ACHIEVEMENTS  %d / %d", earned, total)
+	ui.rewardsDot.Visible = ready
+end
+
 -- Gold, side menu, hint and the gate banner ----------------------------------------------
 
 local function navButton(parent, icon, label, color, order, onClick)
-	local button = Theme.button({ Size = UDim2.fromOffset(78, 78), Text = "", BackgroundColor3 = color, LayoutOrder = order }, parent, onClick)
-	Theme.text({ Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 2), Text = icon, ZIndex = 3 }, button)
-	Theme.title({ Size = UDim2.new(1, 0, 0, 15), Position = UDim2.new(0, 0, 1, -22), Text = label, ZIndex = 3, MaxSize = 13 }, button)
+	local button = Theme.button({ Size = UDim2.fromOffset(66, 66), Text = "", BackgroundColor3 = color, LayoutOrder = order }, parent, onClick)
+	Theme.text({ Size = UDim2.new(1, 0, 0, 28), Position = UDim2.fromOffset(0, 1), Text = icon, ZIndex = 3 }, button)
+	Theme.title({ Size = UDim2.new(1, 0, 0, 14), Position = UDim2.new(0, 0, 1, -20), Text = label, ZIndex = 3, MaxSize = 12 }, button)
 	return button
 end
 
@@ -512,22 +632,37 @@ local function buildHud()
 	local gold = Theme.panel({ Size = UDim2.fromOffset(230, 56), Position = UDim2.new(1, -246, 0, 14) }, ui.root)
 	Theme.icon({ Size = UDim2.fromOffset(40, 40), Position = UDim2.fromOffset(9, 8), ZIndex = 2 }, gold, "💰", Theme.GOLD, 20)
 	ui.gold = Theme.title({ Size = UDim2.new(1, -70, 1, -20), Position = UDim2.fromOffset(58, 10), Text = "0", TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.GOLD, ZIndex = 2 }, gold)
+	ui.titleChip = Theme.chip({ Size = UDim2.fromOffset(230, 26), Position = UDim2.new(1, -246, 0, 76), Text = "", MaxSize = 14, BackgroundTransparency = 0.25 }, ui.root, Theme.PANEL)
 
-	local navPanel = Theme.panel({ Size = UDim2.fromOffset(100, 460), Position = UDim2.new(0, 16, 0.5, -250) }, ui.root)
+	local navPanel = Theme.panel({ Size = UDim2.fromOffset(90, 560), Position = UDim2.new(0, 16, 0.5, -300) }, ui.root)
 	local nav = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 2 }, navPanel)
-	Theme.new("UIListLayout", { Padding = UDim.new(0, 10), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }, nav)
+	Theme.new("UIListLayout", { Padding = UDim.new(0, 8), HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }, nav)
 	for i, item in {
 		{ "👒", "CREW", Color3.fromRGB(220, 70, 90), "crew" },
 		{ "⚔️", "TRAIN", Color3.fromRGB(99, 132, 255), "train" },
 		{ "🛡️", "GEAR", Color3.fromRGB(70, 170, 140), "gear" },
 		{ "🛒", "SHOP", Color3.fromRGB(230, 160, 40), "shop" },
+		{ "🎁", "REWARDS", Color3.fromRGB(255, 120, 60), "rewards" },
 		{ "💎", "STORE", Color3.fromRGB(200, 80, 220), "store" },
+		{ "⚙️", "SETTINGS", Color3.fromRGB(90, 105, 130), "settings" },
 	} do
-		navButton(nav, item[1], item[2], item[3], i, function()
-			Lobby.toggle(item[4])
+		local button = navButton(nav, item[1], item[2], item[3], i, function()
+			if item[4] == "settings" then
+				callbacks.settings()
+			else
+				Lobby.toggle(item[4])
+			end
 		end)
+		if item[4] == "rewards" then
+			-- a red dot when something is ready to claim
+			ui.rewardsDot = Theme.text({
+				Size = UDim2.fromOffset(22, 22), Position = UDim2.new(1, -16, 0, -6), Text = "!", Font = Theme.TITLE_FONT,
+				BackgroundColor3 = Theme.BAD, BackgroundTransparency = 0, Visible = false, ZIndex = 5,
+			}, button)
+			Theme.corner(ui.rewardsDot, 11)
+		end
 	end
-	local playing = Theme.panel({ Size = UDim2.fromOffset(220, 48), Position = UDim2.new(0, 16, 0.5, 220) }, ui.root)
+	local playing = Theme.panel({ Size = UDim2.fromOffset(220, 48), Position = UDim2.new(0, 16, 0.5, 268) }, ui.root)
 	local tile, icon = Theme.icon({ Size = UDim2.fromOffset(34, 34), Position = UDim2.fromOffset(8, 7), ZIndex = 2 }, playing, "", Theme.ACCENT, 17)
 	ui.playingTile, ui.playingIcon = tile, icon
 	ui.crewName = Theme.text({ Size = UDim2.new(1, -60, 1, -16), Position = UDim2.fromOffset(50, 8), Font = Theme.BOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2, MaxSize = 16 }, playing)
@@ -566,6 +701,7 @@ function Lobby.init(gui, cb)
 	buildGear()
 	buildShop()
 	buildStore()
+	buildRewards()
 	buildVoyage()
 	Lobby.setMeta(meta)
 
@@ -618,6 +754,8 @@ function Lobby.toggle(name, open)
 			Lobby.refreshGear()
 		elseif name == "store" then
 			Lobby.refreshStore()
+		elseif name == "rewards" then
+			Lobby.refreshRewards()
 		end
 	end
 	p.frame.Visible = open
@@ -747,6 +885,8 @@ function Lobby.setMeta(data)
 		end
 	end
 	ui.saveWarning.Visible = data.loadFailed == true
+	ui.titleChip.Text = "⭐ " .. (data.title or "Rookie") .. "   💰 " .. Theme.comma((data.rewards and data.rewards.stats.gold) or 0) .. " bounty"
+	Lobby.refreshRewards()
 	Lobby.refreshVoyage()
 	if panels.train.frame.Visible then
 		Lobby.refreshTrain()

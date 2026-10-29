@@ -9,9 +9,12 @@ local RunService = game:GetService("RunService")
 local CollectionService = game:GetService("CollectionService")
 
 local Animate = require(script.Parent.Animate)
+local Sounds = require(script.Parent.Sounds)
 
 local Effects = {}
 local handlers = {}
+-- player settings (see client/Settings.lua)
+Effects.settings = { numbers = true, low = false, shake = true }
 
 local folder = Instance.new("Folder")
 folder.Name = "ClientFX"
@@ -84,6 +87,9 @@ end
 
 -- One-shot particle burst. opts: texture, size, speed, life, gravity
 local function burst(pos, color, count, opts)
+	if Effects.settings.low then
+		count = math.ceil(count / 3)
+	end
 	opts = opts or {}
 	local life = opts.life or 0.3
 	local speed = opts.speed or 12
@@ -204,9 +210,55 @@ local function showHits(hits, color)
 		if i <= 6 then
 			burst(hit[1], color, 6, { size = 0.9, speed = 14, life = 0.25 })
 		end
-		damageNumber(hit[1], hit[2], hit[3])
+		if Effects.settings.numbers then
+			damageNumber(hit[1], hit[2], hit[3])
+		end
 	end
 end
+
+-- Camera shake ----------------------------------------------------------------------------
+-- Moves the camera through Humanoid.CameraOffset, so it works with the default camera.
+
+local shakeUntil, shakeStart, shakeStrength = 0, 0, 0
+
+function Effects.shake(strength, time)
+	if not Effects.settings.shake then
+		return
+	end
+	local now = os.clock()
+	local current = now < shakeUntil and shakeStrength * (shakeUntil - now) / math.max(shakeUntil - shakeStart, 0.01) or 0
+	if strength >= current then
+		shakeStart, shakeUntil, shakeStrength = now, now + time, strength
+	end
+end
+
+-- Shakes the camera if something big happens close to this player.
+local function shakeNear(pos, strength, range)
+	local root = rootOf(Players.LocalPlayer)
+	if root and pos then
+		local d = (root.Position - pos).Magnitude
+		if d < range then
+			Effects.shake(strength * (1 - d / range), 0.3)
+		end
+	end
+end
+
+RunService.RenderStepped:Connect(function()
+	local character = Players.LocalPlayer.Character
+	local hum = character and character:FindFirstChildOfClass("Humanoid")
+	if not hum then
+		return
+	end
+	local now = os.clock()
+	if now < shakeUntil then
+		local k = (shakeUntil - now) / math.max(shakeUntil - shakeStart, 0.01)
+		local m = shakeStrength * k
+		hum.CameraOffset = Vector3.new((math.random() - 0.5) * m, (math.random() - 0.5) * m, (math.random() - 0.5) * m)
+	elseif hum.CameraOffset ~= Vector3.zero then
+		hum.CameraOffset = Vector3.zero
+		shakeStrength = 0
+	end
+end)
 
 -- Effect pieces ---------------------------------------------------------------
 
@@ -642,6 +694,33 @@ function handlers.shout(ev)
 	Debris:AddItem(holder, 1.5)
 end
 
+-- Someone grabbed a pickup (meat, magnet, Buster Call).
+function handlers.pickup(ev)
+	burst(ev.pos, ev.c, 18, { size = 1.2, speed = 14, life = 0.5, gravity = Vector3.new(0, 12, 0) })
+	shockwave(groundAt(ev.pos) + Vector3.new(0, 0.2, 0), 5, ev.c, 0.35)
+	Sounds.play("Pickup", { pos = ev.pos })
+end
+
+-- Buster Call: warship shells rain down all over the area.
+function handlers.buster(ev)
+	local red = Color3.fromRGB(255, 90, 50)
+	shockwave(groundAt(ev.pos) + Vector3.new(0, 0.3, 0), ev.r, red, 0.8)
+	flashLight(ev.pos, red, ev.r, 0.8)
+	Effects.shake(1.6, 0.6)
+	for i = 1, 14 do
+		task.delay(i * 0.05, function()
+			local a, d = math.random() * math.pi * 2, math.random() * ev.r
+			local spot = groundAt(ev.pos + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d))
+			local ball = part({ Shape = Enum.PartType.Ball, Color = red, Transparency = 0.1, Size = Vector3.one * 2, Position = spot })
+			fadeOut(ball, 0.4, { Size = Vector3.one * 12 })
+			burst(spot, Color3.fromRGB(255, 180, 60), 8, { texture = TEX_FIRE, size = 3, speed = 18, life = 0.4 })
+			if i % 4 == 0 then
+				Sounds.play("Boom", { pos = spot })
+			end
+		end)
+	end
+end
+
 -- A treasure chest bursts open: gold sparkles fountain up.
 function handlers.chest(ev)
 	local gold = Color3.fromRGB(255, 205, 60)
@@ -861,9 +940,39 @@ end)
 
 -- Public ------------------------------------------------------------------------
 
+-- Which sound each effect makes, and how hard big ones shake the camera when close.
+local SOUND_FOR = {
+	slash = "Slash", wave = "Slash", punch = "Punch", kick = "Punch", grab = "Punch", hands = "Punch",
+	shot = "Shot", boom = "Boom", strike = "Boom", slam = "Boom", lightning = "Zap", nova = "Burst",
+	beam = "Laser", eshot = "EnemyShot", heal = "Heal", dash = "Dash", puff = "Dash", chest = "Chest",
+}
+local SHAKE_FOR = { boom = 0.8, strike = 1, slam = 1.4, beam = 1.2 }
+
+local function placeOf(ev)
+	if ev.pos then
+		return ev.pos
+	elseif ev.o then
+		return ev.o
+	end
+	local root = ev.p and rootOf(ev.p)
+	return root and root.Position
+end
+
 function Effects.play(ev)
 	if ev.p and ev.anim then
 		Animate.play(ev.p, ev.anim)
+	end
+	local sound = SOUND_FOR[ev.k]
+	if sound then
+		-- your own skills play at full volume; everyone else's a bit quieter
+		local mine = ev.p == Players.LocalPlayer
+		Sounds.play(sound, { pos = not mine and placeOf(ev) or nil, volume = mine and 1 or 0.7 })
+	end
+	if ev.hits and #ev.hits > 0 then
+		Sounds.play("Hit")
+	end
+	if SHAKE_FOR[ev.k] then
+		shakeNear(placeOf(ev), SHAKE_FOR[ev.k], 35)
 	end
 	if ev.p and ev.c then
 		pulseEmblem(ev.p, ev.c)

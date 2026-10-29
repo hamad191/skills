@@ -71,6 +71,9 @@ local function strike(s, player, e, damage, hits)
 	if #hits < MAX_HITS_SHOWN then
 		table.insert(hits, { e.root.Position, math.floor(damage + 0.5), crit })
 	end
+	-- damage per skill, for the results screen
+	local source = s.firing or "?"
+	s.damageBy[source] = (s.damageBy[source] or 0) + math.min(damage, e.hp)
 	Enemies.damage(e, damage, player)
 end
 
@@ -132,6 +135,7 @@ function fire.projectile(player, s, root, st)
 		local shot = {
 			id = nextShotId, player = player, s = s, pos = root.Position, dir = directionTo(root, target),
 			left = st.range, damage = st.damage, radius = st.radius, color = st.w.color, fire = st.w.fire,
+			source = s.firing,
 		}
 		table.insert(projectiles, shot)
 		Fx.emit("shot", {
@@ -229,6 +233,7 @@ local function stepProjectiles(dt)
 		p.left -= move
 		if p.left <= 0 or Enemies.nearest(p.pos, 1.5) then
 			local hits = {}
+			p.s.firing = p.source
 			for _, e in Enemies.inRadius(p.pos, p.radius) do
 				strike(p.s, p.player, e, p.damage, hits)
 			end
@@ -297,6 +302,7 @@ local function useWeapon(player, s, root, key, st, now)
 		syncOrbit(player, key, st)
 	end
 	if now >= (s.timers[key] or 0) then
+		s.firing = key:match("^(.-)#%d+$") or key -- fused parts count toward their fusion
 		local fired = fire[st.w.kind](player, s, root, st)
 		s.timers[key] = now + (fired and st.cooldown or 0.2)
 	end

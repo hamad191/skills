@@ -1,9 +1,12 @@
--- Saves gold, unlocked pirates, upgrades, training, gear, map progress and purchases.
+-- Saves gold, unlocked pirates, upgrades, training, gear, map progress, purchases, lifetime
+-- stats, daily rewards and quests, redeemed codes, achievements, settings and the tutorial.
 -- Safety rules:
 --   * every write uses UpdateAsync with a session lock, so two servers never overwrite each other
 --   * failed loads are retried; if a save still can't be read, this session never saves for that
 --     player (saving defaults would wipe their real data)
 --   * everyone autosaves every couple of minutes and when the server shuts down
+--   * changes ask for a save (requestSave); several in a row become one write, and only one
+--     write per player runs at a time, staying under Roblox's DataStore limits
 local DataStoreService = game:GetService("DataStoreService")
 local RunService = game:GetService("RunService")
 local RS = game:GetService("ReplicatedStorage")
@@ -20,6 +23,13 @@ local cache = {}
 local LOCK_TIMEOUT = 600 -- seconds before a crashed server's lock is ignored
 local AUTOSAVE_EVERY = 120
 local MAX_RECEIPTS = 100
+local SAVE_GAP = 8 -- seconds between requested saves for one player
+local STATS = { "kills", "wins", "runs", "gold", "bosses", "minibosses", "chests", "pickups", "revives", "wave", "level" }
+local QUEST_BY_ID = {}
+for _, q in Config.QUESTS do
+	QUEST_BY_ID[q.id] = q
+end
+local saving, dirty, lastSave = {}, {}, {}
 
 local function key(player)
 	return "p_" .. player.UserId
@@ -36,6 +46,8 @@ local function fresh()
 	return {
 		gold = 0, meta = {}, progress = {}, mastery = {}, training = {}, items = {}, equipped = {},
 		gearLevels = {}, gearCopies = {}, classes = { [Config.DEFAULT_CLASS] = true }, revives = 0, boosts = {}, receipts = {},
+		stats = {}, daily = { day = 0, streak = 0 }, quests = { day = 0, list = {} }, codes = {}, badges = {},
+		settings = { music = 0.5, sfx = 0.8, numbers = true, shake = true, low = false }, tutorial = false,
 	}
 end
 
@@ -100,6 +112,46 @@ local function clean(saved)
 			data.boosts[boost] = num(untilTime)
 		end
 	end
+	for _, stat in STATS do
+		local value = num(section("stats")[stat])
+		if value and value > 0 then
+			data.stats[stat] = math.floor(value)
+		end
+	end
+	local daily = section("daily")
+	data.daily.day = math.floor(num(daily.day) or 0)
+	data.daily.streak = math.clamp(math.floor(num(daily.streak) or 0), 0, 100000)
+	local quests = section("quests")
+	data.quests.day = math.floor(num(quests.day) or 0)
+	for _, q in type(quests.list) == "table" and quests.list or {} do
+		if type(q) == "table" and QUEST_BY_ID[q.id] and #data.quests.list < Config.QUESTS_PER_DAY then
+			table.insert(data.quests.list, {
+				id = q.id, progress = math.clamp(math.floor(num(q.progress) or 0), 0, QUEST_BY_ID[q.id].goal), claimed = q.claimed == true,
+			})
+		end
+	end
+	for code in section("codes") do
+		if Config.CODES[code] then
+			data.codes[code] = true
+		end
+	end
+	for key in section("badges") do
+		if Config.BADGES[key] then
+			data.badges[key] = true
+		end
+	end
+	local settings = section("settings")
+	for _, key in { "music", "sfx" } do
+		if num(settings[key]) then
+			data.settings[key] = math.clamp(num(settings[key]), 0, 1)
+		end
+	end
+	for _, key in { "numbers", "shake", "low" } do
+		if type(settings[key]) == "boolean" then
+			data.settings[key] = settings[key]
+		end
+	end
+	data.tutorial = saved.tutorial == true
 	-- keep the newest receipts so repeat deliveries of a purchase are ignored
 	local receipts = {}
 	for id, time in section("receipts") do
@@ -163,6 +215,13 @@ function PlayerData.save(player, release)
 	if not store or not data or data.loadFailed then
 		return false
 	end
+	-- one write per player at a time: wait for a running one to finish
+	while saving[player] do
+		task.wait(0.1)
+	end
+	saving[player] = true
+	dirty[player] = nil
+	lastSave[player] = os.clock()
 	local wrote = false
 	local ok = pcall(store.UpdateAsync, store, key(player), function(old)
 		if type(old) == "table" and old.lock and old.lock ~= game.JobId then
@@ -178,12 +237,21 @@ function PlayerData.save(player, release)
 		wrote = true
 		return out
 	end)
+	saving[player] = nil
 	return ok and wrote
+end
+
+-- Asks for a save soon. Several changes in a row become one write.
+function PlayerData.requestSave(player)
+	if cache[player] and not cache[player].loadFailed then
+		dirty[player] = true
+	end
 end
 
 function PlayerData.release(player)
 	PlayerData.save(player, true)
 	cache[player] = nil
+	dirty[player], lastSave[player] = nil, nil
 end
 
 -- Permanent upgrades ----------------------------------------------------------------------
@@ -334,6 +402,160 @@ function PlayerData.recordClear(player, mapKey, difficulty)
 	return false
 end
 
+-- Stats, quests and daily rewards -------------------------------------------------------------
+
+function PlayerData.today()
+	return math.floor(os.time() / 86400) -- days since 1970 (UTC)
+end
+
+-- Today's quests, picking new ones when the day changes.
+function PlayerData.quests(player)
+	local data = cache[player]
+	if not data then
+		return {}
+	end
+	local today = PlayerData.today()
+	if data.quests.day ~= today then
+		local pool = table.clone(Config.QUESTS)
+		local list = {}
+		for _ = 1, math.min(Config.QUESTS_PER_DAY, #pool) do
+			local q = table.remove(pool, math.random(#pool))
+			table.insert(list, { id = q.id, progress = 0, claimed = false })
+		end
+		data.quests = { day = today, list = list }
+	end
+	return data.quests.list
+end
+
+function PlayerData.questDef(id)
+	return QUEST_BY_ID[id]
+end
+
+-- Adds to a lifetime stat (kills, wins...) and to today's quests that count it.
+function PlayerData.addStat(player, stat, amount)
+	local data = cache[player]
+	if not data then
+		return
+	end
+	data.stats[stat] = (data.stats[stat] or 0) + amount
+	for _, q in PlayerData.quests(player) do
+		local def = QUEST_BY_ID[q.id]
+		if def.stat == stat and not def.max then
+			q.progress = math.min(def.goal, q.progress + amount)
+		end
+	end
+end
+
+-- Records a best-in-one-run value (highest wave, highest level).
+function PlayerData.bestStat(player, stat, value)
+	local data = cache[player]
+	if not data then
+		return
+	end
+	data.stats[stat] = math.max(data.stats[stat] or 0, value)
+	for _, q in PlayerData.quests(player) do
+		local def = QUEST_BY_ID[q.id]
+		if def.stat == stat and def.max then
+			q.progress = math.min(def.goal, math.max(q.progress, value))
+		end
+	end
+end
+
+-- Pays out a finished quest. Returns the gold, or nil.
+function PlayerData.claimQuest(player, index)
+	local data = cache[player]
+	local q = data and PlayerData.quests(player)[index]
+	local def = q and QUEST_BY_ID[q.id]
+	if not def or q.claimed or q.progress < def.goal then
+		return nil
+	end
+	q.claimed = true
+	data.gold += def.gold
+	data.stats.gold = (data.stats.gold or 0) + def.gold
+	return def.gold
+end
+
+-- The daily login reward: which day of the streak is next and whether it can be claimed today.
+function PlayerData.daily(player)
+	local data = cache[player]
+	if not data then
+		return { canClaim = false, streak = 0, index = 1 }
+	end
+	local today, d = PlayerData.today(), data.daily
+	if d.day == today then
+		return { canClaim = false, streak = d.streak, index = math.min(math.max(d.streak, 1), #Config.DAILY_REWARDS) }
+	end
+	local streak = d.day == today - 1 and d.streak + 1 or 1
+	return { canClaim = true, streak = streak, index = math.min(streak, #Config.DAILY_REWARDS) }
+end
+
+function PlayerData.claimDaily(player)
+	local data = cache[player]
+	local info = PlayerData.daily(player)
+	if not data or not info.canClaim then
+		return nil
+	end
+	data.daily = { day = PlayerData.today(), streak = info.streak }
+	local reward = Config.DAILY_REWARDS[info.index]
+	data.gold += reward.gold
+	data.stats.gold = (data.stats.gold or 0) + reward.gold
+	data.revives += reward.revives or 0
+	return reward
+end
+
+-- Redeems a code once. Returns the reward, or nil and why not.
+function PlayerData.redeem(player, code)
+	local data = cache[player]
+	code = string.upper((string.gsub(code, "%s", "")))
+	local reward = Config.CODES[code]
+	if not data or not reward then
+		return nil, "That code doesn't exist (or has expired)."
+	elseif data.codes[code] then
+		return nil, "You already redeemed that code."
+	end
+	data.codes[code] = true
+	data.gold += reward.gold or 0
+	data.revives += reward.revives or 0
+	return reward
+end
+
+-- Marks an achievement as earned. Returns true the first time.
+function PlayerData.earn(player, key)
+	local data = cache[player]
+	if not data or data.badges[key] then
+		return false
+	end
+	data.badges[key] = true
+	return true
+end
+
+function PlayerData.setSettings(player, settings)
+	local data = cache[player]
+	if not data or type(settings) ~= "table" then
+		return
+	end
+	for _, key in { "music", "sfx" } do
+		if type(settings[key]) == "number" and settings[key] == settings[key] then
+			data.settings[key] = math.clamp(settings[key], 0, 1)
+		end
+	end
+	for _, key in { "numbers", "shake", "low" } do
+		if type(settings[key]) == "boolean" then
+			data.settings[key] = settings[key]
+		end
+	end
+end
+
+-- Finishes the first-time guide. Returns true the first time.
+function PlayerData.finishTutorial(player)
+	local data = cache[player]
+	if not data or data.tutorial then
+		return false
+	end
+	data.tutorial = true
+	return true
+end
+
 function PlayerData.boostActive(player, boost)
 	local data = cache[player]
 	return data ~= nil and (data.boosts[boost] or 0) > os.time()
@@ -344,6 +566,19 @@ task.spawn(function()
 		task.wait(AUTOSAVE_EVERY)
 		for player in cache do
 			task.spawn(PlayerData.save, player)
+		end
+	end
+end)
+
+-- requested saves, at most one every SAVE_GAP seconds per player
+task.spawn(function()
+	while true do
+		task.wait(1)
+		local now = os.clock()
+		for player in dirty do
+			if not saving[player] and now - (lastSave[player] or 0) >= SAVE_GAP then
+				task.spawn(PlayerData.save, player)
+			end
 		end
 	end
 end)

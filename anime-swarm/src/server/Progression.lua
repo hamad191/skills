@@ -106,7 +106,7 @@ function Progression.start(player, className, data, extra)
 		class = className, level = 1, xp = 0, kills = 0, bonusGold = 0, dead = false,
 		weapons = { [class.weapon] = 1 }, passives = {}, timers = {},
 		classBonus = class.bonus, meta = data.meta, mastery = data.mastery, training = data.training,
-		extra = extra or {}, choices = nil, pending = 0, invulnerableUntil = 0,
+		extra = extra or {}, choices = nil, pending = 0, invulnerableUntil = 0, damageBy = {},
 	}
 	s.rerolls = math.floor(Progression.bonus(s, "reroll"))
 	states[player] = s

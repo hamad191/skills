@@ -1,5 +1,6 @@
 -- Client entry point: builds the UI, connects it to the server's remotes, and handles dashing,
--- NPC prompts, Robux purchase prompts and watching teammates while knocked out.
+-- NPC prompts, Robux purchase prompts, watching teammates while knocked out, music, map moods,
+-- settings and the first-time guide.
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local UIS = game:GetService("UserInputService")
@@ -17,6 +18,10 @@ local Effects = require(script.Parent:WaitForChild("Effects"))
 local Hud = require(script.Parent:WaitForChild("Hud"))
 local Lobby = require(script.Parent:WaitForChild("Lobby"))
 local Rigs = require(script.Parent:WaitForChild("Rigs")) -- animates enemies and island NPCs
+local Sounds = require(script.Parent:WaitForChild("Sounds"))
+local Settings = require(script.Parent:WaitForChild("Settings"))
+local Tutorial = require(script.Parent:WaitForChild("Tutorial"))
+local Ambience = require(script.Parent:WaitForChild("Ambience"))
 
 -- our own health bar replaces the default one
 pcall(function()
@@ -161,6 +166,9 @@ Hud.init(root, {
 		remotes.Leave:FireServer()
 	end,
 	spectate = spectate,
+	settings = function()
+		Settings.toggle()
+	end,
 	revive = function(owned)
 		if owned > 0 then
 			remotes.Revive:FireServer()
@@ -190,7 +198,19 @@ Lobby.init(root, {
 	end,
 	buyPass = buyPass,
 	buyProduct = buyProduct,
+	settings = function()
+		Settings.toggle()
+	end,
+	rewards = function(action, arg)
+		remotes.Rewards:FireServer(action, arg)
+	end,
 })
+Settings.init(root, function(values)
+	remotes.Settings:FireServer(values)
+end)
+Tutorial.init(root, function()
+	remotes.Rewards:FireServer("tutorial")
+end)
 
 -- island NPCs greet you and open their menus
 ProximityPromptService.PromptTriggered:Connect(function(prompt)
@@ -198,6 +218,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	if panel then
 		Rigs.speak(prompt.Parent, prompt:GetAttribute("Line"))
 		Lobby.open(panel, prompt:GetAttribute("Tab"))
+		Tutorial.talked()
 	end
 end)
 
@@ -210,12 +231,19 @@ remotes.Stats.OnClientEvent:Connect(Hud.setStats)
 remotes.LevelUp.OnClientEvent:Connect(Hud.showLevelUp)
 remotes.Announce.OnClientEvent:Connect(Hud.announce)
 remotes.Wave.OnClientEvent:Connect(Hud.showWave)
+remotes.Sound.OnClientEvent:Connect(Sounds.play)
 remotes.Results.OnClientEvent:Connect(Hud.showResults)
 remotes.Portal.OnClientEvent:Connect(Lobby.portal)
+local firstMeta = true
 remotes.Meta.OnClientEvent:Connect(function(data)
 	dashCooldown = data.dashCooldown or Config.DASH.cooldown
 	Hud.setRevives(data.revives or 0)
 	Lobby.setMeta(data)
+	if firstMeta and data.rewards then
+		firstMeta = false
+		Settings.load(data.rewards.settings)
+		Tutorial.start(data.rewards.tutorial)
+	end
 end)
 
 remotes.State.OnClientEvent:Connect(function(state)
@@ -241,6 +269,15 @@ remotes.State.OnClientEvent:Connect(function(state)
 	Hud.setVisible(running)
 	Hud.setState(state)
 	Lobby.setVisible(state.phase == "Lobby")
+	if running then
+		Hud.setCrew(state.crew)
+		Ambience.set(state.theme or "island")
+		Sounds.music(state.boss and "Boss" or "Battle")
+	elseif state.phase == "Lobby" then
+		Ambience.set("island")
+		Sounds.music("Lobby")
+	end
+	Tutorial.phase(state.phase)
 end)
 
 local KEYS = { [Enum.KeyCode.One] = 1, [Enum.KeyCode.Two] = 2, [Enum.KeyCode.Three] = 3 }

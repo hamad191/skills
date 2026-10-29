@@ -35,13 +35,20 @@ A roguelite "swarm survivor" game for Roblox (Luau, Rojo project), where every w
      **named Marine boss** arrives (FINAL WAVE).
    - **Treasure chests:** every Vice Admiral drops one, and Marine Captains, CP9 Agents and Pacifistas
      sometimes do. Walk into it and **everyone in the crew** gets a gear roll.
+   - **Pickups** sometimes drop: 🍖 meat heals 30%, 🧲 a magnet pulls in every XP orb, 💣 a Buster Call
+     wipes out the Marines around you.
    - The final boss must fall within 4 minutes (it enrages after 3), or the Marines win.
-5. **Results:** gold from kills, time, bosses and victory, new unlocks, and sometimes a free **gear drop**
-   (rarer on harder difficulties; Mythic gear only drops from bosses). Then back to the island.
+5. **Results:** gold from kills, time, bosses and victory, a **first-clear bonus**, new unlocks, damage
+   dealt by each of your skills, and sometimes a free **gear drop** (rarer on harder difficulties;
+   Mythic gear only drops from bosses). Then back to the island.
 
 **LEAVE** (top left, tap twice) sails home early with the gold earned so far. If you are knocked out you
-can watch your crewmates, use a **Revive** (or buy one on the spot with Robux), or leave. Picking
-level-up cards gives a moment of safety.
+leave a pink **revive circle**: a crewmate standing in it for 4 seconds brings you back. You can also
+watch your crewmates, use a **Revive** (or buy one on the spot with Robux), or leave. Picking
+level-up cards gives a moment of safety. Your crewmates' health shows under the LEAVE button.
+
+New players get a **first-time guide** (a golden trail to Rayleigh, then to a gate, then tips during
+their first adventure) and a 1,000 gold welcome gift for finishing it.
 
 ## Economy
 
@@ -125,10 +132,46 @@ Suggested prices: 2x Gold 299, VIP 399, Lucky Pirate 149, Swift Dash 99 Robux; g
 boosts 79 each; Revive 25.
 Free gear drops are never sold for Robux (no paid random rewards).
 
+## Rewards
+
+The 🎁 **REWARDS** menu (a red "!" shows when something is ready):
+
+- **Daily login:** 500 / 800 / 1,200 / 1,600 / 2,200 / 3,000 / 5,000 gold + a revive on days 1-7 of a
+  streak (day 7 repeats; missing a day starts over). `Config.DAILY_REWARDS`
+- **Daily quests:** 3 a day from a pool (defeat Marines, win, reach a wave or level, Vice Admirals,
+  chests, a named boss, pickups, revive a crewmate), each paying gold. `Config.QUESTS`
+- **Codes:** players redeem each once. Add codes for updates and your socials in `Config.CODES`
+  (starts with SETSAIL, ONEPIECE and GRANDLINE).
+- **Achievements:** 10 of them, shown in game. To also give real Roblox badges, create badges on the
+  Creator Dashboard (your experience > Engagement > Badges) and paste their IDs into `Config.BADGES`.
+
+**Fame:** three leaderboards on the island (biggest bounty, most Marines defeated, most victories),
+a 💰 Bounty and ☠️ Kills column in the player list, and a title over your head from your all-time
+bounty: Rookie, Pirate, Supernova, Warlord, Emperor, Pirate King (`Config.TITLES`).
+
+## Sound and settings
+
+Every skill, hit, explosion, laser, pickup, chest, level-up, wave and button has a sound (built-in
+Roblox sounds; swap any of them in `Config.SOUNDS`). Music is silent until you pick tracks: open the
+Creator Store > Audio > Music, copy a track's ID, and paste it into `Config.MUSIC` (Lobby, Battle,
+Boss). The ⚙️ **SETTINGS** menu (side menu, or the gear button in adventures) has music and effects
+volume, damage numbers, camera shake and a low graphics mode for phones; settings are saved.
+
+Each map has its own mood: time of day, haze, color tint and weather (snow, ash and embers, cherry
+blossoms, falling leaves, desert dust, rising bubbles, ghostly mist).
+
+## Fair play
+
+- Players moving faster than they should (beyond walking, plus room for a dash) are pulled back.
+- Every request (buying, training, picking cards...) is rate limited.
+- Effects are only sent to players near them, so crews on other maps don't slow each other down.
+
 ## Saving
 
 Saves use a session lock (two servers can't overwrite each other), retry failed loads, autosave every
-2 minutes, and never save over a save that failed to load. In Studio, turn on Game Settings > Security
+2 minutes, and never save over a save that failed to load. Purchases and unlocks ask for a save;
+several in a row become one write (at most one every 8 seconds per player), and only one write per
+player runs at a time. In Studio, turn on Game Settings > Security
 > Enable Studio Access to API Services to test saving and purchases.
 
 ## Maps
@@ -280,7 +323,7 @@ The spawn island and all 20 arenas are already built (the voyage gates appear wh
 1. Install [Rojo](https://rojo.space) and the Rojo Studio plugin.
 2. Open `AnimeSwarm.rbxlx` in Studio (it has the map), then run `rojo serve` here and press Connect.
 3. Rojo now keeps the scripts in sync with the files in `src/` as you edit.
-4. To save gold in Studio, turn on Game Settings > Security > Enable Studio Access to API Services.
+4. To test saving, leaderboards and badges in Studio, turn on Game Settings > Security > Enable Studio Access to API Services.
 5. Press Play (or use Test > Start with 2+ players for co-op).
 
 ## Files
@@ -296,13 +339,20 @@ The spawn island and all 20 arenas are already built (the voyage gates appear wh
 | `src/server/Weapons.lua` | How each skill fires and hits |
 | `src/server/Enemies.lua` | Jointed enemy bodies, hats and gear, movement, skills (lasers, snipes, heals, bombs, nets, blinks, reinforcements), XP orbs, chests |
 | `src/server/Progression.lua` | XP, level-up cards, evolutions |
-| `src/server/PlayerData.lua` | Safe saving: gold, upgrades, training, gear, progress, purchases |
-| `src/server/Fx.lua` | Sends effect events (what happened) to every client |
+| `src/server/PlayerData.lua` | Safe saving: gold, upgrades, training, gear, progress, purchases, stats, quests, settings |
+| `src/server/Rewards.lua` | Daily rewards, quests, codes, achievements and badges, the first-time guide's gift |
+| `src/server/Leaderboards.lua` | Island leaderboards, player list stats, bounty titles |
+| `src/server/Guard.lua` | Speed check and request rate limits |
+| `src/server/Fx.lua` | Sends effect events (what happened) to the players near them |
 | `src/client/SwarmClient.client.lua` | Connects the UI to the server; dash, NPC prompts, purchases, spectating |
 | `src/client/Theme.lua` | Colors, fonts, UI building blocks and screen-size scaling |
-| `src/client/Hud.lua` | In-run HUD, waves, boss bar, combo, edge arrows, level-up cards, results |
-| `src/client/Lobby.lua` | Crew, training, gear, shop, store and map select menus, gate banner |
+| `src/client/Hud.lua` | In-run HUD, waves, boss bar, combo, crew health, edge arrows, level-up cards, results |
+| `src/client/Lobby.lua` | Crew, training, gear, shop, rewards, store and map select menus, gate banner |
 | `src/client/Effects.lua` | Skill effects, hit sparks, damage numbers, portal swirls |
 | `src/client/Animate.lua` | Punch, slash, kick, throw and cast animations (R15) |
 | `src/client/Rigs.lua` | Enemy walk cycles and attack poses, NPC idles, waves and speech bubbles |
+| `src/client/Sounds.lua` | Sound effects (3D, with spam limits) and music crossfades |
+| `src/client/Settings.lua` | The settings menu |
+| `src/client/Tutorial.lua` | The first-time guide |
+| `src/client/Ambience.lua` | Per-map lighting, haze, tint and weather |
 | `tools/build_place.py` | Builds `AnimeSwarm.rbxlx`: the spawn island, 20 themed arenas, lighting and all scripts |

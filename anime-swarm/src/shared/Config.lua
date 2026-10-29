@@ -1065,4 +1065,120 @@ Config.PRODUCTS = {
 }
 Config.PRODUCT_ORDER = { "Gold5k", "Gold25k", "Gold100k", "XPBoost", "GoldBoost", "Revive" }
 
+-- Sounds and music ---------------------------------------------------------------------------
+-- Built-in Roblox sounds (rbxasset://) work right away. Swap any id for an audio asset from the
+-- Creator Store ("rbxassetid://123456") to change it; an empty id is silent. Music is empty until
+-- you pick tracks: Creator Store > Audio > Music, copy a track's ID into Config.MUSIC.
+-- pitch = random playback speed range; gap = the shortest time between two plays.
+Config.SOUNDS = {
+	Hit = { id = "rbxasset://sounds/swordslash.wav", volume = 0.12, pitch = { 1.5, 1.9 }, gap = 0.07 },
+	Slash = { id = "rbxasset://sounds/swordslash.wav", volume = 0.3, pitch = { 0.9, 1.1 }, gap = 0.08 },
+	Punch = { id = "rbxasset://sounds/swordlunge.wav", volume = 0.3, pitch = { 0.7, 0.9 }, gap = 0.08 },
+	Shot = { id = "rbxasset://sounds/Rocket whoosh 01.wav", volume = 0.18, pitch = { 1.6, 2 }, gap = 0.08 },
+	Boom = { id = "rbxasset://sounds/Rocket shot.wav", volume = 0.35, pitch = { 0.5, 0.7 }, gap = 0.1 },
+	Zap = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.25, pitch = { 0.5, 0.6 }, gap = 0.1 },
+	Burst = { id = "rbxasset://sounds/Rocket whoosh 01.wav", volume = 0.25, pitch = { 0.8, 1 }, gap = 0.1 },
+	Laser = { id = "rbxasset://sounds/Rocket whoosh 01.wav", volume = 0.5, pitch = { 0.45, 0.55 }, gap = 0.15 },
+	EnemyShot = { id = "rbxasset://sounds/Rocket whoosh 01.wav", volume = 0.12, pitch = { 2.2, 2.6 }, gap = 0.1 },
+	Heal = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.2, pitch = { 1.4, 1.5 }, gap = 0.3 },
+	Dash = { id = "rbxasset://sounds/swordlunge.wav", volume = 0.35, pitch = { 1.2, 1.4 }, gap = 0.1 },
+	Chest = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.6, pitch = { 1.2, 1.2 } },
+	Pickup = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.45, pitch = { 1.6, 1.6 } },
+	LevelUp = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.6, pitch = { 1, 1 } },
+	Wave = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.7, pitch = { 0.4, 0.4 } },
+	Boss = { id = "rbxasset://sounds/Rocket shot.wav", volume = 0.7, pitch = { 0.35, 0.35 } },
+	Down = { id = "rbxasset://sounds/uuhhh.mp3", volume = 0.5 },
+	Click = { id = "rbxasset://sounds/clickfast.wav", volume = 0.45, gap = 0.03 },
+	Coins = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.5, pitch = { 1.8, 1.8 } },
+	Victory = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.7, pitch = { 0.8, 0.8 } },
+}
+Config.MUSIC = { Lobby = "", Battle = "", Boss = "" } -- e.g. Battle = "rbxassetid://1234567"
+
+-- Daily rewards and quests -------------------------------------------------------------------
+
+-- Log in on consecutive days for bigger rewards (day 7 repeats; missing a day starts over).
+Config.DAILY_REWARDS = {
+	{ gold = 500 }, { gold = 800 }, { gold = 1200 }, { gold = 1600 }, { gold = 2200 }, { gold = 3000 }, { gold = 5000, revives = 1 },
+}
+-- Three quests are picked each day (UTC). stat = what counts; max = best in one run instead of a total.
+Config.QUESTS = {
+	{ id = "kill400", text = "Defeat 400 Marines", stat = "kills", goal = 400, gold = 1000 },
+	{ id = "kill1500", text = "Defeat 1,500 Marines", stat = "kills", goal = 1500, gold = 2500 },
+	{ id = "win1", text = "Win an adventure", stat = "wins", goal = 1, gold = 1200 },
+	{ id = "win3", text = "Win 3 adventures", stat = "wins", goal = 3, gold = 3000 },
+	{ id = "wave8", text = "Reach wave 8", stat = "wave", goal = 8, gold = 1200, max = true },
+	{ id = "level15", text = "Reach level 15 in one run", stat = "level", goal = 15, gold = 1000, max = true },
+	{ id = "mini3", text = "Defeat 3 Vice Admirals", stat = "minibosses", goal = 3, gold = 1500 },
+	{ id = "chest2", text = "Open 2 treasure chests", stat = "chests", goal = 2, gold = 1200 },
+	{ id = "boss1", text = "Defeat a named boss", stat = "bosses", goal = 1, gold = 1500 },
+	{ id = "pickup5", text = "Grab 5 pickups (meat, magnets, bombs)", stat = "pickups", goal = 5, gold = 1000 },
+	{ id = "revive1", text = "Revive a crewmate", stat = "revives", goal = 1, gold = 1500 },
+}
+Config.QUESTS_PER_DAY = 3
+
+-- Codes players can redeem once each (REWARDS menu). Add new ones for updates and your socials.
+Config.CODES = {
+	SETSAIL = { gold = 1000 },
+	ONEPIECE = { gold = 2000 },
+	GRANDLINE = { gold = 1500, revives = 1 },
+}
+
+-- First clear of a map + difficulty pays a bonus: (base + perMap * (map # - 1)) * difficulty #.
+Config.FIRST_CLEAR = { base = 500, perMap = 150 }
+
+-- Badges: create them on the Creator Dashboard (your experience > Engagement > Badges) and paste
+-- the IDs here. id = 0 means not set up yet (skipped).
+Config.BADGES = {
+	Welcome = { id = 0, name = "Welcome Aboard" }, -- first visit
+	FirstVictory = { id = 0, name = "First Victory" },
+	FirstPirate = { id = 0, name = "First Recruit" }, -- unlock a pirate
+	FullCrew = { id = 0, name = "Full Crew" }, -- unlock every pirate
+	Kills1000 = { id = 0, name = "1,000 Marines Down" },
+	Kills10000 = { id = 0, name = "10,000 Marines Down" },
+	Extreme = { id = 0, name = "Extreme Clear" }, -- win any map on Extreme
+	Conqueror = { id = 0, name = "Grand Line Conqueror" }, -- win the last map
+	Mythic = { id = 0, name = "Mythic Treasure" }, -- get a Mythic item
+	Lifesaver = { id = 0, name = "Lifesaver" }, -- revive a crewmate
+}
+
+-- Leaderboards on the island (all-time, updated every couple of minutes).
+Config.LEADERBOARDS = {
+	{ stat = "gold", title = "BIGGEST BOUNTY", icon = "💰" },
+	{ stat = "kills", title = "MOST MARINES DEFEATED", icon = "☠️" },
+	{ stat = "wins", title = "MOST VICTORIES", icon = "🏆" },
+}
+Config.LEADERBOARD_SPOTS = { Vector3.new(58, 0, 1442), Vector3.new(67, 0, 1458), Vector3.new(76, 0, 1474) }
+Config.LEADERBOARD_FACE = Vector3.new(0, 0, 1452)
+
+-- Titles over your head, from your all-time bounty (total gold earned).
+Config.TITLES = {
+	{ bounty = 0, title = "Rookie", color = rgb(200, 210, 220) },
+	{ bounty = 10000, title = "Pirate", color = rgb(120, 200, 255) },
+	{ bounty = 50000, title = "Supernova", color = rgb(120, 230, 140) },
+	{ bounty = 200000, title = "Warlord", color = rgb(255, 200, 70) },
+	{ bounty = 1000000, title = "Emperor", color = rgb(255, 110, 70) },
+	{ bounty = 5000000, title = "Pirate King", color = rgb(255, 90, 200) },
+}
+
+-- Adventures --------------------------------------------------------------------------------
+
+-- Pickups that sometimes drop from defeated Marines.
+--   Meat heals, Magnet pulls in every XP orb, Buster Call wipes out nearby Marines.
+Config.PICKUPS = {
+	Meat = { icon = "🍖", chance = 0.012, heal = 0.3, color = rgb(210, 120, 70) },
+	Magnet = { icon = "🧲", chance = 0.004, color = rgb(90, 160, 255) },
+	BusterCall = { icon = "💣", chance = 0.0025, radius = 70, bossDamage = 0.08, color = rgb(255, 80, 60) },
+}
+Config.PICKUP_LIFETIME = 25
+
+-- Knocked-out crewmates leave a revive circle: stand in it to bring them back.
+Config.CREW_REVIVE = { time = 4, radius = 7, health = 0.5 }
+
+-- Hits push regular Marines back a little (studs per hit, less for big ones).
+Config.KNOCKBACK = 0.5
+
+-- Anti-cheat: players moving faster than their walk speed x slack (plus room for a dash) are
+-- pulled back to where they were.
+Config.MOVE_CHECK = { every = 0.5, slack = 1.6, extra = 4, dash = 24 }
+
 return Config

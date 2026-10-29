@@ -1,12 +1,16 @@
 -- In-run HUD: status bar (level, XP, map, timer, kills), wave tracker and wave banners, boss
 -- health bar, combo counter, arrows to off-screen chests and bosses, a red flash when you get
--- hurt, skill action bar, health, level-up cards, announcements and the results screen.
+-- hurt, crewmates' health, skill action bar, health, level-up cards, announcements and the
+-- results screen (with damage per skill).
 local Players = game:GetService("Players")
 local RS = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
 
 local Config = require(RS:WaitForChild("Shared"):WaitForChild("Config"))
 local Theme = require(script.Parent.Theme)
+local Sounds = require(script.Parent.Sounds)
+local Effects = require(script.Parent.Effects)
 
 local Hud = {}
 local ui = {}
@@ -184,6 +188,7 @@ local function buildScreenLayer()
 end
 
 local function flashHurt(amount)
+	Effects.shake(math.clamp(amount * 6, 0.25, 1.2), 0.25)
 	for _, f in ui.vignette do
 		f.BackgroundTransparency = math.clamp(0.75 - amount * 2, 0.2, 0.7)
 		Theme.tween(f, 0.5, { BackgroundTransparency = 1 })
@@ -242,7 +247,7 @@ local function buildHealth(root)
 
 	-- dash: Shift / L2 / the on-screen button; the dark overlay drains as it recharges
 	local dash = Theme.new("TextButton", {
-		Size = UDim2.fromOffset(84, 28), Position = UDim2.new(1, -90, 0, 6), Text = "💨 SHIFT", Font = Theme.BOLD,
+		Size = UDim2.fromOffset(84, 28), Position = UDim2.new(1, -90, 0, 6), Text = UIS.TouchEnabled and not UIS.KeyboardEnabled and "💨 DASH" or "💨 SHIFT", Font = Theme.BOLD,
 		TextScaled = true, TextColor3 = Theme.TEXT, BackgroundColor3 = Theme.ACCENT, AutoButtonColor = false, ZIndex = 2,
 	}, panel)
 	Theme.corner(dash, 8)
@@ -331,6 +336,15 @@ local function buildCrewControls(root)
 			end)
 		end
 	end)
+
+	Theme.button({ Size = UDim2.fromOffset(44, 38), Position = UDim2.fromOffset(174, 16), Text = "⚙️", BackgroundColor3 = Theme.CARD_LIGHT, ZIndex = 2 }, root, function()
+		callbacks.settings()
+	end)
+
+	-- crewmates' health, under the leave button
+	ui.crewList = Theme.new("Frame", { Size = UDim2.fromOffset(210, 200), Position = UDim2.fromOffset(16, 64), BackgroundTransparency = 1 }, root)
+	Theme.new("UIListLayout", { Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder }, ui.crewList)
+	ui.crewRows = {}
 
 	local down = Theme.panel({ Size = UDim2.fromOffset(440, 118), Position = UDim2.new(0.5, -220, 1, -262), Visible = false, ZIndex = 5 }, root)
 	ui.down = down
@@ -455,7 +469,7 @@ local function buildBanners(gui)
 		BackgroundTransparency = 0.35, Visible = false, ZIndex = 30,
 	}, gui)
 	ui.results = overlay
-	local card = Theme.panel({ Size = UDim2.fromOffset(500, 440), Position = UDim2.new(0.5, -250, 0.5, -220), ZIndex = 31 }, overlay)
+	local card = Theme.panel({ Size = UDim2.fromOffset(500, 620), Position = UDim2.new(0.5, -250, 0.5, -310), ZIndex = 31 }, overlay)
 	ui.resultScale = Theme.new("UIScale", {}, card)
 	local tile, icon = Theme.icon({ Size = UDim2.fromOffset(72, 72), Position = UDim2.new(0.5, -36, 0, 22), ZIndex = 32 }, card, "🏆", Theme.GOLD, 20)
 	ui.resultTile, ui.resultIcon = tile, icon
@@ -468,7 +482,22 @@ local function buildBanners(gui)
 		Theme.text({ Size = UDim2.new(1, -16, 0, 18), Position = UDim2.fromOffset(8, 46), Text = name, TextColor3 = Theme.MUTED, ZIndex = 33, MaxSize = 14 }, stat)
 	end
 	ui.resultGold = Theme.title({ Size = UDim2.new(1, -40, 0, 46), Position = UDim2.fromOffset(20, 282), TextColor3 = Theme.GOLD, ZIndex = 32 }, card)
-	ui.resultUnlocked = Theme.chip({ Size = UDim2.fromOffset(440, 28), Position = UDim2.new(0.5, -220, 0, 338), ZIndex = 32, MaxSize = 14 }, card, Theme.GOOD)
+	ui.resultUnlocked = Theme.chip({ Size = UDim2.fromOffset(460, 28), Position = UDim2.new(0.5, -230, 0, 334), ZIndex = 32, MaxSize = 14 }, card, Theme.GOOD)
+	ui.resultUnlocked.TextWrapped = true
+	Theme.divider({ Size = UDim2.new(1, -60, 0, 2), Position = UDim2.fromOffset(30, 374), ZIndex = 32 }, card)
+	Theme.title({ Size = UDim2.new(1, -40, 0, 20), Position = UDim2.fromOffset(20, 382), Text = "DAMAGE BY SKILL", TextColor3 = Theme.GOLD, ZIndex = 32, MaxSize = 18 }, card)
+	ui.damageRows = {}
+	for i = 1, 6 do
+		local row = Theme.new("Frame", { Size = UDim2.new(1, -60, 0, 26), Position = UDim2.fromOffset(30, 408 + (i - 1) * 30), BackgroundTransparency = 1, ZIndex = 32 }, card)
+		local icon = Theme.text({ Size = UDim2.fromOffset(26, 26), Text = "", ZIndex = 33 }, row)
+		local name = Theme.text({ Size = UDim2.new(0.45, -32, 1, 0), Position = UDim2.fromOffset(32, 0), Font = Theme.BOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 33, MaxSize = 14 }, row)
+		local bar = Theme.new("Frame", { Size = UDim2.new(0.55, -70, 0, 12), Position = UDim2.new(0.45, 0, 0.5, -6), BackgroundColor3 = Theme.BG, BackgroundTransparency = 0.3, ZIndex = 33 }, row)
+		Theme.corner(bar, 6)
+		local fill = Theme.new("Frame", { Size = UDim2.fromScale(0, 1), BorderSizePixel = 0, ZIndex = 34 }, bar)
+		Theme.corner(fill, 6)
+		local amount = Theme.text({ Size = UDim2.fromOffset(64, 26), Position = UDim2.new(1, -64, 0, 0), Font = Theme.BOLD, TextColor3 = Theme.GOLD, TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 33, MaxSize = 14 }, row)
+		ui.damageRows[i] = { row = row, icon = icon, name = name, fill = fill, amount = amount }
+	end
 	Theme.text({
 		Size = UDim2.new(1, -40, 0, 18), Position = UDim2.new(0, 20, 1, -36), ZIndex = 32,
 		Text = "Sailing back to the island...", TextColor3 = Theme.MUTED, MaxSize = 15,
@@ -558,6 +587,7 @@ end
 
 -- The big banner at the start of each wave (and when the boss arrives).
 function Hud.showWave(info)
+	Sounds.play(info.boss and "Boss" or "Wave")
 	local color = info.color or Theme.ACCENT
 	ui.waveNumber.Text = info.boss and "FINAL WAVE" or "WAVE " .. tostring(info.n)
 	ui.waveTitle.Text = info.title or ""
@@ -669,6 +699,46 @@ end
 
 local bossCheckAt = 0
 
+-- Crewmates' health bars (everyone in the run but you).
+local function updateCrew()
+	for userId, row in ui.crewRows do
+		local mate = Players:GetPlayerByUserId(userId)
+		local hum = mate and mate.Character and mate.Character:FindFirstChildOfClass("Humanoid")
+		local ratio = hum and math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1) or 0
+		row.fill.Size = UDim2.fromScale(ratio, 1)
+		row.state.Text = ratio <= 0 and "💀" or ""
+		row.frame.BackgroundTransparency = ratio <= 0 and 0.5 or 0.15
+	end
+end
+
+-- Builds the crew list from the run's crew (UserIds).
+function Hud.setCrew(crew)
+	local wanted = {}
+	for _, userId in crew or {} do
+		if userId ~= player.UserId then
+			wanted[userId] = true
+		end
+	end
+	for userId, row in ui.crewRows do
+		if not wanted[userId] then
+			row.frame:Destroy()
+			ui.crewRows[userId] = nil
+		end
+	end
+	for userId in wanted do
+		if not ui.crewRows[userId] then
+			local mate = Players:GetPlayerByUserId(userId)
+			local frame = Theme.card({ Size = UDim2.fromOffset(210, 34), BackgroundColor3 = Theme.PANEL, BackgroundTransparency = 0.15 }, ui.crewList)
+			Theme.text({ Size = UDim2.new(1, -40, 0, 14), Position = UDim2.fromOffset(8, 3), Text = mate and mate.DisplayName or "Crewmate", Font = Theme.BOLD, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 2, MaxSize = 13 }, frame)
+			local bar, fill = Theme.bar({ Size = UDim2.new(1, -16, 0, 8), Position = UDim2.fromOffset(8, 21), ZIndex = 2 }, frame,
+				Color3.fromRGB(120, 240, 140), Color3.fromRGB(40, 170, 80))
+			bar:FindFirstChildOfClass("TextLabel").Visible = false
+			local state = Theme.text({ Size = UDim2.fromOffset(24, 18), Position = UDim2.new(1, -30, 0, 1), Text = "", ZIndex = 3 }, frame)
+			ui.crewRows[userId] = { frame = frame, fill = fill, state = state }
+		end
+	end
+end
+
 -- Every frame while the HUD is up: boss bar, combo timer, markers, low-health pulse.
 function Hud.update(dt)
 	if not ui.root.Visible then
@@ -713,6 +783,7 @@ function Hud.update(dt)
 	end
 
 	updateMarkers(me)
+	updateCrew()
 
 	-- low health: the edges pulse red
 	if ui.lowHealth then
@@ -838,6 +909,7 @@ function Hud.showLevelUp(list, rerolls)
 	ui.reroll.Visible = (rerolls or 0) > 0
 	if not ui.levelOverlay.Visible then
 		setBlur(true)
+		Sounds.play("LevelUp")
 	end
 	ui.levelOverlay.Visible = true
 end
@@ -879,6 +951,9 @@ function Hud.showResults(r)
 	ui.resultAdventure.Text = r.adventure or ""
 	ui.resultAdventure.BackgroundColor3 = r.color or Theme.ACCENT
 	local notes = {}
+	if r.firstClear then
+		table.insert(notes, "⭐ First clear +" .. Theme.comma(r.firstClear))
+	end
 	if r.unlocked then
 		table.insert(notes, "🔓 " .. r.unlocked)
 	end
@@ -900,6 +975,20 @@ function Hud.showResults(r)
 	countUp(ui.resultGold, r.gold, function(v)
 		return "+" .. Theme.comma(v) .. " 💰"
 	end)
+	local damage = r.damage or {}
+	local top = damage[1] and damage[1].amount or 1
+	for i, row in ui.damageRows do
+		local d = damage[i]
+		row.row.Visible = d ~= nil
+		if d then
+			row.icon.Text = d.icon or ""
+			row.name.Text = d.name
+			row.fill.BackgroundColor3 = d.color or Theme.ACCENT
+			row.fill.Size = UDim2.fromScale(0, 1)
+			Theme.tween(row.fill, 0.8 + i * 0.1, { Size = UDim2.fromScale(d.amount / top, 1) })
+			row.amount.Text = d.amount >= 10000 and string.format("%.1fK", d.amount / 1000) or Theme.comma(d.amount)
+		end
+	end
 	ui.results.Visible = true
 	setBlur(true)
 	ui.resultScale.Scale = 0.7

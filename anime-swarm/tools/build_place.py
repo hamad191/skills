@@ -359,6 +359,14 @@ def npc_spots():
     return [(float(x), float(z)) for x, z in re.findall(r"position = Vector3\.new\((-?[\d.]+), 0, (-?[\d.]+)\)", block)]
 
 
+def leaderboard_spots():
+    """(x, z) of the island leaderboards, read from Config.LEADERBOARD_SPOTS."""
+    with open(os.path.join(ROOT, "src/shared/Config.lua"), encoding="utf-8") as f:
+        text = f.read()
+    line = text[text.index("Config.LEADERBOARD_SPOTS"):].split("\n", 1)[0]
+    return [(float(x), float(z)) for x, z in re.findall(r"Vector3\.new\((-?[\d.]+), 0, (-?[\d.]+)\)", line)]
+
+
 def free(x, z):
     if abs(x) < 9 and ISLAND_Z < z < ISLAND_Z + 40:  # the path
         return False
@@ -381,6 +389,7 @@ def spawn_island():
     ]
     BLOCKED.extend([(0, cz, 14), (PLAZA[0], PLAZA[1], PLAZA[2] + 4)])
     BLOCKED.extend((x, z, 13) for x, z in npc_spots())  # the island NPCs and their stalls (server/Npcs.lua)
+    BLOCKED.extend((x, z, 8) for x, z in leaderboard_spots())  # leaderboards (server/Leaderboards.lua)
 
     # signs and landmarks around the spawn
     S = Placer(16, GRASS_TOP, cz + 16, 0)

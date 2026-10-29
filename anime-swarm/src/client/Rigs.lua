@@ -273,9 +273,13 @@ end
 
 -- Main loop -----------------------------------------------------------------------------------
 
+local MOB_RANGE = 240 -- only animate what this player can actually see
+local NPC_RANGE = 160
+
 -- Stepped runs after Roblox's Animator, so these poses aren't overwritten.
 RunService.Stepped:Connect(function(_, dt)
 	local now = os.clock()
+	local focus = workspace.CurrentCamera.Focus.Position
 	local folder = workspace:FindFirstChild("Enemies")
 	if folder then
 		for _, model in folder:GetChildren() do
@@ -285,7 +289,12 @@ RunService.Stepped:Connect(function(_, dt)
 				mobs[model] = st
 			end
 			if st then
-				animateMob(model, st, dt, now)
+				local pos = st.torso.Position
+				if (pos - focus).Magnitude <= MOB_RANGE * st.scale then
+					animateMob(model, st, dt, now)
+				else
+					st.last = pos -- keep the speed estimate fresh for when it comes into view
+				end
 			end
 		end
 	end
@@ -301,7 +310,7 @@ RunService.Stepped:Connect(function(_, dt)
 			st = npcState(model)
 			npcs[model] = st
 		end
-		if st then
+		if st and (st.root.Position - focus).Magnitude <= NPC_RANGE then
 			animateNpc(model, st, dt, now)
 		end
 	end
