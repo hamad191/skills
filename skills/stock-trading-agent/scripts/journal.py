@@ -4,6 +4,8 @@
 Every decision (trade opened, trade closed, trade skipped, lesson learned) is
 appended to a JSONL file so later sessions can review what worked.
 Location: $TRADING_JOURNAL or ~/.trading-agent/journal.jsonl
+Trades opened through desk.py are logged here automatically, tagged with the
+analyst who proposed them, so review can rank analysts by results.
 
 Examples:
   python3 journal.py open --symbol AAPL --setup trend_pullback --entry 190.2 \\
@@ -21,43 +23,36 @@ Examples:
 from __future__ import annotations
 
 import argparse
-import datetime as dt
 import json
-import os
 import sys
+
+import store
 
 
 def path() -> str:
-    p = os.environ.get("TRADING_JOURNAL") or os.path.expanduser("~/.trading-agent/journal.jsonl")
-    os.makedirs(os.path.dirname(p) or ".", exist_ok=True)
-    return p
-
-
-def now() -> str:
-    return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+    return store.resolve("TRADING_JOURNAL", "journal.jsonl")
 
 
 def read_all() -> list:
-    p = path()
-    if not os.path.exists(p):
-        return []
-    out = []
-    with open(p) as fh:
-        for line in fh:
-            line = line.strip()
-            if line:
-                try:
-                    out.append(json.loads(line))
-                except json.JSONDecodeError:
-                    continue
-    return out
+    return store.read_jsonl(path())
 
 
 def append(rec: dict) -> dict:
-    rec = {"ts": now(), **rec}
-    with open(path(), "a") as fh:
-        fh.write(json.dumps(rec) + "\n")
-    return rec
+    return store.append_jsonl(path(), rec)
+
+
+def open_trade(**fields) -> dict:
+    """Record a new trade; returns the stored record (with its id)."""
+    fields = {k: v for k, v in fields.items() if v is not None}
+    fields["symbol"] = str(fields["symbol"]).upper()
+    return append({"type": "open", "id": new_id(fields["symbol"], read_all()), **fields})
+
+
+def find_open_trade(symbol: str):
+    for t in trades_state(read_all()).values():
+        if t["status"] == "open" and t.get("symbol") == symbol.upper():
+            return t
+    return None
 
 
 def trades_state(records: list) -> dict:
@@ -76,7 +71,7 @@ def trades_state(records: list) -> dict:
                     status="closed",
                     exit=r["exit"],
                     exit_reason=r.get("reason"),
-                    closed_ts=r["ts"],
+                    closed_ts=r.get("ts"),
                     exit_notes=r.get("notes"),
                 )
                 risk = t["entry"] - t["stop"]
@@ -86,7 +81,7 @@ def trades_state(records: list) -> dict:
 
 
 def new_id(symbol: str, records: list) -> str:
-    day = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%d")
+    day = store.today().replace("-", "")
     base = f"{symbol.upper()}-{day}"
     n = sum(1 for r in records if r.get("type") == "open" and str(r.get("id", "")).startswith(base)) + 1
     return f"{base}-{n}"
@@ -152,6 +147,7 @@ def review(last=None) -> dict:
         "by_setup": by("setup"),
         "by_confidence": by("confidence"),
         "by_regime": by("regime"),
+        "by_analyst": by("analyst"),
         "losing_streak": streak,
         "flags": flags,
         "open_trades": [
@@ -183,6 +179,7 @@ def main(argv=None) -> None:
     p.add_argument("--thesis", required=True)
     p.add_argument("--invalidation", required=True, help="what would prove the thesis wrong")
     p.add_argument("--order-id")
+    p.add_argument("--analyst", help="who proposed the trade")
     p = sub.add_parser("close")
     p.add_argument("--id", required=True)
     p.add_argument("--exit", type=float, required=True)
@@ -205,9 +202,7 @@ def main(argv=None) -> None:
     if a.cmd == "open":
         if a.stop >= a.entry:
             ap.error("stop must be below entry (long only)")
-        rec = {k: v for k, v in vars(a).items() if k != "cmd" and v is not None}
-        rec["symbol"] = a.symbol.upper()
-        out = append({"type": "open", "id": new_id(a.symbol, records), **rec})
+        out = open_trade(**{k: v for k, v in vars(a).items() if k != "cmd"})
     elif a.cmd == "close":
         state = trades_state(records)
         if a.id not in state:

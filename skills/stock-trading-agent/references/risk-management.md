@@ -1,7 +1,10 @@
 # Risk Management
 
-Risk rules are enforced in code by `scripts/risk.py`. `alpaca.py buy` calls it
-before every order and refuses anything it rejects.
+Risk rules are enforced in code by `scripts/risk.py`. `alpaca.py buy` and
+`desk.py execute` call it before every order and refuse anything it rejects;
+`desk.py approve` runs the same check (plus the sector cap) before the manager's
+approval is recorded. The manager's `--size` and the mandate's `--risk-scale`
+can only shrink the size `risk.py` allows, never grow it.
 
 ## Limits
 
@@ -54,7 +57,8 @@ Values looser than the hard caps are clamped to the caps. Unknown keys are ignor
   already hold.
 - After 3 consecutive losses, use `risk_per_trade_pct: 0.5` until the next winner.
 - After a −3% day, stop opening trades. Review the journal tomorrow instead.
-- Correlation: do not hold more than 3 positions in one sector. Five semiconductor
-  stocks are one bet, not five.
+- Correlation: no more than 3 positions in one sector (`desk.py approve` enforces this
+  for symbols in the default universe and for proposals tagged `--sector`). Five
+  semiconductor stocks are one bet, not five.
 - Overnight and earnings gaps can jump past stops. That is why there is a
   position-size cap and an earnings blackout.

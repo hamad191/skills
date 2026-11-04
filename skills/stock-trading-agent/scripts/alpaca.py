@@ -18,6 +18,7 @@ Examples:
   python3 alpaca.py bars SPY AAPL --days 400 --out bars.json
   python3 alpaca.py snapshot AAPL MSFT
   python3 alpaca.py buy AAPL --stop 182.5 --target 205 [--qty 10] [--limit 190.1] [--max-exposure 50]
+  python3 alpaca.py raise-stop AAPL --stop 188   # finds the stop leg; only moves it up
   python3 alpaca.py replace <order_id> --stop 188
   python3 alpaca.py close AAPL [--qty 5]
   python3 alpaca.py cancel <order_id>
@@ -166,8 +167,22 @@ def get_snapshots(symbols, feed: str = "iex") -> dict:
 # ---------------------------------------------------------------- trading
 
 
-def submit_entry(symbol: str, stop: float, target, qty=None, limit=None, tif: str = "day", max_exposure=None):
-    """Risk-checked long entry with an attached stop-loss (and optional take-profit)."""
+def submit_entry(
+    symbol: str,
+    stop: float,
+    target,
+    qty=None,
+    limit=None,
+    tif: str = "day",
+    max_exposure=None,
+    size_fraction: float = 1.0,
+    max_entry=None,
+):
+    """Risk-checked long entry with an attached stop-loss (and optional take-profit).
+
+    size_fraction scales the risk-approved quantity down (manager conviction).
+    max_entry refuses to buy above that price (no chasing).
+    """
     import risk  # local module; imported lazily so read-only commands stay light
 
     symbol = symbol.upper()
@@ -182,16 +197,35 @@ def submit_entry(symbol: str, stop: float, target, qty=None, limit=None, tif: st
         if entry <= 0:
             die(f"Could not get a last price for {symbol}; pass --limit explicitly.")
 
-    verdict = risk.evaluate(
-        symbol=symbol,
-        entry=entry,
-        stop=stop,
-        target=target,
-        account=account,
-        positions=positions,
-        requested_qty=qty,
-        regime_exposure_pct=max_exposure,
-    )
+    if max_entry is not None and entry > float(max_entry):
+        return {
+            "submitted": False,
+            "risk": {
+                "approved": False,
+                "entry": entry,
+                "reasons": [
+                    f"price {entry:.2f} is above the max entry {float(max_entry):.2f}: "
+                    "do not chase; wait for a pullback or use a limit at or below it"
+                ],
+            },
+        }
+
+    def check(requested):
+        return risk.evaluate(
+            symbol=symbol,
+            entry=entry,
+            stop=stop,
+            target=target,
+            account=account,
+            positions=positions,
+            requested_qty=requested,
+            regime_exposure_pct=max_exposure,
+        )
+
+    verdict = check(qty)
+    if verdict["approved"] and size_fraction < 1.0:
+        verdict = check(max(0, int(verdict["qty"] * max(0.0, size_fraction))))
+        verdict["size_fraction"] = size_fraction
     if not verdict["approved"]:
         return {"submitted": False, "risk": verdict}
 
@@ -225,6 +259,50 @@ def replace_order(order_id: str, stop=None, limit=None, qty=None) -> dict:
     if not body:
         die("Nothing to replace: pass --stop, --limit or --qty.")
     return _order_summary(trading("PATCH", f"/v2/orders/{order_id}", body=body))
+
+
+OPEN_STATUSES = {"new", "accepted", "held", "pending_new", "partially_filled", "pending_replace"}
+
+
+def find_stop_orders(symbol: str) -> list:
+    """Open sell-stop orders protecting ``symbol`` (bracket/OTO legs included)."""
+    symbol = symbol.upper()
+    seen, found = set(), []
+    orders = get_orders("open", 500, nested=False) + get_orders("open", 500, nested=True)
+    for o in orders:
+        for c in [o] + list(o.get("legs") or []):
+            if (
+                c.get("id") not in seen
+                and str(c.get("symbol", "")).upper() == symbol
+                and c.get("side") == "sell"
+                and c.get("type") in ("stop", "stop_limit")
+                and c.get("status") in OPEN_STATUSES
+            ):
+                seen.add(c.get("id"))
+                found.append(c)
+    return found
+
+
+def raise_stop(symbol: str, new_stop: float) -> dict:
+    """Move the protective stop UP. Refuses to lower it or to place it above the price."""
+    symbol = symbol.upper()
+    pos = next((p for p in get_positions() if str(p.get("symbol")).upper() == symbol), None)
+    if pos is None:
+        return {"ok": False, "reason": f"no open position in {symbol}"}
+    price = float(pos.get("current_price") or 0)
+    legs = find_stop_orders(symbol)
+    if not legs:
+        return {"ok": False, "reason": f"no open stop order found for {symbol}: the position may be UNPROTECTED"}
+    if price and new_stop >= price:
+        return {"ok": False, "reason": f"new stop {new_stop} is not below the current price {price}; to exit, close the position"}
+    highest = max(float(leg.get("stop_price") or 0) for leg in legs)
+    if new_stop <= highest:
+        return {"ok": False, "reason": f"stops only move up: current stop is {highest}, requested {new_stop}"}
+    results = []
+    for leg in legs:
+        current = float(leg.get("stop_price") or 0)
+        results.append({"from": current, "to": new_stop, "order": replace_order(leg["id"], stop=new_stop)})
+    return {"ok": True, "symbol": symbol, "price": price, "replaced": results}
 
 
 def close_position(symbol: str, qty=None) -> dict:
@@ -348,6 +426,9 @@ def main(argv=None) -> None:
     p.add_argument("--stop", type=float)
     p.add_argument("--limit", type=float)
     p.add_argument("--qty", type=int)
+    p = sub.add_parser("raise-stop", help="move the protective stop of a position up")
+    p.add_argument("symbol")
+    p.add_argument("--stop", type=float, required=True)
     p = sub.add_parser("close")
     p.add_argument("symbol")
     p.add_argument("--qty", type=float)
@@ -378,6 +459,11 @@ def main(argv=None) -> None:
         emit(submit_entry(a.symbol, a.stop, a.target, a.qty, a.limit, a.tif, a.max_exposure))
     elif a.cmd == "replace":
         emit(replace_order(a.order_id, a.stop, a.limit, a.qty))
+    elif a.cmd == "raise-stop":
+        res = raise_stop(a.symbol, a.stop)
+        emit(res)
+        if not res["ok"]:
+            sys.exit(2)
     elif a.cmd == "close":
         emit(close_position(a.symbol, a.qty))
     elif a.cmd == "cancel":
