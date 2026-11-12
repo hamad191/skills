@@ -6,8 +6,8 @@ spare, no Super Safari accessories. STL files, millimetres, ready to slice.
 
 ![Assembled preview](preview/assembled.png)
 
-Colours in the preview show the intended finish (white body, black trim). The wheels under the body
-are placeholders – your chassis supplies those.
+The preview is the coloured model in `color/` (white body, black trim, chrome grille). The wheels
+under the body are placeholders – your chassis supplies those.
 
 ## What this is, and what it is not
 
@@ -65,6 +65,22 @@ print the trim in black than paint it: bare `body_shell` (also as `_front` / `_r
 over the arch edge; bumpers and steps take M2 self-tapping screws from inside or glue.
 
 `manifest.json` lists every file with its size, volume and check results.
+
+## Coloured model
+
+STL cannot store colour, so the painted body is also exported in `color/`:
+
+| File | Use |
+| --- | --- |
+| `patrol_y61_colored.glb` | View in any glTF viewer, phone AR viewers, Blender. Metres, Y up. |
+| `patrol_y61_colored.obj` + `.mtl` | Universal fallback. Millimetres, Z up. |
+| `patrol_y61_colored.3mf` | Multi-colour printing: opens in Bambu Studio / OrcaSlicer / PrusaSlicer as one object made of 30 parts, each with its colour, so you can assign a filament per part. |
+
+Colours follow the reference photo: white body; satin-black bumpers, flares, side steps, mirrors,
+door handles, window frames/pillars and glass rubbers; chrome grille surround, wing bars, badge
+and tailgate garnish over a black mesh; red taillights with the clear centre band; dark tinted
+glass; silver steel spare wheel. The black details on the shell (`body_black_trim`) are cut out as
+their own volume, so they can be printed in black instead of painted.
 
 ## Printing
 
@@ -136,6 +152,7 @@ and `manifest.json`.
   (47° windscreen with plan bow, 14° tumblehome, leaning tailgate glass, roof crown).
 - `model.py` – hollows the skin to a constant wall, then cuts arches, windows, panel lines and
   pockets, and builds flares, bumpers, steps, lamps, grille, mirrors, spare, seam ribs and mounts.
+- `color.py` – the painted model: per-part colours, GLB / OBJ / 3MF writers.
 - `build.py` – exports print-oriented STLs, checks them, renders the previews.
 
 All vehicle dimensions in the source are full-size millimetres, so they can be corrected against a

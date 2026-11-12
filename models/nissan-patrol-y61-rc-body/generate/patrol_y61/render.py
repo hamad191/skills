@@ -39,6 +39,14 @@ class Scene:
         self.n += len(V)
         return self
 
+    def add_mesh(self, V, F, face_rgb):
+        """Add a raw mesh with one 0-255 RGB colour per triangle."""
+        self.V.append(V)
+        self.F.append(F + self.n)
+        self.C.append(np.asarray(face_rgb, float))
+        self.n += len(V)
+        return self
+
     def build(self):
         V = np.concatenate(self.V)
         F = np.concatenate(self.F)

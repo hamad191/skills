@@ -1,0 +1,72 @@
+newmtl body_white
+Kd 0.9400 0.9400 0.9200
+Ka 0 0 0
+Ks 0.15 0.15 0.15
+Ns 230
+d 1.00
+illum 2
+
+newmtl trim_black
+Kd 0.0750 0.0750 0.0800
+Ka 0 0 0
+Ks 0.15 0.15 0.15
+Ns 110
+d 1.00
+illum 2
+
+newmtl chrome
+Kd 0.8000 0.8200 0.8400
+Ka 0 0 0
+Ks 0.60 0.60 0.60
+Ns 310
+d 1.00
+illum 2
+
+newmtl grille_black
+Kd 0.0400 0.0400 0.0450
+Ka 0 0 0
+Ks 0.15 0.15 0.15
+Ns 89
+d 1.00
+illum 2
+
+newmtl lens_clear
+Kd 0.7600 0.8300 0.8900
+Ka 0 0 0
+Ks 0.15 0.15 0.15
+Ns 350
+d 1.00
+illum 2
+
+newmtl lens_red
+Kd 0.7400 0.0500 0.0700
+Ka 0 0 0
+Ks 0.15 0.15 0.15
+Ns 310
+d 1.00
+illum 2
+
+newmtl glass
+Kd 0.1300 0.1700 0.2000
+Ka 0 0 0
+Ks 0.15 0.15 0.15
+Ns 370
+d 0.62
+illum 2
+
+newmtl tire_black
+Kd 0.0500 0.0500 0.0550
+Ka 0 0 0
+Ks 0.15 0.15 0.15
+Ns 49
+d 1.00
+illum 2
+
+newmtl wheel_silver
+Kd 0.7200 0.7400 0.7700
+Ka 0 0 0
+Ks 0.60 0.60 0.60
+Ns 250
+d 1.00
+illum 2
+

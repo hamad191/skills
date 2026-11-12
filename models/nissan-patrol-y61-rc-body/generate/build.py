@@ -21,6 +21,7 @@ import numpy as np
 import trimesh
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from patrol_y61 import color as col  # noqa: E402
 from patrol_y61 import geom as g  # noqa: E402
 from patrol_y61.model import Model  # noqa: E402
 from patrol_y61.params import Params  # noqa: E402
@@ -240,8 +241,17 @@ def main():
     with open(os.path.join(out, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=2)
 
+    # ---- coloured model (STL has no colour): GLB / OBJ for viewing, multi-part 3MF for slicers
+    painted = col.colored_parts(kit, fused)
+    cdir = os.path.join(out, "color")
+    os.makedirs(cdir, exist_ok=True)
+    col.write_glb(os.path.join(cdir, "patrol_y61_colored.glb"), painted)
+    col.write_obj(os.path.join(cdir, "patrol_y61_colored.obj"), painted)
+    col.write_3mf(os.path.join(cdir, "patrol_y61_colored.3mf"), painted)
+    print(f"  coloured model: {len(painted)} parts, {sum(len(F) for _, _, F, _ in painted)} triangles -> color/")
+
     if not a.no_preview:
-        previews(kit, fused, body, P, os.path.join(out, "preview"))
+        previews(kit, fused, body, P, os.path.join(out, "preview"), painted)
     for n in notes:
         print("  note:", n)
     print(f"wall thickness (ray-sampled): {manifest['wall_thickness_mm']['body_shell']}  nominal {P.wall}")
@@ -249,7 +259,7 @@ def main():
     return 0 if ok_all else 1
 
 
-def previews(kit, fused, body, P, folder):
+def previews(kit, fused, body, P, folder, painted):
     os.makedirs(folder, exist_ok=True)
     L = P.wheelbase
     cx, h = L / 2, P.R(1000.0)
@@ -263,15 +273,17 @@ def previews(kit, fused, body, P, folder):
             ((cx - 2.3 * L, 2.3 * L, h + 1.6 * L), (cx, 0, h * 0.8)),
         ]
 
-    # painted / multi-colour look, on preview wheels
-    sc = Scene()
-    for name, p in kit.parts.items():
-        if not name.startswith("body_mount_"):
-            sc.add(p["solid"], p["color"])
-    sc.add(kit.shell, "white")
-    for s_, c in kit.preview_wheels():
-        sc.add(s_, c)
-    sc.build()
+    # the painted model, on preview wheels
+    def painted_scene(wheels):
+        sc = Scene()
+        for _, V, F, mats in painted:
+            sc.add_mesh(V, F, col.face_colors(mats))
+        if wheels:
+            for s_, c in kit.preview_wheels():
+                sc.add(s_, c)
+        return sc.build()
+
+    sc = painted_scene(True)
     size = (1100, 700)
     contact_sheet([sc.render(e, t, fov=24, size=size, ground_z=gz) for e, t in cams(size)], cols=2).save(os.path.join(folder, "assembled.png"))
 
@@ -281,11 +293,7 @@ def previews(kit, fused, body, P, folder):
     contact_sheet([sc.render(e, t, fov=24, size=size) for e, t in views], cols=2).save(os.path.join(folder, "body_complete.png"))
 
     # detail close-ups
-    sc = Scene()
-    for name, p in kit.parts.items():
-        if not name.startswith("body_mount_"):
-            sc.add(p["solid"], p["color"])
-    sc.add(kit.shell, "white").build()
+    sc = painted_scene(False)
     xr = kit.B.x_rear
     shots = [
         sc.render((kit.B.x_face - 1.5 * L, -0.55 * L, h + 0.45 * L), (kit.B.x_face + 0.15 * L, 0, h * 0.95), fov=24, size=size),
