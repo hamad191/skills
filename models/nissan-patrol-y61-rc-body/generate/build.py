@@ -216,14 +216,15 @@ def main():
         print(f"  {'OK ' if ok else 'BAD'} {folder + '/' if folder else ''}{name:<28} {bb[3]-bb[0]:6.1f} x {bb[4]-bb[1]:5.1f} x {bb[5]-bb[2]:5.1f} mm"
               f"  {vol:6.2f} cm3  {ntri:6d} tris")
 
-    manifest["wall_thickness_mm"] = dict(nominal=P.wall, body_shell=wall_stats(kit.shell))
+    manifest["wall_thickness_mm"] = dict(nominal=P.wall, body_shell=wall_stats(kit.shell), body_complete=wall_stats(body))
     B = kit.B
     fa, ra = kit.arch(kit.xc_f), kit.arch(kit.xc_r)
     z0, z1 = kit.rail_z
     bbb = body.bounding_box()
     manifest["fitment"] = dict(
         wheelbase_mm=round(P.wheelbase, 1),
-        body_length_mm=round(bbb[3] - bbb[0], 1), body_width_over_flares_mm=round(bbb[4] - bbb[1], 1),
+        body_length_mm=round(bbb[3] - bbb[0], 1), body_width_over_steps_mm=round(bbb[4] - bbb[1], 1),
+        body_width_over_flares_mm=round(2 * (kit.W + P.Ry(45.0)), 1), body_width_sheet_metal_mm=round(2 * kit.W, 1),
         body_height_mm=round(bbb[5] - bbb[2], 1),
         front_overhang_mm=round(-bbb[0], 1), rear_overhang_mm=round(bbb[3] - P.wheelbase, 1),
         inner_width_at_sills_mm=round(2 * (float(B.side_y(P.wheelbase / 2, B.z_sill)) - P.wall), 1),

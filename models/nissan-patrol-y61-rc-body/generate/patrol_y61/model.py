@@ -419,7 +419,9 @@ class Model:
         self.add("headlight_L", lens.mirror([0, 1, 0]), "lens", down=(1, 0, 0))
         r_led = 2.6 if P.screw >= 3.0 else 1.6  # 5 mm or 3 mm LED
         for sgn in (-1, 1):
-            shell = shell - g.cyl((B.x_face + pd + 0.1, sgn * yc, zc2), (B.x_face + 8.0, sgn * yc, zc2), r_led)
+            # kit: open hole behind the separate lens; fused: blind socket that stops at the lens
+            x0 = B.x_face + pd + 2 * OV if self.fused else B.x_face - 3.0
+            shell = shell - g.cyl((x0, sgn * yc, zc2), (B.x_face + 8.0, sgn * yc, zc2), r_led)
         return shell
 
     # ------------------------------------------------------------------ rear
@@ -446,7 +448,8 @@ class Model:
         r_led = 1.6 if P.screw >= 3.0 else 1.05
         for sgn in (-1, 1):
             for z in (912.0, 1180.0):
-                shell = shell - g.cyl((B.x_rear - pd - 0.1, sgn * Ry(800.0), R(z)), (B.x_rear - 9.0, sgn * Ry(800.0), R(z)), r_led)
+                x0 = B.x_rear - pd - 2 * OV if self.fused else B.x_rear + 3.0
+                shell = shell - g.cyl((x0, sgn * Ry(800.0), R(z)), (B.x_rear - 9.0, sgn * Ry(800.0), R(z)), r_led)
 
         # tailgate garnish with the pull handle at its inboard end
         gar = rear(self.inset(garnish), 12.0 * k) ^ (B.grown(0.9 * k) - B.core(gd + OV if self.fused else gd - 0.05))
@@ -719,7 +722,7 @@ class Model:
         x0 = self.xc_f + self.arch(self.xc_f)["a_out"] + (0.0 if self.fused else 1.2 * k)
         x1 = self.xc_r - self.arch(self.xc_r)["a_out"] - (0.0 if self.fused else 1.2 * k)
         zt, zbt = R(432.0), R(392.0)
-        board = g.extrude_z(g.rrect(x0, self.W - 13.0 * k, x1, self.W + Ry(98.0), 4.0 * k), zbt, zt)
+        board = g.extrude_z(g.rrect(x0, self.W - 13.0 * k, x1, self.W + Ry(78.0), 4.0 * k), zbt, zt)
         ribs = [sg.box(x0 + 6.0 * k, self.W + (1.5 + i * 2.6) * k, x1 - 6.0 * k, self.W + (2.4 + i * 2.6) * k) for i in range(3)]
         board = board - g.extrude_z(unary_union(ribs), zt - 0.4 * k, zt + 1.0)
         c0 = P.wall - OV if self.fused else P.wall + P.fit
