@@ -1,0 +1,716 @@
+{
+  "model": "Nissan Patrol Y61 GL (2007) RC body shell",
+  "scale": "1:18",
+  "wheelbase_mm": 165.0,
+  "params": {
+    "wheelbase": 165.0,
+    "tire_od": 57.0,
+    "tire_width": 22.0,
+    "lift": 4.0,
+    "width_scale": 1.0,
+    "arch_clear_side": 3.0,
+    "arch_clear_top": 4.0,
+    "wall": 1.2,
+    "groove_w": 0.4,
+    "groove_d": 0.3,
+    "pocket_d": 0.6,
+    "glass_flange": 0.8,
+    "fit": 0.15,
+    "post_d": 4.0,
+    "post_spacing_front": null,
+    "post_spacing_rear": null,
+    "rail_depth": 7.0,
+    "rail_height": 4.0,
+    "screw": 2.0,
+    "frame_notch_width": 46.0,
+    "frame_notch_top": 700.0,
+    "flange_depth": 4.0,
+    "flange_t": 1.6
+  },
+  "parts": [
+    {
+      "file": "stl/body_complete.stl",
+      "color": "white",
+      "note": "the whole body in one piece (needs a 270 mm bed)",
+      "size_mm": [
+        269.4,
+        113.1,
+        81.3
+      ],
+      "volume_cm3": 103.86,
+      "solid_mass_g": 129.8,
+      "triangles": 90544,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/body_complete_front.stl",
+      "color": "white",
+      "note": "body split at the print seam",
+      "size_mm": [
+        81.0,
+        113.1,
+        144.9
+      ],
+      "volume_cm3": 50.32,
+      "solid_mass_g": 62.9,
+      "triangles": 52878,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/body_complete_rear.stl",
+      "color": "white",
+      "note": "body split at the print seam",
+      "size_mm": [
+        81.3,
+        113.1,
+        124.5
+      ],
+      "volume_cm3": 53.53,
+      "solid_mass_g": 66.9,
+      "triangles": 39900,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/grille.stl",
+      "color": "silver",
+      "note": "paint the mesh black; surround, bars and badge chrome",
+      "size_mm": [
+        10.6,
+        46.4,
+        1.8
+      ],
+      "volume_cm3": 0.32,
+      "solid_mass_g": 0.4,
+      "triangles": 14704,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/headlight_R.stl",
+      "color": "lens",
+      "note": "clear/natural filament; LED socket behind",
+      "size_mm": [
+        10.0,
+        24.7,
+        13.0
+      ],
+      "volume_cm3": 0.24,
+      "solid_mass_g": 0.3,
+      "triangles": 2158,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/headlight_L.stl",
+      "color": "lens",
+      "note": "",
+      "size_mm": [
+        10.0,
+        24.7,
+        13.0
+      ],
+      "volume_cm3": 0.24,
+      "solid_mass_g": 0.3,
+      "triangles": 2160,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/taillight_R.stl",
+      "color": "red",
+      "note": "translucent red; LED holes behind",
+      "size_mm": [
+        22.7,
+        9.7,
+        9.4
+      ],
+      "volume_cm3": 0.26,
+      "solid_mass_g": 0.3,
+      "triangles": 1456,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/taillight_L.stl",
+      "color": "red",
+      "note": "",
+      "size_mm": [
+        22.7,
+        9.7,
+        9.4
+      ],
+      "volume_cm3": 0.26,
+      "solid_mass_g": 0.3,
+      "triangles": 1454,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/tailgate_garnish.stl",
+      "color": "silver",
+      "note": "chrome strip above the number plate",
+      "size_mm": [
+        3.5,
+        27.3,
+        1.2
+      ],
+      "volume_cm3": 0.09,
+      "solid_mass_g": 0.1,
+      "triangles": 348,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/glass_front_door_R.stl",
+      "color": "clear",
+      "note": "clear PETG/resin, glued in from inside",
+      "size_mm": [
+        47.6,
+        30.0,
+        6.2
+      ],
+      "volume_cm3": 1.87,
+      "solid_mass_g": 2.3,
+      "triangles": 2570,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/glass_rear_door_R.stl",
+      "color": "clear",
+      "note": "clear PETG/resin, glued in from inside",
+      "size_mm": [
+        47.6,
+        30.4,
+        2.9
+      ],
+      "volume_cm3": 2.25,
+      "solid_mass_g": 2.8,
+      "triangles": 1356,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/glass_quarter_R.stl",
+      "color": "clear",
+      "note": "clear PETG/resin, glued in from inside",
+      "size_mm": [
+        52.1,
+        30.5,
+        3.2
+      ],
+      "volume_cm3": 2.39,
+      "solid_mass_g": 3.0,
+      "triangles": 1638,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/glass_front_door_L.stl",
+      "color": "clear",
+      "note": "clear PETG/resin, glued in from inside",
+      "size_mm": [
+        47.6,
+        30.0,
+        6.2
+      ],
+      "volume_cm3": 1.87,
+      "solid_mass_g": 2.3,
+      "triangles": 2882,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/glass_rear_door_L.stl",
+      "color": "clear",
+      "note": "clear PETG/resin, glued in from inside",
+      "size_mm": [
+        47.6,
+        30.4,
+        2.9
+      ],
+      "volume_cm3": 2.25,
+      "solid_mass_g": 2.8,
+      "triangles": 1394,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/glass_quarter_L.stl",
+      "color": "clear",
+      "note": "clear PETG/resin, glued in from inside",
+      "size_mm": [
+        52.1,
+        30.5,
+        3.2
+      ],
+      "volume_cm3": 2.39,
+      "solid_mass_g": 3.0,
+      "triangles": 1634,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/glass_windscreen.stl",
+      "color": "clear",
+      "note": "clear PETG/resin, glued in from inside",
+      "size_mm": [
+        34.3,
+        88.8,
+        4.8
+      ],
+      "volume_cm3": 4.78,
+      "solid_mass_g": 6.0,
+      "triangles": 2514,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/glass_tailgate_L.stl",
+      "color": "clear",
+      "note": "clear PETG/resin, glued in from inside",
+      "size_mm": [
+        27.7,
+        31.4,
+        2.7
+      ],
+      "volume_cm3": 1.24,
+      "solid_mass_g": 1.6,
+      "triangles": 636,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/glass_tailgate_R.stl",
+      "color": "clear",
+      "note": "clear PETG/resin, glued in from inside",
+      "size_mm": [
+        27.8,
+        51.7,
+        2.7
+      ],
+      "volume_cm3": 2.18,
+      "solid_mass_g": 2.7,
+      "triangles": 628,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/flare_front_R.stl",
+      "color": "black",
+      "note": "glue; the lip locates it on the arch edge",
+      "size_mm": [
+        72.0,
+        35.7,
+        8.3
+      ],
+      "volume_cm3": 1.79,
+      "solid_mass_g": 2.2,
+      "triangles": 3110,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/flare_front_L.stl",
+      "color": "black",
+      "note": "",
+      "size_mm": [
+        72.0,
+        35.7,
+        8.3
+      ],
+      "volume_cm3": 1.79,
+      "solid_mass_g": 2.2,
+      "triangles": 3110,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/flare_rear_R.stl",
+      "color": "black",
+      "note": "glue; the lip locates it on the arch edge",
+      "size_mm": [
+        72.0,
+        35.7,
+        6.5
+      ],
+      "volume_cm3": 1.79,
+      "solid_mass_g": 2.2,
+      "triangles": 2972,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/flare_rear_L.stl",
+      "color": "black",
+      "note": "",
+      "size_mm": [
+        72.0,
+        35.7,
+        6.5
+      ],
+      "volume_cm3": 1.79,
+      "solid_mass_g": 2.2,
+      "triangles": 2972,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/bumper_front.stl",
+      "color": "black",
+      "note": "screwed from inside the nose panel (or glued)",
+      "size_mm": [
+        16.2,
+        101.1,
+        23.8
+      ],
+      "volume_cm3": 12.61,
+      "solid_mass_g": 15.8,
+      "triangles": 3242,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/bumper_rear.stl",
+      "color": "black",
+      "note": "screwed from inside the tail panel (or glued)",
+      "size_mm": [
+        21.1,
+        104.5,
+        20.9
+      ],
+      "volume_cm3": 18.25,
+      "solid_mass_g": 22.8,
+      "triangles": 2428,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/side_step_R.stl",
+      "color": "black",
+      "note": "screws through the sill, or glue",
+      "size_mm": [
+        91.6,
+        13.2,
+        11.0
+      ],
+      "volume_cm3": 3.56,
+      "solid_mass_g": 4.5,
+      "triangles": 694,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/side_step_L.stl",
+      "color": "black",
+      "note": "",
+      "size_mm": [
+        91.6,
+        13.2,
+        11.0
+      ],
+      "volume_cm3": 3.56,
+      "solid_mass_g": 4.5,
+      "triangles": 694,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/mirror_R.stl",
+      "color": "black",
+      "note": "peg into the door; glue",
+      "size_mm": [
+        9.3,
+        17.0,
+        5.4
+      ],
+      "volume_cm3": 0.57,
+      "solid_mass_g": 0.7,
+      "triangles": 794,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/mirror_L.stl",
+      "color": "black",
+      "note": "",
+      "size_mm": [
+        9.3,
+        17.0,
+        5.4
+      ],
+      "volume_cm3": 0.57,
+      "solid_mass_g": 0.7,
+      "triangles": 794,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/spare_tire.stl",
+      "color": "tire",
+      "note": "solid ring: 5-10 % infill, or TPU",
+      "size_mm": [
+        43.2,
+        43.2,
+        14.7
+      ],
+      "volume_cm3": 14.49,
+      "solid_mass_g": 18.1,
+      "triangles": 10184,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/spare_wheel.stl",
+      "color": "silver",
+      "note": "press / glue into the tyre",
+      "size_mm": [
+        24.7,
+        24.7,
+        13.8
+      ],
+      "volume_cm3": 1.75,
+      "solid_mass_g": 2.2,
+      "triangles": 3796,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/spare_carrier.stl",
+      "color": "black",
+      "note": "two screws from inside the tailgate; wheel glues onto the spigot",
+      "size_mm": [
+        15.0,
+        8.3,
+        16.1
+      ],
+      "volume_cm3": 0.66,
+      "solid_mass_g": 0.8,
+      "triangles": 996,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/body_mount_crossbar_front.stl",
+      "color": "grey",
+      "note": "92.9 mm long; screws up into the fender rails, body posts through the holes",
+      "size_mm": [
+        16.0,
+        92.9,
+        2.4
+      ],
+      "volume_cm3": 2.82,
+      "solid_mass_g": 3.5,
+      "triangles": 4084,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/accessories/body_mount_crossbar_rear.stl",
+      "color": "grey",
+      "note": "96.2 mm long; screws up into the fender rails, body posts through the holes",
+      "size_mm": [
+        16.0,
+        96.2,
+        2.4
+      ],
+      "volume_cm3": 2.87,
+      "solid_mass_g": 3.6,
+      "triangles": 4476,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/body_shell.stl",
+      "color": "white",
+      "note": "bare shell for separately printed trim",
+      "size_mm": [
+        254.4,
+        102.2,
+        75.6
+      ],
+      "volume_cm3": 56.39,
+      "solid_mass_g": 70.5,
+      "triangles": 73768,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/body_shell_front.stl",
+      "color": "white",
+      "note": "bare shell split at the print seam",
+      "size_mm": [
+        75.3,
+        102.2,
+        139.1
+      ],
+      "volume_cm3": 28.25,
+      "solid_mass_g": 35.3,
+      "triangles": 41760,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    },
+    {
+      "file": "stl/multicolor_kit/body_shell_rear.stl",
+      "color": "white",
+      "note": "bare shell split at the print seam",
+      "size_mm": [
+        75.6,
+        102.2,
+        115.3
+      ],
+      "volume_cm3": 28.14,
+      "solid_mass_g": 35.2,
+      "triangles": 34060,
+      "non_manifold_edges": 0,
+      "winding_errors": 0,
+      "watertight": true,
+      "bodies": 1,
+      "positive_volume": true
+    }
+  ],
+  "notes": [],
+  "wall_thickness_mm": {
+    "nominal": 1.2,
+    "body_shell": {
+      "median": 1.2,
+      "p5": 0.6,
+      "p1": 0.58
+    }
+  },
+  "fitment": {
+    "wheelbase_mm": 165.0,
+    "body_length_mm": 269.4,
+    "body_width_over_flares_mm": 113.1,
+    "body_height_mm": 81.3,
+    "front_overhang_mm": 49.2,
+    "rear_overhang_mm": 55.3,
+    "inner_width_at_sills_mm": 96.5,
+    "max_tire_od_mm": 57.0,
+    "arch_opening_width_mm": 63.0,
+    "arch_top_above_axle_mm": 32.5,
+    "sill_height_above_ground_mm": 31.5,
+    "roof_height_above_ground_mm": 107.1,
+    "recommended_track_outer_mm": 107.2,
+    "post_crossbar_underside_above_ground_mm": 61.0,
+    "crossbar_front_x_range_mm": [
+      -22.1,
+      7.9
+    ],
+    "crossbar_rear_x_range_mm": [
+      155.7,
+      191.7
+    ],
+    "seams_x_mm": [
+      95.8
+    ]
+  }
+}
