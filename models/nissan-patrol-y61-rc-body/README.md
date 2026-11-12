@@ -6,20 +6,24 @@ spare, no Super Safari accessories. STL files, millimetres, ready to slice.
 
 ![Assembled preview](preview/assembled.png)
 
-The preview is the coloured model in `color/` (white body, black trim, chrome grille). The wheels
-under the body are placeholders – your chassis supplies those.
+The preview is the coloured model in `color/` (white body, charcoal trim, chrome grille), seen from
+the same three viewpoints as the reference photos. The wheels under the body are placeholders –
+your chassis supplies those.
 
 ## What this is, and what it is not
 
-- The shape is **modelled from the published Y61 dimensions** (wheelbase 2970 mm, body width
-  1840 mm, 1930 mm over flares, height 1855 mm) **and the reference photo** – it is not a 3D scan.
-  Proportions, pillar positions, window shapes, flares, lamps and grille follow the photo; small
-  items are simplified for printing at this size.
+- The shape is **modelled from the reference photo and the published Y61 dimensions** – it is not
+  a 3D scan. The side profile was fitted by overlaying the model on the side photo at the same
+  scale: roof line, windscreen rake, bonnet line, belt line, window and pillar positions, tailgate
+  lean, bumpers, flares and wheel arches all follow the photo. Plan-view shapes (how round the
+  corners are, how far the flares stand out) are estimated from the three-quarter photos.
+- It is a clean, simplified surface, not a sculpt: panel pressings, lamp internals and small trim
+  are reduced to what prints at this size.
 - Every STL was checked by the build script: one connected body, watertight, **zero non-manifold
   edges**, consistent winding, wall thickness sampled by ray casting.
 - It has **not been test-printed**. Slice the body halves first and check the fit on your chassis
   before printing the rest.
-- Left out on purpose at 1:18: lettering ("PATROL", badges' text), wipers, antenna, interior
+- Left out on purpose at 1:18: lettering ("PATROL", badge text), wipers, antenna, interior
   (the shell is empty so the chassis, motor, battery and electronics have room).
 
 ## Scale and fitment
@@ -28,19 +32,22 @@ under the body are placeholders – your chassis supplies those.
 | --- | --- | --- |
 | Scale | 1:18 | |
 | Wheelbase | **165.0 mm** | 2970 mm |
-| Length, bumper to bumper | 269 mm (278 mm with spare) | ~4850 / 5045 mm |
-| Width, sheet metal / over flares / over side steps | 102.2 / 107.2 / 110.9 mm | 1840 / 1930 / ~2000 mm |
-| Roof height above ground | 107 mm (includes 4 mm lift) | 1855 mm |
+| Length, bumper to bumper | 270 mm (278 mm with spare) | ~4860 / 5045 mm |
+| Width, sheet metal / over flares / over side steps | 102.2 / 108.7 / 110.9 mm | 1840 / 1955 / ~2000 mm |
+| Roof height above ground | 104 mm | 1875 mm |
 | Inside width between the sills | 96.5 mm | |
-| Wheel-arch opening | 63 mm wide, 32.5 mm above the axle centre | |
-| Largest tyre | **57 mm** diameter | |
-| Tyre faces flush with the flares at | 107 mm outer track | |
+| Wheel-arch opening | 55.6 mm wide, 26.8 mm above the axle centre | 1000 mm, as on the car |
+| Tyre the arches are drawn for | up to **45 mm** diameter (stock is 43 mm) | 265/70R16, 777 mm |
+| Tyre faces flush with the flares at | 109 mm outer track | |
 | Wall thickness | 1.2 mm | |
 
-The arches sit exactly on a 165 mm wheelbase. The openings are slightly larger than scale so a
-57 mm RC tyre clears them with the body 4 mm above scale ride height; the flare outline itself is
-to scale. If your chassis is wider than 107 mm across the tyres, the tyres will stand proud of the
-flares (see _Matching your chassis_).
+**Arches and tyres.** The main files keep the wheel arches and flares exactly to scale, because
+that is what makes it look like the car in the photo. Scale arches clear a tyre of up to about
+45 mm at stock ride height, or about 51 mm with the body raised 4 mm on its posts. Most 1:18
+crawler chassis run 55–58 mm tyres; for those use the files in `stl/big_tire_arches/` (arch
+openings enlarged to 63 mm for a 57 mm tyre with a 4 mm lift – the flares get thinner, the rest
+of the body is identical), or mount the scale body about 12 mm high and accept that the tyres
+cannot tuck into the arches.
 
 ## Which files to print
 
@@ -48,8 +55,9 @@ flares (see _Matching your chassis_).
 
 | File | Size | Notes |
 | --- | --- | --- |
-| `stl/body_complete.stl` | 269 × 111 × 81 mm | Whole body in one piece: shell, bumpers, flares, side steps, grille, lamps fused. Needs a ~270 mm bed. |
-| `stl/body_complete_front.stl` + `stl/body_complete_rear.stl` | 145 / 125 mm tall | The same body cut at the B-pillar. Fits a 180 mm printer. |
+| `stl/body_complete.stl` | 270 × 111 × 82 mm | Whole body in one piece: shell, bumpers, flares, side steps, grille, lamps fused. Needs a ~270 mm bed. |
+| `stl/body_complete_front.stl` + `stl/body_complete_rear.stl` | 143 / 127 mm tall | The same body cut at the B-pillar. Fits a 180 mm printer. |
+| `stl/big_tire_arches/body_complete*.stl` | same | The same three files with arches cut for 57 mm RC tyres. |
 
 **Accessories** (`stl/accessories/`) – small parts that cannot sensibly be printed as part of the shell:
 
@@ -72,15 +80,16 @@ STL cannot store colour, so the painted body is also exported in `color/`:
 
 | File | Use |
 | --- | --- |
-| `patrol_y61_colored.glb` | View in any glTF viewer, phone AR viewers, Blender. Metres, Y up. |
+| `patrol_y61_colored.glb` | View in any glTF viewer, phone AR viewers, Blender. Metres, Y up, smooth-shaded. |
 | `patrol_y61_colored.obj` + `.mtl` | Universal fallback. Millimetres, Z up. |
-| `patrol_y61_colored.3mf` | Multi-colour printing: opens in Bambu Studio / OrcaSlicer / PrusaSlicer as one object made of 30 parts, each with its colour, so you can assign a filament per part. |
+| `patrol_y61_colored.3mf` | Multi-colour printing: opens in Bambu Studio / OrcaSlicer / PrusaSlicer as one object made of coloured parts, so you can assign a filament per part. |
 
-Colours follow the reference photo: white body; satin-black bumpers, flares, side steps, mirrors,
-door handles, window frames/pillars and glass rubbers; chrome grille surround, wing bars, badge
-and tailgate garnish over a black mesh; red taillights with the clear centre band; dark tinted
-glass; silver steel spare wheel. The black details on the shell (`body_black_trim`) are cut out as
-their own volume, so they can be printed in black instead of painted.
+Colours follow the reference photo: white body; charcoal bumpers, flares, side steps, mirrors,
+door handles, window frames/pillars and glass rubbers; chrome grille surround, wing bars, badge,
+headlight reflectors and tailgate garnish over a black mesh; amber indicators; red taillights with
+the clear centre band; dark tinted glass; silver steel spare wheel. The black details on the shell
+(`body_black_trim`) are cut out as their own volume, so they can be printed in black instead of
+painted.
 
 ## Printing
 
@@ -96,7 +105,7 @@ their own volume, so they can be printed in black instead of painted.
   - Bumpers and side steps are upside down, lamps/grille/glazing lie on their backs, mirrors on
     the glass face, flares on the back face (a few support lines under the leg tips).
 - **Infill:** 10–15 % for bumpers, steps and the spare tyre (solid, chunky parts). Walls are solid.
-- **Weight:** about 75–90 g printed for the fused body (104 cm³ of plastic if printed 100 % solid).
+- **Weight:** about 80–100 g printed for the fused body (115 cm³ of plastic if printed 100 % solid).
 
 ## Assembly
 
@@ -108,8 +117,9 @@ their own volume, so they can be printed in black instead of painted.
    pilot holes every 6 mm. Screw a crossbar up into the rails (M2 × 6 self-tapping) at the
    fore-aft position of your body posts. The crossbar has a staggered pattern of 4.4 mm post
    holes; the posts come up through them and standard body clips go on above the bar, reached
-   through the wheel arch or a window. The bar underside sits 61 mm above the ground at design
-   ride height – raise or lower the body by moving the clips on the posts.
+   through the wheel arch or a window. The bar underside sits 49 mm above the ground at scale
+   ride height (60 mm on the big-tyre variant) – raise or lower the body by moving the clips on
+   the posts.
 3. **Chassis clearance.** The nose and tail panels have a 46 mm wide slot behind the bumpers for
    the chassis frame ends. Remove the chassis' own bumpers.
 4. **Lights (optional).** Each headlight has a 3 mm LED socket behind the lens; each taillight has
@@ -129,9 +139,9 @@ tyres, tyre diameter, body-post diameter and spacing – and regenerate if it di
 cd generate
 pip install -r requirements.txt
 
-python3 build.py                                   # as supplied: true 1:18, 165 mm wheelbase
+python3 build.py                                   # as supplied: true 1:18, scale arches
+python3 build.py --tire-od 57 --lift 4             # arches enlarged for 57 mm tyres (big_tire_arches)
 python3 build.py --wheelbase 155                   # shorter chassis: whole body scales to 1:19.2
-python3 build.py --tire-od 60 --lift 6             # bigger tyres: larger arch openings, more lift
 python3 build.py --width-scale 1.12                # wider axles: stretch the body sideways only
 python3 build.py --post-d 4 --post-spacing-front 40 --post-spacing-rear 44   # exact post holes
 python3 build.py --scale 10                        # 1:10 class: 313 mm wheelbase, 2 mm wall, M3
@@ -139,8 +149,8 @@ python3 build.py --scale 10                        # 1:10 class: 313 mm wheelbas
 
 `--wheelbase` keeps the car in proportion (everything scales together). `--width-scale` trades a
 little accuracy for tyres that sit inside the flares. The script prints a warning if a tyre is too
-big for the fender at the chosen lift, re-validates every part, and rewrites `stl/`, `preview/`
-and `manifest.json`.
+big for the fender at the chosen lift, re-validates every part, and rewrites `stl/`, `color/`,
+`preview/` and `manifest.json`.
 
 ## How the model is built
 
@@ -148,8 +158,9 @@ and `manifest.json`.
 [manifold3d](https://github.com/elalish/manifold):
 
 - `body.py` – the outer skin: a lower body lofted nose-to-tail (plan taper, barrelled flanks,
-  bonnet crown and centre bulge, rounded nose and tail) joined to a greenhouse lofted belt-to-roof
-  (47° windscreen with plan bow, 14° tumblehome, leaning tailgate glass, roof crown).
+  crowned bonnet with its raised centre, rounded nose, forward-leaning tailgate) joined to a
+  greenhouse lofted belt-to-roof (47° windscreen with plan bow, 12° tumblehome, 19° tailgate
+  glass, roof crown).
 - `model.py` – hollows the skin to a constant wall, then cuts arches, windows, panel lines and
   pockets, and builds flares, bumpers, steps, lamps, grille, mirrors, spare, seam ribs and mounts.
 - `color.py` – the painted model: per-part colours, GLB / OBJ / 3MF writers.

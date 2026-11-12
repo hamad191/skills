@@ -34,13 +34,13 @@ class Body:
         self.t = P.wall
 
         # --- key stations --------------------------------------------------
-        self.x_face = R(-780.0)  # grille plane (centreline)
-        self.x_rear = R(3800.0)  # tailgate skin below the belt
+        self.x_face = R(-735.0)  # grille plane (centreline)
+        self.x_rear = R(3850.0)  # tailgate skin at bumper height
         self.x_cowl = R(520.0)  # windscreen base at the centreline
-        self.z_belt = R(1270.0)
+        self.z_belt = R(1285.0)
         self.z_sill = R(495.0)
         self.z_floor = R(300.0)  # construction floor, trimmed away later
-        self.z_top0 = R(1800.0)  # roof edge height before the roofline warp
+        self.z_top0 = R(1815.0)  # roof edge height before the roofline warp
 
         # --- lower body ----------------------------------------------------
         self.r_nose = R(170.0)
@@ -56,7 +56,7 @@ class Body:
         self.nose_lean = np.tan(np.radians(3.0))
         self._zsh = Pchip(
             R(np.array([-900.0, -780, -600, 0, 400, 600, 700, 4300])),
-            R(np.array([1110.0, 1120, 1136, 1190, 1247, 1270, 1270, 1270])),
+            R(np.array([1125.0, 1140, 1152, 1195, 1258, 1285, 1285, 1285])),
         )
         self._wpl = Pchip(
             R(np.array([-900.0, -780, -400, 0, 600, 3000, 3400, 3800, 4300])),
@@ -64,26 +64,28 @@ class Body:
         )
         self._crown = Pchip(
             R(np.array([-900.0, -780, 0, 450, 600, 700, 4300])),
-            R(np.array([30.0, 30, 34, 28, 15, 0, 0])),
+            R(np.array([30.0, 30, 45, 55, 50, 0, 0])),
         )
         self._ycr = Pchip(R(np.array([-900.0, -780, 520, 4300])), Ry(np.array([410.0, 420, 640, 640])))
-        self.bulge_h = R(10.0)
-        self.bulge_blend = Ry(70.0)
+        self.bulge_h = R(22.0)
+        self.bulge_blend = Ry(45.0)
 
         # --- greenhouse ----------------------------------------------------
-        self.tau = np.radians(14.0)  # tumblehome
+        self.tau = np.radians(12.0)  # tumblehome
         self.lean_f = np.radians(90.0 - 47.0)  # windscreen, from vertical
-        self.lean_r = np.radians(14.0)  # tailgate glass, from vertical
+        self.lean_r = np.radians(19.0)  # tailgate glass, from vertical
+        self.tail_lean = np.tan(np.radians(8.0))  # tailgate skin below the glass
+        self.z_tail0 = R(830.0)  # the tailgate leans forward above this height
         self.rs, self.rf, self.rr = (max(R(v), self.r_min + 1.0) for v in (70.0, 80.0, 60.0))  # roof edge radii
-        self.rc_f, self.rc_r = R(95.0), R(100.0)  # A / D pillar plan radii
+        self.rc_f, self.rc_r = R(95.0), R(110.0)  # A / D pillar plan radii
         self.bow_f = R(80.0)  # windscreen plan bow
-        self.gh_inset_rear = 0.5 * P.k
+        self.gh_inset_rear = 0.8 * P.k
         self.gh_embed = max(4.0 * self.t + 2.0, 12.0 * P.k)
         self._roof = Pchip(
             R(np.array([-900.0, 900, 1050, 1500, 2000, 3000, 3700, 4300])),
-            R(np.array([1762.0, 1762, 1770, 1812, 1826, 1826, 1812, 1806])),
+            R(np.array([1790.0, 1790, 1802, 1840, 1850, 1850, 1840, 1834])),
         )
-        self.roof_crown = R(30.0)
+        self.roof_crown = R(25.0)
         self.roof_halfw = Ry(700.0)
 
         self.step = 3.0 * max(P.k, 0.55)  # loft station pitch
@@ -161,9 +163,13 @@ class Body:
         wF = self._wpl(self.x_cowl + self.bow_f) - self.k_up - self.ledge
         return self.x_cowl + (z_pre - self.z_belt) * np.tan(self.lean_f) + self.bow_f * (y / wF) ** 2
 
+    def tail_x(self, z):
+        """X of the tailgate skin (lower body) at height z."""
+        return self.x_rear - self.tail_lean * np.clip(np.asarray(z, float) - self.z_tail0, 0, None)
+
     def rear_x(self, z_pre):
         """Tailgate glass X at design height z_pre."""
-        return self.x_rear - self.gh_inset_rear - (z_pre - self.z_belt) * np.tan(self.lean_r)
+        return float(self.tail_x(self.z_belt)) - self.gh_inset_rear - (z_pre - self.z_belt) * np.tan(self.lean_r)
 
     # ------------------------------------------------------------------
     # lower body
@@ -239,6 +245,9 @@ class Body:
         fade = 1 - smoothstep((x - self.x_face) / self.P.R(150.0))
         wref = self._wpl(self.x_face)
         rings[..., 0] = x + fade * (self.nose_bow * (y / wref) ** 2 + self.nose_lean * np.clip(z - self.P.R(880.0), 0, None))
+        # tailgate: the whole rounded tail leans forward above the bumper
+        back = smoothstep((x - (self.x_rear - self.P.R(520.0))) / self.P.R(380.0))
+        rings[..., 0] -= back * self.tail_lean * np.clip(z - self.z_tail0, 0, None)
         V, F = loft(rings, (1, 2))
         bottom_idx = np.nonzero(np.tile(bottom, len(xs)))[0] + 4 * rings.shape[1]
         assert nh * 2 - 2 == rings.shape[1]
@@ -264,7 +273,7 @@ class Body:
         e = 1.2 * self.P.k * np.clip((zb - z) / self.gh_embed, 0.0, 1.0)
         dW = self._lean_arc(z, zb, zt, self.tau, self.rs) + e
         xf = self.x_cowl + self._lean_arc(z, zb, zt, self.lean_f, self.rf) + e
-        xr = self.x_rear - self.gh_inset_rear - self._lean_arc(z, zb, zt, self.lean_r, self.rr) - e
+        xr = float(self.tail_x(zb)) - self.gh_inset_rear - self._lean_arc(z, zb, zt, self.lean_r, self.rr) - e
         return xf, xr, dW
 
     def _gh_outline(self, xf, xr, dW):
@@ -363,7 +372,7 @@ class Body:
                 if delta < 0:
                     # the rings packed against the flat nose / tail caps would
                     # fold over the offset cap; pin them to the offset planes
-                    Vl2[:, 0] = np.minimum(Vl2[:, 0], self.x_rear + delta)
+                    Vl2[:, 0] = np.minimum(Vl2[:, 0], self.tail_x(Vl2[:, 2]) + delta)
                     Vl2[:, 0] = np.maximum(Vl2[:, 0], self.face_x(Vl2[:, 1], Vl2[:, 2]) - delta)
             else:
                 Vl2, Vg2 = Vl.copy(), Vg

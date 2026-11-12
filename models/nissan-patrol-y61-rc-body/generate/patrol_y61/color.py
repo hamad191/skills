@@ -14,6 +14,8 @@ import struct
 import zipfile
 
 import numpy as np
+import shapely.geometry as sg
+from shapely import affinity
 from shapely.ops import unary_union
 
 from . import geom as g
@@ -21,13 +23,14 @@ from . import geom as g
 # name: (sRGB colour, alpha, metallic, roughness)
 MATERIALS = {
     "body_white": ((0.94, 0.94, 0.92), 1.0, 0.0, 0.45),
-    "trim_black": ((0.075, 0.075, 0.08), 1.0, 0.0, 0.75),
+    "trim_black": ((0.15, 0.15, 0.16), 1.0, 0.0, 0.8),  # unpainted plastic is charcoal, not pure black
     "chrome": ((0.80, 0.82, 0.84), 1.0, 0.9, 0.25),
     "grille_black": ((0.04, 0.04, 0.045), 1.0, 0.0, 0.8),
     "lens_clear": ((0.76, 0.83, 0.89), 1.0, 0.3, 0.15),
     "lens_red": ((0.74, 0.05, 0.07), 1.0, 0.1, 0.25),
+    "lens_amber": ((0.93, 0.55, 0.16), 1.0, 0.1, 0.3),
     "glass": ((0.13, 0.17, 0.20), 0.62, 0.0, 0.1),
-    "tire_black": ((0.05, 0.05, 0.055), 1.0, 0.0, 0.9),
+    "tire_black": ((0.09, 0.09, 0.095), 1.0, 0.0, 0.95),
     "wheel_silver": ((0.72, 0.74, 0.77), 1.0, 0.6, 0.4),
 }
 PART_MATERIAL = [  # first matching prefix wins
@@ -74,6 +77,17 @@ def _split_shell(model):
     return model.shell - cutter, model.shell ^ cutter
 
 
+def _split_headlight(model, solid):
+    """Chrome main reflector, amber indicator, clear lens."""
+    P, B = model.P, model.B
+    R, Ry = P.R, P.Ry
+    fr = lambda shp: g.extrude_x(shp, B.x_face - 8.0, B.x_face + R(260.0))
+    both = lambda shp: unary_union([shp, affinity.scale(shp, -1, 1, origin=(0, 0))])
+    refl = fr(both(sg.Point(Ry(560.0), R(1005.0)).buffer(R(78.0), quad_segs=14)))
+    ind = fr(both(sg.Point(Ry(790.0), R(940.0)).buffer(R(40.0), quad_segs=10)))
+    return [(solid - refl - ind, "lens_clear"), (solid ^ refl, "chrome"), (solid ^ ind, "lens_amber")]
+
+
 def _paint_grille(model, V, F):
     """Chrome surround / bars / badge, black mesh and backing."""
     B, k = model.B, model.k
@@ -97,6 +111,12 @@ def colored_parts(kit, fused):
         out.append((name, V, F, np.full(len(F), mat, dtype=object)))
     for name, p in fused.parts.items():
         if not name.startswith(fused.FUSE):
+            continue
+        if name.startswith("headlight_"):
+            for i, (sol, mat) in enumerate(_split_headlight(fused, p["solid"])):
+                if not sol.is_empty():
+                    V, F = _mesh(sol)
+                    out.append((name if i == 0 else f"{name}_{mat}", V, F, np.full(len(F), mat, dtype=object)))
             continue
         V, F = _mesh(p["solid"])
         if name == "grille":
@@ -138,6 +158,24 @@ def write_obj(path, parts):
             off += len(V)
 
 
+def shaded_groups(parts, mname):
+    """All triangles of one material as (positions, normals, indices) with creased smooth normals."""
+    ps, ns = [], []
+    for _, V, F, mats in parts:
+        sel = mats == mname
+        if not sel.any():
+            continue
+        cn = g.corner_normals(V, F)
+        ps.append(V[F[sel]].reshape(-1, 3))
+        ns.append(cn[sel].reshape(-1, 3))
+    if not ps:
+        return None
+    Pc, Nc = np.concatenate(ps), np.concatenate(ns)
+    key = np.concatenate([np.round(Pc, 4), np.round(Nc, 2)], axis=1)
+    _, first, inv = np.unique(key, axis=0, return_index=True, return_inverse=True)
+    return Pc[first], Nc[first], inv.reshape(-1, 3)
+
+
 # ----------------------------------------------------------------------------- GLB
 def write_glb(path, parts):
     """Binary glTF 2.0: one primitive per material, metres, Y up."""
@@ -154,25 +192,18 @@ def write_glb(path, parts):
         return len(views) - 1
 
     for mi, mname in enumerate(names):
-        vs, fs, n = [], [], 0
-        for _, V, F, mats in parts:
-            sel = F[mats == mname]
-            if len(sel) == 0:
-                continue
-            used, inv = np.unique(sel, return_inverse=True)
-            vs.append(V[used])
-            fs.append(inv.reshape(-1, 3) + n)
-            n += len(used)
-        if not vs:
+        got = shaded_groups(parts, mname)
+        if got is None:
             continue
-        Vm = np.concatenate(vs).astype(np.float32)
-        Fm = np.concatenate(fs).astype(np.uint32)
+        Vm, Nm, Fm = (got[0].astype(np.float32), got[1].astype(np.float32), got[2].astype(np.uint32))
         pv = push(Vm.tobytes(), 34962)
         accessors.append(dict(bufferView=pv, componentType=5126, count=len(Vm), type="VEC3",
                               min=Vm.min(0).tolist(), max=Vm.max(0).tolist()))
+        nv = push(Nm.tobytes(), 34962)
+        accessors.append(dict(bufferView=nv, componentType=5126, count=len(Nm), type="VEC3"))
         iv = push(Fm.tobytes(), 34963)
         accessors.append(dict(bufferView=iv, componentType=5125, count=int(Fm.size), type="SCALAR"))
-        prims.append(dict(attributes=dict(POSITION=len(accessors) - 2), indices=len(accessors) - 1, material=mi, mode=4))
+        prims.append(dict(attributes=dict(POSITION=len(accessors) - 3, NORMAL=len(accessors) - 2), indices=len(accessors) - 1, material=mi, mode=4))
 
     materials = []
     for mname in names:

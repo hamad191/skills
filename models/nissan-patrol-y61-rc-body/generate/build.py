@@ -225,14 +225,14 @@ def main():
     manifest["fitment"] = dict(
         wheelbase_mm=round(P.wheelbase, 1),
         body_length_mm=round(bbb[3] - bbb[0], 1), body_width_over_steps_mm=round(bbb[4] - bbb[1], 1),
-        body_width_over_flares_mm=round(2 * (kit.W + P.Ry(45.0)), 1), body_width_sheet_metal_mm=round(2 * kit.W, 1),
+        body_width_over_flares_mm=round(2 * (kit.W + P.Ry(58.0)), 1), body_width_sheet_metal_mm=round(2 * kit.W, 1),
         body_height_mm=round(bbb[5] - bbb[2], 1),
         front_overhang_mm=round(-bbb[0], 1), rear_overhang_mm=round(bbb[3] - P.wheelbase, 1),
         inner_width_at_sills_mm=round(2 * (float(B.side_y(P.wheelbase / 2, B.z_sill)) - P.wall), 1),
         max_tire_od_mm=P.tire_od, arch_opening_width_mm=round(2 * fa["a_in"], 1),
         arch_top_above_axle_mm=round(fa["top_in"] - P.z_axle, 1),
         sill_height_above_ground_mm=round(B.z_sill + P.lift, 1), roof_height_above_ground_mm=round(bbb[5] + P.lift, 1),
-        recommended_track_outer_mm=round(2 * (kit.W + P.Ry(45.0)), 1),
+        recommended_track_outer_mm=round(2 * (kit.W + P.Ry(58.0)), 1),
         post_crossbar_underside_above_ground_mm=round(z0 - max(2.4, 4.0 * P.k) + P.lift, 1),
         crossbar_front_x_range_mm=[round(v, 1) for v in (kit.rail_holes["front"][0][0], kit.rail_holes["front"][-1][0])],
         crossbar_rear_x_range_mm=[round(v, 1) for v in (kit.rail_holes["rear"][0][0], kit.rail_holes["rear"][-1][0])],
@@ -265,12 +265,15 @@ def previews(kit, fused, body, P, folder, painted):
     cx, h = L / 2, P.R(1000.0)
     gz = -P.lift  # ground plane in body coordinates
 
+    u = P.s  # full-size mm -> model mm
+
     def cams(size):
+        # the same three viewpoints as the reference photos, plus a high front quarter
         return [
-            ((cx - 2.5 * L, -2.1 * L, h + 0.75 * L), (cx, 0, h * 0.85)),
-            ((cx, -4.7 * L, h * 1.05), (cx, 0, h * 0.85)),
-            ((cx + 2.6 * L, -2.0 * L, h + 0.8 * L), (cx, 0, h * 0.85)),
-            ((cx - 2.3 * L, 2.3 * L, h + 1.6 * L), (cx, 0, h * 0.8)),
+            ((-3900 * u, -3000 * u, 1350 * u), (650 * u, -100 * u, 820 * u), 36),
+            ((cx, -4.7 * L, h * 1.05), (cx, 0, h * 0.85), 24),
+            ((7000 * u, -3700 * u, 1750 * u), (2350 * u, 0, 850 * u), 31),
+            ((cx - 2.3 * L, 2.3 * L, h + 1.6 * L), (cx, 0, h * 0.8), 24),
         ]
 
     # the painted model, on preview wheels
@@ -285,12 +288,12 @@ def previews(kit, fused, body, P, folder, painted):
 
     sc = painted_scene(True)
     size = (1100, 700)
-    contact_sheet([sc.render(e, t, fov=24, size=size, ground_z=gz) for e, t in cams(size)], cols=2).save(os.path.join(folder, "assembled.png"))
+    contact_sheet([sc.render(e, t, fov=f, size=size, ground_z=gz, bg=(128, 131, 137)) for e, t, f in cams(size)], cols=2).save(os.path.join(folder, "assembled.png"))
 
     # the one-piece body exactly as exported
     sc = Scene().add(body, "white").build()
-    views = cams(size)[:3] + [((cx, -0.6 * L, -3.6 * L), (cx, 0, h * 0.9))]
-    contact_sheet([sc.render(e, t, fov=24, size=size) for e, t in views], cols=2).save(os.path.join(folder, "body_complete.png"))
+    views = cams(size)[:3] + [((cx, -0.6 * L, -3.6 * L), (cx, 0, h * 0.9), 24)]
+    contact_sheet([sc.render(e, t, fov=f, size=size) for e, t, f in views], cols=2).save(os.path.join(folder, "body_complete.png"))
 
     # detail close-ups
     sc = painted_scene(False)

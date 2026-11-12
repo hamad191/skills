@@ -6,7 +6,7 @@ import numpy as np
 import trimesh
 from PIL import Image
 
-from .geom import mesh_arrays
+from .geom import corner_normals, mesh_arrays
 
 COLORS = {
     "white": (238, 238, 236),
@@ -22,11 +22,13 @@ COLORS = {
 
 
 class Scene:
-    def __init__(self):
+    def __init__(self, smooth=True):
         self.V = []
         self.F = []
         self.C = []
+        self.N = []
         self.n = 0
+        self.smooth = smooth
 
     def add(self, man, color="white"):
         if man is None or man.is_empty():
@@ -36,6 +38,7 @@ class Scene:
         self.F.append(F + self.n)
         col = np.array(COLORS[color] if isinstance(color, str) else color, float)
         self.C.append(np.tile(col, (len(F), 1)))
+        self.N.append(corner_normals(V, F) if self.smooth else None)
         self.n += len(V)
         return self
 
@@ -44,6 +47,7 @@ class Scene:
         self.V.append(V)
         self.F.append(F + self.n)
         self.C.append(np.asarray(face_rgb, float))
+        self.N.append(corner_normals(V, F) if self.smooth else None)
         self.n += len(V)
         return self
 
@@ -54,7 +58,25 @@ class Scene:
         self.col = np.concatenate(self.C)
         self.inter = trimesh.ray.ray_pyembree.RayMeshIntersector(self.mesh)
         self.fn = self.mesh.face_normals
+        self.cn = np.concatenate(self.N) if self.smooth else None
+        self.tris = V[F]
         return self
+
+    def normals_at(self, tri, orig, dirs):
+        """Shading normal for each ray hit (interpolated across the triangle when smooth)."""
+        if self.cn is None:
+            return self.fn[tri]
+        t = self.tris[tri]
+        e1, e2 = t[:, 1] - t[:, 0], t[:, 2] - t[:, 0]
+        pv = np.cross(dirs, e2)
+        det = np.einsum("ij,ij->i", e1, pv)
+        det = np.where(np.abs(det) < 1e-12, 1e-12, det)
+        tv = orig - t[:, 0]
+        u = np.clip(np.einsum("ij,ij->i", tv, pv) / det, 0, 1)
+        v = np.clip(np.einsum("ij,ij->i", dirs, np.cross(tv, e1)) / det, 0, 1)
+        n = self.cn[tri]
+        out = n[:, 0] * (1 - u - v)[:, None] + n[:, 1] * u[:, None] + n[:, 2] * v[:, None]
+        return out / np.maximum(np.linalg.norm(out, axis=1), 1e-12)[:, None]
 
     def render(self, eye, target, fov=28.0, size=(1200, 800), ss=2, bg=(92, 95, 102), ground_z=None):
         W, H = size[0] * ss, size[1] * ss
@@ -85,9 +107,9 @@ class Scene:
             sh = self.inter.intersects_any(gp + np.array([0, 0, 0.05]), np.tile(np.array([0.15, 0.1, 1.0]), (len(gp), 1)))
             base = np.array(bg, float) * 1.08
             img[g] = np.where(sh[:, None], base * 0.62, base)
-        n = self.fn[tri[hit]]
         d = dirs[hit]
-        n = np.where((np.einsum("ij,ij->i", n, d) > 0)[:, None], -n, n)
+        n = self.normals_at(tri[hit], orig[hit], d)
+        n = np.where((np.einsum("ij,ij->i", self.fn[tri[hit]], d) > 0)[:, None], -n, n)
         key = np.array([-0.45, -0.5, 0.74])
         key /= np.linalg.norm(key)
         fill = np.array([0.6, 0.55, 0.3])
@@ -105,6 +127,30 @@ class Scene:
         if ss > 1:
             im = im.resize(size, Image.LANCZOS)
         return im
+
+
+def render_ortho(scene, center, fwd, half_w, size=(1200, 800), ss=2, bg=(255, 255, 255)):
+    """Orthographic view (no perspective) - for comparing silhouettes against drawings/photos."""
+    W, H = size[0] * ss, size[1] * ss
+    fwd = np.asarray(fwd, float) / np.linalg.norm(fwd)
+    up = np.array([0, 0, 1.0]) if abs(fwd[2]) < 0.95 else np.array([0, 1.0, 0])
+    right = np.cross(fwd, up)
+    right /= np.linalg.norm(right)
+    upv = np.cross(right, fwd)
+    half_h = half_w * H / W
+    gx, gy = np.meshgrid(((np.arange(W) + 0.5) / W * 2 - 1) * half_w, (1 - (np.arange(H) + 0.5) / H * 2) * half_h)
+    orig = np.asarray(center, float)[None] + right[None] * gx.reshape(-1, 1) + upv[None] * gy.reshape(-1, 1) - fwd[None] * 5000.0
+    dirs = np.tile(fwd, (len(orig), 1))
+    tri = scene.inter.intersects_first(orig, dirs)
+    img = np.tile(np.array(bg, float), (len(orig), 1))
+    hit = tri >= 0
+    n = scene.normals_at(tri[hit], orig[hit], dirs[hit])
+    n = np.where((scene.fn[tri[hit]] @ fwd > 0)[:, None], -n, n)
+    key = np.array([-0.45, -0.5, 0.74]) / np.linalg.norm([-0.45, -0.5, 0.74])
+    lam = 0.45 + 0.4 * np.clip(n @ key, 0, 1) + 0.25 * np.clip(-(n @ fwd), 0, 1)
+    img[hit] = scene.col[tri[hit]] * np.clip(lam, 0, 1.1)[:, None]
+    im = Image.fromarray(np.clip(img, 0, 255).reshape(H, W, 3).astype(np.uint8))
+    return im.resize(size, Image.LANCZOS) if ss > 1 else im, hit.reshape(H, W)
 
 
 def contact_sheet(images, cols=2, pad=6, bg=(60, 62, 68)):
