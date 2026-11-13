@@ -107,7 +107,7 @@ class Model:
             x = float(B.ws_x(zp))
             return np.array([x, 0.0, float(B.gz(zp, x))])
 
-        a, b = cl(R(1320.0)), cl(R(1745.0))
+        a, b = cl(R(1305.0)), cl(R(1728.0))
         t = (b - a) / np.linalg.norm(b - a)
         self.ws_O = np.array([B.x_cowl, 0.0, B.z_belt])
         self.ws_t = t
@@ -183,9 +183,8 @@ class Model:
         a = self.arch(xc)
         cin, cout = a["inner"], a["outer"]
         t = P.wall
-        p = P.Ry(58.0)  # flare stand-out from the flank
+        p = P.Ry(45.0)  # flare stand-out from the flank
         e, lip = 0.8 * k, 1.2 * k
-        face = 0.74  # share of the band that is flat face before the edge rolls off
         gap = -OV if self.fused else P.fit
         back = -OV if self.fused else 0.0
         deep = -(t + 0.6 * k)
@@ -195,8 +194,8 @@ class Model:
             d = cout[i] - cin[i]
             band = float(np.linalg.norm(d))
             er = d / band
-            prof = [(-lip, deep), (-lip, p - k), (-lip + 0.3 * k, p - 0.3 * k), (-lip + k, p), (face * band, p)]
-            prof += [((face + (1 - face) * np.sin(f)) * band, e + (p - e) * np.cos(f)) for f in phi]
+            prof = [(-lip, deep), (-lip, p - k), (-lip + 0.3 * k, p - 0.3 * k), (-lip + k, p), (0.5 * band, p)]
+            prof += [((0.5 + 0.5 * np.sin(f)) * band, e + (p - e) * np.cos(f)) for f in phi]
             prof += [(band, back), (0.75 * band, back), (0.5 * band, back), (0.25 * band, back), (-gap, back), (-gap, deep)]
             prof = np.array(prof)
             xz = cin[i][None] + prof[:, :1] * er[None]
@@ -221,27 +220,27 @@ class Model:
     def window_shapes(self):
         """Side-view glass outlines (model xz), keyed by name."""
         r = self.P.R
-        front = g.rpoly(self.pts([(850, 1305), (1680, 1305), (1680, 1753), (1130, 1753), (850, 1455)]), r(45))
-        rear_a = g.rpoly(self.pts([(1806, 1305), (2300, 1305), (2300, 1753), (1806, 1753)]), r(40))
-        rear_b = g.rpoly(self.pts([(2336, 1305), (2640, 1305), (2640, 1753), (2336, 1753)]), r(40))
-        quarter = g.rpoly(self.pts([(2740, 1305), (3600, 1305), (3545, 1753), (2740, 1753)]), r(70))
+        front = g.rpoly(self.gh_pts([(850, 1290), (1680, 1290), (1680, 1740), (1123, 1740), (850, 1447)]), r(45))
+        rear_a = g.rpoly(self.gh_pts([(1806, 1290), (2300, 1290), (2300, 1740), (1806, 1740)]), r(40))
+        rear_b = g.rpoly(self.gh_pts([(2336, 1290), (2640, 1290), (2640, 1740), (2336, 1740)]), r(40))
+        quarter = g.rpoly(self.gh_pts([(2740, 1290), (3640, 1290), (3530, 1740), (2740, 1740)]), r(70))
         return {"front_door": front, "rear_door": unary_union([rear_a, rear_b]), "quarter": quarter}
 
     def windscreen_shape(self):
         """Windscreen opening in glass-plane coordinates (y, v)."""
         P, B = self.P, self.B
-        z0, z1 = P.R(1320.0), P.R(1745.0)
+        z0, z1 = P.R(1305.0), P.R(1728.0)
         xs = B.x_cowl + B.bow_f
         yb = float(B.gh_halfw(xs, z0)) - P.Ry(88.0)
         yt = float(B.gh_halfw(xs, z1)) - P.Ry(78.0)
         ys = np.linspace(-yb, yb, 15)
-        bottom = [self.ws_uv(y, z0 + P.R(40.0) * (1 - (y / yb) ** 2)) for y in ys]
+        bottom = [self.ws_uv(y, z0 + P.R(22.0) * (1 - (y / yb) ** 2)) for y in ys]
         top = [self.ws_uv(yt, z1), self.ws_uv(-yt, z1)]
         return g.rpoly(bottom + top, P.R(55.0))
 
     def rear_window_shapes(self):
         P, B = self.P, self.B
-        z0, z1 = P.R(1320.0), P.R(1740.0)
+        z0, z1 = P.R(1305.0), P.R(1722.0)
         xr = P.R(3700.0)
         ys = P.Ry(-184.0)  # barn door split (the left door is the narrow one)
         bar = P.Ry(62.0)
@@ -290,7 +289,7 @@ class Model:
         ws = self.windscreen_shape()
         cut.append(self.ws_prism(ws))
         rw, y_split = self.rear_window_shapes()
-        self._rw_prism = lambda s: g.extrude_x(s, B.x_rear - R(400.0), B.x_rear + 6.0)
+        self._rw_prism = lambda s: g.extrude_x(s, B.x_rear - R(300.0), B.x_rear + 6.0)
         for shp in rw.values():
             cut.append(self._rw_prism(shp))
         shell = shell - g.union(cut)
@@ -300,10 +299,10 @@ class Model:
         rub = 1.3 * k
         grooves = []
         lines = [
-            self.pts([(581, 532), (581, 1277)]),  # front door leading edge
+            self.pts([(581, 532), (581, 1262)]),  # front door leading edge
             self.pts([(581, 532), (2350, 532)]),  # door bottoms
-            self.pts([(1724, 532), (1724, 1755)]),  # B pillar shut line
-            self.pts([(2690, 1070), (2690, 1755)]),  # rear door trailing edge
+            self.gh_pts([(1724, 532), (1724, 1742)]),  # B pillar shut line
+            self.gh_pts([(2690, 1070), (2690, 1742)]),  # rear door trailing edge
         ]
         for ln in lines:
             grooves.append(self.across(g.stroke(ln, gw)))
@@ -320,8 +319,8 @@ class Model:
         for sgn in (-1, 1):
             grooves.append(g.extrude_z(g.stroke([(R(1090.0), sgn * Ry(640.0)), (R(3540.0), sgn * Ry(628.0))], 1.4 * gw), R(1700.0), R(1950.0)))
         # tailgate: barn door split, door bottoms, number plate recess
-        rear = lambda s: g.extrude_x(s, B.x_rear - R(400.0), B.x_rear + 6.0)
-        ztop = float(B.gz(R(1790.0), B.rear_x(R(1790.0))))
+        rear = lambda s: g.extrude_x(s, B.x_rear - R(260.0), B.x_rear + 6.0)
+        ztop = float(B.gz(R(1770.0), B.rear_x(R(1770.0))))
         grooves.append(rear(g.stroke([(y_split, R(842.0)), (y_split, ztop)], gw)))
         grooves.append(rear(g.stroke([(-Ry(735.0), R(842.0)), (Ry(735.0), R(842.0))], gw)))
         grooves.append(rear(outline(g.rrect(Ry(-655.0), R(905.0), Ry(-285.0), R(1105.0), R(20.0)), 0.0, gw)))
@@ -364,8 +363,8 @@ class Model:
     # ------------------------------------------------------------------ front
     def front_shapes(self):
         R, Ry = self.P.R, self.P.Ry
-        grille = g.rrect(-Ry(418.0), R(894.0), Ry(418.0), R(1110.0), R(16.0))
-        lamp = g.rrect(Ry(438.0), R(902.0), self.W + 8.0, R(1108.0), R(30.0))
+        grille = g.rrect(-Ry(418.0), R(894.0), Ry(418.0), R(1086.0), R(16.0))
+        lamp = g.rrect(Ry(438.0), R(902.0), self.W + 8.0, R(1082.0), R(30.0))
         return grille, lamp
 
     def front_details(self, shell):
@@ -408,17 +407,14 @@ class Model:
 
         # headlight lenses with LED sockets behind them
         lens = fr(self.inset(lamp)) ^ (B.grown(0.4 * k) - floor)
-        yc, zc2 = Ry(560.0), R(1005.0)
+        yc, zc2 = Ry(560.0), R(992.0)
         mw = max(0.2, 0.3 * k)
         marks = unary_union([
             sg.Point(yc, zc2).buffer(R(78.0), quad_segs=14).exterior.buffer(mw),
-            sg.LineString([(Ry(690.0), R(902.0)), (Ry(690.0), R(1108.0))]).buffer(mw),
+            sg.LineString([(Ry(690.0), R(902.0)), (Ry(690.0), R(1082.0))]).buffer(mw),
             sg.Point(Ry(790.0), R(940.0)).buffer(R(40.0), quad_segs=10).exterior.buffer(mw),
         ]).intersection(lamp.buffer(-0.6 * k))
         lens = lens - (fr(marks) - B.grown(0.08 * k))
-        c = sg.Point(yc, zc2)
-        dish = c.buffer(R(70.0), quad_segs=14).difference(c.buffer(R(24.0), quad_segs=10))
-        lens = lens - (fr(dish) - B.core(0.1 * k))  # reflector bowl around the bulb
         self.add("headlight_R", lens, "lens", note="clear/natural filament; LED socket behind", down=(1, 0, 0))
         self.add("headlight_L", lens.mirror([0, 1, 0]), "lens", down=(1, 0, 0))
         r_led = 2.6 if P.screw >= 3.0 else 1.6  # 5 mm or 3 mm LED
@@ -432,8 +428,8 @@ class Model:
     def rear_details(self, shell):
         P, B, R, Ry, k = self.P, self.B, self.P.R, self.P.Ry, self.k
         pd = P.pocket_d
-        rear = lambda s, depth=R(235.0): g.extrude_x(s, B.x_rear - depth, B.x_rear + 8.0)
-        lamp = g.rrect(Ry(735.0), R(838.0), self.W + 8.0, R(1268.0), R(26.0))
+        rear = lambda s, depth=R(165.0): g.extrude_x(s, B.x_rear - depth, B.x_rear + 8.0)
+        lamp = g.rrect(Ry(735.0), R(840.0), self.W + 8.0, R(1250.0), R(26.0))
         lamps = unary_union([lamp, affinity.scale(lamp, -1, 1, origin=(0, 0))])
         garnish = g.rrect(Ry(-705.0), R(1142.0), Ry(-212.0), R(1206.0), R(14.0))
         gd = 0.6 * k
@@ -444,17 +440,16 @@ class Model:
         lens = rear(self.inset(lamp)) ^ (B.grown(0.4 * k) - floor)
         mw = max(0.2, 0.3 * k)
         marks = unary_union([
-            sg.LineString([(Ry(735.0), R(z)), (self.W + 8.0, R(z))]).buffer(mw) for z in (988.0, 1120.0)
+            sg.LineString([(Ry(735.0), R(z)), (self.W + 8.0, R(z))]).buffer(mw) for z in (985.0, 1105.0)
         ]).intersection(lamp.buffer(-0.6 * k))
         lens = lens - (rear(marks) - B.grown(0.08 * k))
         self.add("taillight_R", lens, "red", note="translucent red; LED holes behind", down=(-1, 0, 0))
         self.add("taillight_L", lens.mirror([0, 1, 0]), "red", down=(-1, 0, 0))
         r_led = 1.6 if P.screw >= 3.0 else 1.05
         for sgn in (-1, 1):
-            for z in (912.0, 1195.0):
-                xt = float(B.tail_x(R(z)))
-                x0 = xt - pd - 2 * OV if self.fused else xt + 3.0
-                shell = shell - g.cyl((x0, sgn * Ry(800.0), R(z)), (xt - 9.0, sgn * Ry(800.0), R(z)), r_led)
+            for z in (912.0, 1180.0):
+                x0 = B.x_rear - pd - 2 * OV if self.fused else B.x_rear + 3.0
+                shell = shell - g.cyl((x0, sgn * Ry(800.0), R(z)), (B.x_rear - 9.0, sgn * Ry(800.0), R(z)), r_led)
 
         # tailgate garnish with the pull handle at its inboard end
         gar = rear(self.inset(garnish), 12.0 * k) ^ (B.grown(0.9 * k) - B.core(gd + OV if self.fused else gd - 0.05))
@@ -469,8 +464,8 @@ class Model:
 
     def mirror_mount(self):
         x = self.P.R(800.0)
-        zp = self.P.R(1348.0)
-        return x, zp, float(self.B.gh_halfw(x, zp))
+        zp = self.P.R(1330.0)
+        return x, float(self.B.gz(zp, x)), float(self.B.gh_halfw(x, zp))
 
     def bumper_screws(self):
         R, Ry = self.P.R, self.P.Ry
@@ -501,8 +496,7 @@ class Model:
                     holes.append(g.cyl((x, sgn * (self.W - 12.0 * self.k), R(545.0)), (x, sgn * (self.W + 3.0), R(545.0)), rc))
         ys, zs = self.spare_center()  # spare wheel carrier
         for dz in (-R(85.0), R(85.0)):
-            xt = float(B.tail_x(zs + dz))
-            holes.append(g.cyl((xt + 1.0, ys, zs + dz), (xt - t - 2.0, ys, zs + dz), rc))
+            holes.append(g.cyl((B.x_rear + 1.0, ys, zs + dz), (B.x_rear - t - 2.0, ys, zs + dz), rc))
         xm, zm, ym = self.mirror_mount()  # mirror pegs
         for sgn in (-1, 1):
             holes.append(g.cyl((xm, sgn * (ym - t - 2.0), zm), (xm, sgn * (ym + 2.0), zm), self.r_peg() + 0.1))
@@ -666,9 +660,9 @@ class Model:
     def _bumper(self, front: bool):
         P, B, R, Ry, k = self.P, self.B, self.P.R, self.P.Ry, self.k
         t = P.wall
-        p = Ry(30.0)
+        p = Ry(40.0)
         if front:
-            zt, zb, D = R(880.0), R(450.0), R(112.0)
+            zt, zb, D = R(880.0), R(450.0), R(105.0)
             xe = B.x_face - D
             prof = [(xe + R(18), zt), (xe, zt - R(60)), (xe, R(610)), (xe + R(50), zb), (B.x_face + R(140), R(470)), (-R(250), R(560)), (-R(250), zt)]
             shift = -(D - p)
@@ -684,15 +678,8 @@ class Model:
         S = B.outer().slice(0.5 * (zt + zb))
         Sp = S.offset(p, m3.JoinType.Round) ^ end
         plan = m3.CrossSection.batch_hull([Sp, Sp.translate((shift, 0.0))])
-        hw = self.W + p + 1.0
-        x0, x1 = (xe, xe + R(1500.0)) if front else (xe - R(1500.0), xe)
-        plan = plan ^ g.cs(g.rrect(x0, -hw, x1, hw, R(300.0), res=16))  # round the outer corners in plan
         rim = plan - S.offset(-(t + 2.5 * k))
         solid = g.extrude_z(rim, zb - 2.0, zt + 2.0) ^ self.across(g.rpoly(prof, R(22.0)))
-        # lower outer corners are cut back, as on the car
-        cut = Ry(120.0)
-        front_view = sg.Polygon([(-hw, zt + 5), (hw, zt + 5), (hw, R(570.0)), (hw - cut, zb - 5), (-hw + cut, zb - 5), (-hw, R(570.0))])
-        solid = solid ^ g.extrude_x(front_view, -BIG, 2 * BIG)
         solid = solid - self.hug() - self.across(self.arch_shape(xc, "outer", -OV if self.fused else P.fit))
         return solid, xe, zt, zb
 
@@ -817,9 +804,8 @@ class Model:
         P, B, R, Ry, k = self.P, self.B, self.P.R, self.P.Ry, self.k
         od, wd, bead = R(REAL_TIRE_OD), R(REAL_TIRE_WIDTH), R(406.4)
         ys, zs = self.spare_center()
-        gap = R(30.0)
-        xs = float(B.tail_x(zs + R(135.0)))  # door skin at the top of the carrier plate
-        xcen = float(B.tail_x(zs - 0.35 * od)) + gap + wd / 2
+        gap = R(55.0)
+        xcen = B.x_rear + gap + wd / 2
         to_car = lambda m: m.rotate([0, 90, 0]).translate([xcen, ys, zs])  # wheel face (+Z) -> rearward (+X)
         rs = max(1.9, 2.95 * k)
         ww = wd - 2.0 * k
@@ -829,15 +815,13 @@ class Model:
         zf = ww / 2 - R(50.0)
         x_disc = xcen + zf - max(1.4, 2.2 * k)
         pt = max(1.6, 2.4 * k)
-        xb = float(B.tail_x(zs - R(135.0)))  # door skin at the bottom of the plate (furthest back)
-        plate = g.extrude_x(g.rrect(ys - R(75.0), zs - R(135.0), ys + R(75.0), zs + R(135.0), R(30.0)), xs - 1.0, xb + pt)
-        post = g.cyl((xs - 1.0, ys, zs), (x_disc, ys, zs), R(62.0))
-        web = g.extrude_x(g.rrect(ys - 0.8 - 0.8 * k, zs - R(125.0), ys + 0.8 + 0.8 * k, zs + R(125.0), 0.6), xs - 1.0, xcen - wd / 2 - 0.4)
+        plate = g.extrude_x(g.rrect(ys - R(75.0), zs - R(135.0), ys + R(75.0), zs + R(135.0), R(30.0)), B.x_rear, B.x_rear + pt)
+        post = g.cyl((B.x_rear + 0.5, ys, zs), (x_disc, ys, zs), R(62.0))
+        web = g.extrude_x(g.rrect(ys - 0.8 - 0.8 * k, zs - R(125.0), ys + 0.8 + 0.8 * k, zs + R(125.0), 0.6), B.x_rear + 0.5, B.x_rear + gap - 0.5)
         spig = g.cyl((x_disc - 1.0, ys, zs), (xcen + zf + R(30.0), ys, zs), rs)
-        car = (plate + post + web + spig) - B.grown(0.05)  # seat it on the leaning door skin
+        car = plate + post + web + spig
         for dz in (-R(85.0), R(85.0)):
-            xt = float(B.tail_x(zs + dz))
-            car = car - g.cyl((xt - 1.0, ys, zs + dz), (xt + 7.0 * k, ys, zs + dz), P.r_pilot)
+            car = car - g.cyl((B.x_rear - 1.0, ys, zs + dz), (B.x_rear + 7.0 * k, ys, zs + dz), P.r_pilot)
         self.add("spare_carrier", car, "black", note="two screws from inside the tailgate; wheel glues onto the spigot", down=(-1, 0, 0))
 
     def build_crossbars(self):
@@ -852,7 +836,7 @@ class Model:
         bead = 0.47 * P.tire_od
         tire = self.tire(P.tire_od, P.tire_width, bead)
         wheel = self.steel_wheel(bead, P.tire_width - 3.0 * self.k, face_offset=0.22 * P.tire_width)
-        y_out = self.W + P.Ry(58.0) - 0.4  # tyre sidewall just inside the flare face
+        y_out = self.W + P.Ry(45.0) - 0.5  # tyre sidewall just inside the flare face
         out = []
         for xc in (self.xc_f, self.xc_r):
             for sgn in (-1, 1):

@@ -313,33 +313,3 @@ def keep_main(man: Manifold, min_vol: float = 0.2):
 def smoothstep(t):
     t = np.clip(t, 0.0, 1.0)
     return t * t * (3 - 2 * t)
-
-
-def corner_normals(V, F, crease_deg=38.0):
-    """Per-corner shading normals: smooth across faces closer than ``crease_deg``, sharp otherwise.
-
-    Returns (nf, 3, 3). Used for viewing only - the geometry is unchanged.
-    """
-    t = V[F]
-    fn = np.cross(t[:, 1] - t[:, 0], t[:, 2] - t[:, 0])
-    area = np.linalg.norm(fn, axis=1)
-    unit = fn / np.maximum(area, 1e-20)[:, None]
-    nf = len(F)
-    cv = F.reshape(-1)  # vertex of each corner
-    cf = np.repeat(np.arange(nf), 3)  # face of each corner
-    order = np.argsort(cv, kind="stable")
-    sv, sf = cv[order], cf[order]
-    start = np.concatenate([[0], np.nonzero(np.diff(sv))[0] + 1])
-    size = np.diff(np.concatenate([start, [len(sv)]]))
-    gstart = np.repeat(start, size)  # group start for every sorted corner
-    gsize = np.repeat(size, size)
-    i = np.repeat(np.arange(len(sv)), gsize)
-    j = np.repeat(gstart, gsize) + (np.arange(len(i)) - np.repeat(np.cumsum(gsize) - gsize, gsize))
-    fi, fj = sf[i], sf[j]
-    ok = np.einsum("ij,ij->i", unit[fi], unit[fj]) > np.cos(np.radians(crease_deg))
-    acc = np.zeros((len(sv), 3))
-    np.add.at(acc, i[ok], fn[fj[ok]])
-    acc /= np.maximum(np.linalg.norm(acc, axis=1), 1e-20)[:, None]
-    out = np.zeros((nf * 3, 3))
-    out[order] = acc
-    return out.reshape(nf, 3, 3)

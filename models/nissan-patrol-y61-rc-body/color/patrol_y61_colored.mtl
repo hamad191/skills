@@ -7,10 +7,10 @@ d 1.00
 illum 2
 
 newmtl trim_black
-Kd 0.1500 0.1500 0.1600
+Kd 0.0750 0.0750 0.0800
 Ka 0 0 0
 Ks 0.15 0.15 0.15
-Ns 89
+Ns 110
 d 1.00
 illum 2
 
@@ -46,14 +46,6 @@ Ns 310
 d 1.00
 illum 2
 
-newmtl lens_amber
-Kd 0.9300 0.5500 0.1600
-Ka 0 0 0
-Ks 0.15 0.15 0.15
-Ns 290
-d 1.00
-illum 2
-
 newmtl glass
 Kd 0.1300 0.1700 0.2000
 Ka 0 0 0
@@ -63,10 +55,10 @@ d 0.62
 illum 2
 
 newmtl tire_black
-Kd 0.0900 0.0900 0.0950
+Kd 0.0500 0.0500 0.0550
 Ka 0 0 0
 Ks 0.15 0.15 0.15
-Ns 30
+Ns 49
 d 1.00
 illum 2
 

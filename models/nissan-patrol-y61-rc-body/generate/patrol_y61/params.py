@@ -19,12 +19,12 @@ REAL_TIRE_WIDTH = 265.0
 class Params:
     # --- RC chassis fitment -------------------------------------------------
     wheelbase: float = 165.0  # chassis wheelbase (mm); 165 mm = true 1:18
-    tire_od: float = 45.0  # largest tyre the arches are cut for (mm); up to this the arches stay true to scale
-    tire_width: float = 15.0  # only used for the preview render
-    lift: float = 0.0  # body lift above scale ride height (mm)
+    tire_od: float = 57.0  # largest tyre the arches are cut for (mm)
+    tire_width: float = 22.0  # only used for the preview render
+    lift: float = 4.0  # body lift above scale ride height (mm)
     width_scale: float = 1.0  # lateral stretch for wide axles (1.0 = true scale)
     arch_clear_side: float = 3.0  # tyre-to-arch gap fore/aft (mm)
-    arch_clear_top: float = 3.5  # tyre-to-arch gap above the tyre at ride height (mm)
+    arch_clear_top: float = 4.0  # tyre-to-arch gap above the tyre at ride height (mm)
 
     # --- shell --------------------------------------------------------------
     wall: float = 1.2  # body wall thickness (mm)
